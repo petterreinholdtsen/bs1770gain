@@ -1,5 +1,5 @@
 /*
- * bs1770gain_csv2avdict.c
+ * ffsox_csv2avdict.c
  * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
  *
  * This library is free software; you can redistribute it and/or
@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
-#include <bs1770gain.h>
+#include <ffsox.h>
 #if defined (WIN32)
 #include <windows.h>
 #include <mbstring.h>
@@ -34,7 +34,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 #if defined (WIN32) // {
-#define strtok_r bs1770gain_strtok_r
+#define strtok_r ffsox_strtok_r
 #endif // }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -504,7 +504,7 @@ static const char *priv_name(const char *s)
   return p;
 }
 
-int bs1770gain_csv2avdict(const char *file, char sep, AVDictionary **metadata)
+int ffsox_csv2avdict(const char *file, char sep, AVDictionary **metadata)
 {
   const char *name=NULL;
   char *csv=NULL;

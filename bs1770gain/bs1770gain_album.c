@@ -112,7 +112,7 @@ void bs1770gain_album_copy_file(const bs1770gain_album_t *album,
 #endif // }
 
   // try to open the source file.
-  if (NULL==(src=bs1770gain_path3(NULL,album->ipath,basename)))
+  if (NULL==(src=ffsox_path3(NULL,album->ipath,basename)))
     goto src;
 
 #if defined (WIN32) // {
@@ -125,7 +125,7 @@ void bs1770gain_album_copy_file(const bs1770gain_album_t *album,
 #endif // }
 
   // try to open the destination file.
-  if (NULL==(dst=bs1770gain_path3(NULL,album->opath,basename)))
+  if (NULL==(dst=ffsox_path3(NULL,album->opath,basename)))
     goto dst;
 
   // copy the file.

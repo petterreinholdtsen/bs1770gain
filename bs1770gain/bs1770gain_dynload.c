@@ -285,6 +285,8 @@ static int bs1770gain_dynload_avutil(void *lib)
   BS1770GAIN_BIND(lib,&bs1770gain_avutil.av_dict_get,"av_dict_get");
   BS1770GAIN_BIND(lib,&bs1770gain_avutil.av_dict_set,"av_dict_set");
   BS1770GAIN_BIND(lib,&bs1770gain_avutil.av_dict_free,"av_dict_free");
+  BS1770GAIN_BIND(lib,&bs1770gain_avutil.av_frame_get_buffer,
+      "av_frame_get_buffer");
 
   code=0;
 loadlib:

@@ -19,7 +19,7 @@
  */
 #ifndef __BS1770GAIN_H__
 #define __BS1770GAIN_H__ // {
-#include <bs1770gain_dynload.h>
+#include <ffsox.h>
 #include <lib1770.h>
 #include <dirent.h>
 #ifdef __cpluplus
@@ -29,10 +29,8 @@ extern "C" {
 ///////////////////////////////////////////////////////////////////////////////
 #define BS1770GAIN_MIN(x,y) \
   ((x)<(y)?(x):(y))
-
-#define BS1770GAIN_MESSAGE(message) \
-  av_log(NULL,AV_LOG_ERROR,"Error %s: \"%s\" (%d).\n",message, \
-      bs1770gain_basename(__FILE__),__LINE__)
+#define BS1770GAIN_MESSAGE(m) \
+  FFSOX_MESSAGE(m)
 
 #define BS1770GAIN_GOTO(condition,message,label) do { \
   if (condition) { \
@@ -40,9 +38,6 @@ extern "C" {
     goto label; \
   } \
 } while (0)
-
-///////////////////////////////////////////////////////////////////////////////
-#define BS1770GAIN_SAMPLE_FMT AV_SAMPLE_FMT_S32
 
 ///////////////////////////////////////////////////////////////////////////////
 typedef struct bs1770gain_block_options bs1770gain_block_options_t;
@@ -58,23 +53,13 @@ typedef struct bs1770gain_read bs1770gain_read_t;
 typedef struct bs1770gain_convert bs1770gain_convert_t;
 
 ///////////////////////////////////////////////////////////////////////////////
-int bs1770gain_csv2avdict(const char *file, char sep, AVDictionary **metadata);
-
 const char *bs1770gain_basename(const char *path);
 const char *bs1770gain_ext(const char *path);
 void bs1770gain_mkdir_dirname(char *path);
 char *bs1770gain_extend_path(const char *dirname, const char *basename);
 char *bs1770gain_opath(const char *ipath, const char *odirname,
     const char *oext);
-#if defined (WIN32) // {
-wchar_t *bs1770gain_s2w(const char *s);
-char *bs1770gain_strtok_r(char *str, const char *delim, char **saveptr);
-wchar_t *bs1770gain_wcstok_r(wchar_t *str, const wchar_t *delim,
-    wchar_t **saveptr);
-#endif // }
 
-int bs1770gain_audiostream(AVFormatContext *ic, int *aip, int *vip,
-    const bs1770gain_options_t *options);
 int64_t bs1770gain_seek(AVFormatContext *ifc, const bs1770gain_options_t *o);
 int bs1770gain_sox(const bs1770gain_options_t *options, const char *path,
     bs1770gain_stats_t *stats);
@@ -86,11 +71,10 @@ int64_t bs1770gain_parse_time(const char *s);
 int bs1770gain_oor(AVPacket *p, const AVFormatContext *ifc,
     const bs1770gain_options_t *options);
 #if defined (WIN32) // {
+wchar_t *bs1770gain_s2w(const char *s);
 int bs1770gain_copy_file(const wchar_t *src, const wchar_t *dst);
-wchar_t *bs1770gain_path3(const wchar_t *ws1, const char *s2, const char *s3);
 #else // } {
 int bs1770gain_copy_file(const char *src, const char *dst);
-char *bs1770gain_path3(const char *s1, const char *s2, const char *s3);
 #endif // }
 int bs1770gain_same_file(const char *path1, const char *path2);
 
@@ -365,6 +349,7 @@ size_t bs1770gain_read_decode(bs1770gain_read_t *read, sox_sample_t *obuf,
 int bs1770gain_read_decode_frame(bs1770gain_read_t *read);
 int bs1770gain_read_eob(bs1770gain_read_t *read);
 void bs1770gain_read_reset(bs1770gain_read_t *read);
+
 size_t bs1770gain_read_convert_frame(bs1770gain_read_t *read,
     sox_sample_t *obuf, size_t size);
 

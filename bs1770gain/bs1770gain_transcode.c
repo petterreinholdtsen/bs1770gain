@@ -18,116 +18,7 @@
  * MA  02110-1301  USA
  */
 #include <bs1770gain.h>
-
-///////////////////////////////////////////////////////////////////////////////
-typedef struct bs1770gain_streams bs1770gain_streams_t;
-
-struct bs1770gain_streams {
-  struct {
-    int ai;
-    int vi;
-  } i;
-
-  struct {
-    int ai;
-    int vi;
-  } o;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-static int bs1770gain_new_stream(AVStream *ist, AVFormatContext *ofc,
-    int codec_type)
-{
-  AVCodecContext *icc=ist->codec;
-  AVCodec *oc;
-  AVStream *ost;
-  AVCodecContext *occ;
-  AVRational sar;
-
-  if (codec_type<0) {
-    // copy stream (video and audio).
-    if (NULL==(ost=avformat_new_stream(ofc,icc->codec)))
-      goto ost;
-
-    occ=ost->codec;
-
-    if (avcodec_copy_context(occ,icc)<0)
-      goto ost;
-
-    switch (icc->codec_type) {
-    case AVMEDIA_TYPE_VIDEO:
-      sar=ist->sample_aspect_ratio.num
-          ?ist->sample_aspect_ratio
-          :icc->sample_aspect_ratio;
-      ost->sample_aspect_ratio=sar;
-      occ->sample_aspect_ratio=sar;
-      ost->avg_frame_rate=ist->avg_frame_rate;
-      break;
-    case AVMEDIA_TYPE_AUDIO:
-      break;
-    default:
-      break;
-    }
-
-    ost->time_base=ist->time_base;
-  }
-  else {
-    // decode stream (audio only).
-    BS1770GAIN_GOTO(NULL==(oc=avcodec_find_encoder(codec_type)),
-        "finding encoder",ost);
-    BS1770GAIN_GOTO(NULL==(ost=avformat_new_stream(ofc,NULL)),
-        "allocation output stream",ost);
-    occ=ost->codec;
-    occ->sample_fmt=BS1770GAIN_SAMPLE_FMT;
-    occ->sample_rate=icc->sample_rate;
-    occ->channel_layout=icc->channel_layout;
-    occ->channels=icc->channels;
-#if 0 // {
-    occ->time_base=icc->time_base;
-#else // } {
-    occ->time_base=(AVRational){1,occ->sample_rate};
-#endif // }
-    BS1770GAIN_GOTO(avcodec_open2(occ,oc,NULL)<0,
-        "allocation encoder",ost);
-    ost->time_base=occ->time_base;
-  }
-
-  occ->codec_tag=0;
-
-  if (ofc->oformat->flags&AVFMT_GLOBALHEADER)
-    occ->flags|=CODEC_FLAG_GLOBAL_HEADER;
-
-  return 0;
-ost:
-  return -1;
-}
-
-static AVFormatContext *bs1770gain_open_output(const AVFormatContext *ifc,
-    const char *opath, bs1770gain_streams_t *s, int codec_type)
-{
-  AVFormatContext *ofc=NULL;
-
-  BS1770GAIN_GOTO(avformat_alloc_output_context2(&ofc,NULL,NULL,opath)<0,
-      "opening output format",ofc);
-
-  if (0<=s->i.vi) {
-    s->o.vi=ofc->nb_streams;
-    BS1770GAIN_GOTO(bs1770gain_new_stream(ifc->streams[s->i.vi],ofc,-1)<0,
-        "opening output stream",ost);
-  }
-  else
-    s->o.vi=-1;
-
-  s->o.ai=ofc->nb_streams;
-  BS1770GAIN_GOTO(bs1770gain_new_stream(ifc->streams[s->i.ai],ofc,
-      codec_type)<0,"opening output stream",ost);
-
-  return ofc;
-ost:
-  avformat_free_context(ofc);
-ofc:
-  return NULL;
-}
+#include <ffsox_priv.h>
 
 static void bs1770gain_tags_rg(bs1770gain_tag_t *tags,
     const bs1770gain_stats_t *track,
@@ -258,13 +149,15 @@ static void bs1770gain_write_dict(AVDictionary **ometadata,
 }
 
 // copy all tags into the fresh dictionary except the RG/BWF ones.
-static void bs1770gain_clone_tags(bs1770gain_tag_t *tags,
-    AVFormatContext *ofc, AVFormatContext *ifc,
-    bs1770gain_stats_t *track, bs1770gain_stats_t *album,
+static void bs1770gain_clone_tags(bs1770gain_tag_t *tags, sink_t *so,
+    source_t *si, bs1770gain_stats_t *track, bs1770gain_stats_t *album,
     const bs1770gain_options_t *options)
 {
+  //int i;
+  read_list_t *reads;
+  read_t *read;
+  write_t *write;
   AVStream *ist,*ost;
-  int i;
 
   // initialize the RG/BWF tags.
   switch (options->mode) {
@@ -279,23 +172,28 @@ static void bs1770gain_clone_tags(bs1770gain_tag_t *tags,
   }
 
   // copy the format dictionary.
-  bs1770gain_clone_dict(&ofc->metadata,ifc->metadata,tags);
+  bs1770gain_clone_dict(&so->f.fc->metadata,si->f.fc->metadata,tags);
 
-  for (i=0;i<ifc->nb_streams;++i) {
-    ost=ofc->streams[i];
-    ist=ifc->streams[i];
-    // copy the stream dictionary.
-    bs1770gain_clone_dict(&ost->metadata,ist->metadata,tags);
+  LIST_FOREACH(&reads,si->reads.h) {
+    read=reads->read;
+
+    if (NULL!=(write=read->write)) {
+      ist=read->s.st;
+      ost=write->s.st;
+      bs1770gain_clone_dict(&ost->metadata,ist->metadata,tags);
 #if 0 // {
-    if (ai==i)
-      bs1770gain_write_dict(&ost->metadata,ist->metadata,tags);
+      if (ai==i)
+        bs1770gain_write_dict(&ost->metadata,ist->metadata,tags);
 #endif // }
+    };
   }
 }
 
 int bs1770gain_transcode(bs1770gain_stats_t *track, bs1770gain_stats_t *album,
     const char *ipath, const char *opath, const bs1770gain_options_t *options)
 {
+  enum { CODEC_ID=AV_CODEC_ID_FLAC,SAMPLE_FMT=AV_SAMPLE_FMT_S32 };
+
   bs1770gain_tag_t tags[]={
     ///////////////////////////////////////////////////////////////////////////
     { .key="REPLAYGAIN_ALGORITHM",          .val="" },
@@ -314,184 +212,83 @@ int bs1770gain_transcode(bs1770gain_stats_t *track, bs1770gain_stats_t *album,
     { .key=NULL,                            .val="" }
   };
 
-  int code;
-  AVFormatContext *ifc,*ofc;
-  bs1770gain_streams_t s;
-  int size,got_frame;
-  AVCodecContext *adc;
-  AVDictionary *opts;
-  AVCodec *ad;
-  bs1770gain_convert_t *convert;
-  AVStream *st;
-  AVPacket p1,p2;
-  char drc[32];
-  int64_t ts1,ts2;
+  int code=-1;
+  double drc=options->drc;
+  int ai=options->audio;
+  int vi=options->video;
+  ffsox_source_t si;
+  ffsox_sink_t so;
+  ffsox_machine_t m;
+  double q;
 
-  code=-1;
-  ifc=NULL;
-  opts=NULL;
-  ofc=NULL;
+  if (ffsox_source_create(&si,ipath)<0) {
+    FFSOX_MESSAGE("creating source");
+    goto si;
+  }
 
-  BS1770GAIN_GOTO(avformat_open_input(&ifc,ipath,0,0)<0,
-      "open input file",ifc);
-  ifc->flags|=AVFMT_FLAG_GENPTS;
-  BS1770GAIN_GOTO(avformat_find_stream_info(ifc,0)<0,
-      "finding stream info",find);
-  BS1770GAIN_GOTO(bs1770gain_audiostream(ifc,&s.i.ai,&s.i.vi,options)<0,
-      "finding audio",find);
+  if (ffsox_sink_create(&so,opath)<0) {
+    FFSOX_MESSAGE("creating sink");
+    goto so;
+  }
 
-  if (0!=options->extensions)
-    bs1770gain_csv2avdict(ipath,'\t',&ifc->metadata);
 
   if (BS1770GAIN_MODE_APPLY==options->mode) {
-    adc=ifc->streams[s.i.ai]->codec;
-    // we want to have stereo.
-    // TODO: should be an option.
-    adc->request_channel_layout=AV_CH_LAYOUT_STEREO;
-
-    // find a decoder.
-    BS1770GAIN_GOTO(NULL==(ad=bs1770gain_find_decoder(adc->codec_id)),
-        "finding audio decoder",find);
-
-    if (AV_CODEC_ID_AC3==adc->codec_id) {
-      // avoid dynamic range compression.
-      sprintf(drc,"%0.2f",options->drc);
-      BS1770GAIN_GOTO(av_dict_set(&opts,"drc_scale",drc,0)!=0,
-          "switching off dynamic range compression",opts);
-    }
-
-    // open the audio decoder.
-    BS1770GAIN_GOTO(0!=avcodec_open2(adc,ad,&opts),"opening decoder",adc);
-
-    // open the output context.
-    ofc=bs1770gain_open_output(ifc,opath,&s,AV_CODEC_ID_FLAC);
-    BS1770GAIN_GOTO(NULL==ofc,"opening output format",ofc);
-    // copy all tags except the RG/BWF ones.
-    bs1770gain_clone_tags(tags,ofc,ifc,track,album,options);
-
-    // open a converter.
-    convert=bs1770gain_convert_new(ifc,s.i.ai,ofc,s.o.ai,options,track,album);
-    BS1770GAIN_GOTO(NULL==convert,"allocation convert",convert);
+    q=options->preamp+options->level;
+    q-=(1.0-options->apply)*bs1770gain_stats_get_loudness(album,options);
+    q-=options->apply*bs1770gain_stats_get_loudness(track,options);
+    q=LIB1770_DB2Q(q);
   }
-  else {
-    adc=NULL;
-    ad=NULL;
-    convert=NULL;
+  else
+    q=-1.0;
 
-    // open the output context.
-    BS1770GAIN_GOTO(NULL==(ofc=bs1770gain_open_output(ifc,opath,&s,-1)),
-        "opening output format",ofc);
-    // copy all tags except the RG/BWF ones.
-    bs1770gain_clone_tags(tags,ofc,ifc,track,album,options);
+  if (ffsox_source_link_create(&si,&so,drc,CODEC_ID,SAMPLE_FMT,q,ai,vi)<0) {
+    FFSOX_MESSAGE("creating link");
+    goto link;
+  }
+
+  // copy all tags except the RG/BWF ones.
+  bs1770gain_clone_tags(tags,&so,&si,track,album,options);
+
+  if (BS1770GAIN_MODE_APPLY!=options->mode) {
     // set the RG/BWF tags.
-    bs1770gain_write_dict(&ofc->metadata,ifc->metadata,tags);
+    bs1770gain_write_dict(&so.f.fc->metadata,si.f.fc->metadata,tags);
   }
 
-  if (0==(ofc->oformat->flags&AVFMT_NOFILE)) {
-    BS1770GAIN_GOTO(avio_open(&ofc->pb,opath,AVIO_FLAG_WRITE)<0,
-        "opening output file",pb);
+  if (bs1770gain_seek(si.f.fc,options)<0ll) {
+    FFSOX_MESSAGE("seeking");
+    goto seek;
   }
 
-  av_init_packet(&p1);
-  p1.data=NULL;
-  p1.size=0;
-
-  /////////////////////////////////////////////////////////////////////////////
-  BS1770GAIN_GOTO((ts1=bs1770gain_seek(ifc,options))<0,"seeking",seek);
-  BS1770GAIN_GOTO(avformat_write_header(ofc,NULL)<0,"writing header",header);
-
-  while (0<=av_read_frame(ifc,&p1)) {
-    // if stream is in range ...
-    if (p1.stream_index<ifc->nb_streams) {
-      // in case of seeking adjust the timestamps ...
-      if (ts1>0) {
-        st=ifc->streams[p1.stream_index];
-        ts2=av_rescale_q(ts1,AV_TIME_BASE_Q,st->time_base);
-
-        if (p1.dts!=AV_NOPTS_VALUE)
-          p1.dts-=ts2;
-
-        if (p1.pts!=AV_NOPTS_VALUE)
-          p1.pts-=ts2;
-      }
-
-      if (bs1770gain_oor(&p1,ifc,options)) {
-        av_free_packet(&p1);
-        goto flush;
-      }
-
-      if (BS1770GAIN_MODE_APPLY==options->mode&&s.i.ai==p1.stream_index) {
-        p2=p1;
-
-        // transcode the selected audio stream.
-        do {
-          if ((size=bs1770gain_convert_packet(convert,&got_frame,&p2))<0) {
-            BS1770GAIN_MESSAGE("transcoding audio");
-            av_free_packet(&p1);
-            goto write;
-          }
-
-          size=FFMIN(size,p2.size);
-          p2.data+=size;
-          p2.size-=size;
-        } while (0<p2.size);
-      }
-      else if (s.i.ai==p1.stream_index||s.i.vi==p1.stream_index) {
-        // pass through only selected streams, i.e. just
-        // one audio and just one video.
-        p1.stream_index=p1.stream_index==s.i.ai?s.o.ai:s.o.vi;
-
-        if (av_interleaved_write_frame(ofc,&p1)<0) {
-          BS1770GAIN_MESSAGE("writing frame");
-          av_free_packet(&p1);
-          goto write;
-        }
-      }
-    }
-
-    av_free_packet(&p1);
-  }
-flush:
-  if (BS1770GAIN_MODE_APPLY==options->mode) {
-    // flush the decoder.
-    p1.stream_index=s.i.ai;
-    p1.data=NULL;
-    p1.size=0;
-
-    do {
-      if (bs1770gain_convert_packet(convert,&got_frame,&p1)<0) {
-        BS1770GAIN_MESSAGE("transcoding audio");
-        goto write;
-      }
-    } while (got_frame);
-
-    // signal to the encoder eof by sending a NULL frame.
-    // use a properly initialized packet, i.e. p1.
-    avcodec_encode_audio2(ofc->streams[s.i.ai]->codec,&p1,NULL,&got_frame);
+  if (ffsox_sink_open(&so)<0) {
+    FFSOX_MESSAGE("opening sink");
+    goto open;
   }
 
-  BS1770GAIN_GOTO(av_write_trailer(ofc),"writing trailer",trailer);
+  if (ffsox_machine_create(&m,&si)<0) {
+    FFSOX_MESSAGE("creating machine");
+    goto machine;
+  }
+
+  if (ffsox_machine_loop(&m)<0) {
+    FFSOX_MESSAGE("running machine");
+    goto run;
+  }
+
   code=0;
 // cleanup:
-trailer:
-write:
-header:
+run:
+  ffsox_machine_cleanup(&m);
+machine:
+  ffsox_sink_close(&so);
+open:
 seek:
-  if (0==(ofc->flags&AVFMT_NOFILE))
-    avio_close(ofc->pb);
-pb:
-  if (NULL!=convert)
-    bs1770gain_convert_close(convert);
-convert:
-  avformat_free_context(ofc);
-ofc:
-  if (NULL!=adc)
-    avcodec_close(adc);
-adc:
-  av_dict_free(&opts);
-opts:
-find:
-  avformat_close_input(&ifc);
-ifc:
+  ffsox_source_link_cleanup(&si);
+link:
+  ffsox_sink_cleanup(&so);
+so:
+  si.vmt->cleanup(&si);
+si:
+  code=0;
+//cleanup:
   return code;
 }

@@ -1,6 +1,7 @@
 include config.mak
 include $(SRCDIR)/bs1770gain/version.mak
 include $(SRCDIR)/examples/version.mak
+include $(SRCDIR)/libffsox-2/version.mak
 include $(SRCDIR)/lib1770-2/version.mak
 
 .PHONY: all install release-bin release-src release-tools
@@ -19,8 +20,14 @@ install: $(EXAMPLES_INSTALL)
 endif # }
 
 ########
+LIBFFSOX=libffsox-2-$(LIBFFSOX_VERSION)
+#LIBFFSOX_INSTALL+=$(INCLUDEDIR)/libffsox.h
+LIBFFSOX_INSTALL+=$(LIBDIR)/libffsox-2.a
+install: $(LIBFFSOX_INSTALL)
+
+########
 LIB1770=lib1770-2-$(LIB1770_VERSION)
-LIB1770_INSTALL+=$(INCLUDEDIR)/lib1770.h
+#LIB1770_INSTALL+=$(INCLUDEDIR)/lib1770.h
 LIB1770_INSTALL+=$(LIBDIR)/lib1770-2.a
 install: $(LIB1770_INSTALL)
 
@@ -89,6 +96,7 @@ $(BS1770GAIN_INSTALL): build/$(BS1770GAIN)/Makefile FORCE
 	cd $(<D) && $(MAKE) install
 build/$(BS1770GAIN)/Makefile: $(SOX_INSTALL)
 build/$(BS1770GAIN)/Makefile: $(FFMPEG_INSTALL)
+build/$(BS1770GAIN)/Makefile: $(LIBFFSOX_INSTALL)
 build/$(BS1770GAIN)/Makefile: $(LIB1770_INSTALL)
 build/$(BS1770GAIN)/Makefile: $(SRCDIR)/bs1770gain/Makefile
 build/$(BS1770GAIN)/Makefile: $(SRCDIR)/bs1770gain/configure
@@ -104,6 +112,17 @@ build/$(EXAMPLES)/Makefile: $(FFMPEG_INSTALL)
 build/$(EXAMPLES)/Makefile: $(LIBSNDFILE_INSTALL)
 build/$(EXAMPLES)/Makefile: $(SRCDIR)/examples/Makefile
 build/$(EXAMPLES)/Makefile: $(SRCDIR)/examples/configure
+	mkdir -p $(@D)
+	cd $(@D) && $< --prefix=$(PREFIX) --tooldir=$(TOOLDIR)
+	touch $@
+
+###############################################################################
+$(LIBFFSOX_INSTALL): build/$(LIBFFSOX)/Makefile FORCE
+	cd $(<D) && $(MAKE) install
+build/$(LIBFFSOX)/Makefile: $(SOX_INSTALL)
+build/$(LIBFFSOX)/Makefile: $(FFMPEG_INSTALL)
+build/$(LIBFFSOX)/Makefile: $(SRCDIR)/libffsox-2/Makefile
+build/$(LIBFFSOX)/Makefile: $(SRCDIR)/libffsox-2/configure
 	mkdir -p $(@D)
 	cd $(@D) && $< --prefix=$(PREFIX) --tooldir=$(TOOLDIR)
 	touch $@
@@ -356,6 +375,7 @@ RELEASE_SRC+=COPYING
 RELEASE_SRC+=bits
 RELEASE_SRC+=configure
 RELEASE_SRC+=Makefile
+RELEASE_SRC+=libffsox-2
 RELEASE_SRC+=lib1770-2
 RELEASE_SRC+=examples
 RELEASE_SRC+=bs1770gain

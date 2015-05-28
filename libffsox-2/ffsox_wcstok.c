@@ -1,5 +1,5 @@
 /*
- * bs1770gain_strtok.c
+ * ffsox_wstrtok.c
  * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
  *
  * This library is free software; you can redistribute it and/or
@@ -18,56 +18,15 @@
  * MA  02110-1301  USA
  */
 #if defined (WIN32) // {
-#include <bs1770gain.h>
-#include <windows.h>
+#include <ffsox.h>
 
-///////////////////////////////////////////////////////////////////////////////
-static HANDLE msvcrt(void)
-{
-  static HANDLE hLib=NULL;
-
-  if (NULL==hLib)
-    hLib=LoadLibraryA("msvcrt.dll");
-
-  return hLib;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-static char *bs1770gain_strtok(char *str, const char *delim, char **saveptr)
-{
-  return strtok(str,delim);
-}
-
-char *bs1770gain_strtok_r(char *str, const char *delim, char **saveptr)
-{
-  typedef typeof (strtok_s) *strtok_s_t;
-  static strtok_s_t strtok_s=NULL;
-  HANDLE hLib;
-
-  if (NULL==strtok_s) {
-    if (NULL==(hLib=msvcrt()))
-      goto strtok;
-
-    if (NULL==(strtok_s=(strtok_s_t)GetProcAddress(hLib,"strtok_s")))
-      goto strtok;
-
-    goto strtok_s;
-  strtok:
-    strtok_s=bs1770gain_strtok;
-    goto strtok_s;
-  }
-strtok_s:
-  return strtok_s(str,delim,saveptr);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-static wchar_t *bs1770gain_wcstok(wchar_t *str, const wchar_t *delim,
+static wchar_t *ffsox_wcstok(wchar_t *str, const wchar_t *delim,
     wchar_t **saveptr)
 {
   return wcstok(str,delim);
 }
 
-wchar_t *bs1770gain_wcstok_r(wchar_t *str, const wchar_t *delim,
+wchar_t *ffsox_wcstok_r(wchar_t *str, const wchar_t *delim,
     wchar_t **saveptr)
 {
   typedef typeof (wcstok_s) *wcstok_s_t;
@@ -75,7 +34,7 @@ wchar_t *bs1770gain_wcstok_r(wchar_t *str, const wchar_t *delim,
   HANDLE hLib;
 
   if (NULL==wcstok_s) {
-    if (NULL==(hLib=msvcrt()))
+    if (NULL==(hLib=ffsox_msvcrt()))
       goto wcstok;
 
     if (NULL==(wcstok_s=(wcstok_s_t)GetProcAddress(hLib,"wcstok_s")))
@@ -83,7 +42,7 @@ wchar_t *bs1770gain_wcstok_r(wchar_t *str, const wchar_t *delim,
 
     goto wcstok_s;
   wcstok:
-    wcstok_s=bs1770gain_wcstok;
+    wcstok_s=ffsox_wcstok;
     goto wcstok_s;
   }
 wcstok_s:
