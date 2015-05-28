@@ -49,8 +49,9 @@ along with this program. If not, see
     target="_blank">http://www.gnu.org/licenses/</a>&gt;.
 </div>
 
-<p><b>BS1770GAIN is a loudness scanner compliant to ITU BS.1770 and it's
-flavours EBU R128, ATCS A/85, and ReplayGain 2.0.</b>
+<p><b>BS1770GAIN is a loudness scanner compliant to ITU BS.1770 and its
+flavours EBU R128, ATCS A/85, and ReplayGain 2.0. It helps normalizing the
+loudness of audio and video files to the same level.</b>
 
 <p><table border="0" cellpadding="0" cellspacing="0">
 <tr>
@@ -83,8 +84,17 @@ flavours EBU R128, ATCS A/85, and ReplayGain 2.0.</b>
 
 <p><div class="history"><table style="width:100%">
 <tr>
+  <td valign="top">2014-12-04</td>
+  <td valign="top">0.1.1</td>
+  <td valign="top"><ul>
+  <li>Compiled with <tt>-O2</tt>.
+  <li>Slighly different error handling with <tt>getopt_long()</tt>.
+  <li>Added the FFmpeg and SoX shared objects / dynamic link libraries to the release.
+  </ul></td>
+</tr>
+<tr>
   <td valign="top">2014-12-01</td>
-  <td valign="top">0.0.1</td>
+  <td valign="top">0.1.0</td>
   <td valign="top">Initial release.</td>
 </tr>
 </table></div>
@@ -126,6 +136,19 @@ measures not related to loudness:
   <li>measurement of the <i>maximum sample peak</i> (ordinary peak), and
   <li>measurement of the <i>maximum true peak</i> (peak due to upsampling).
 </ul>
+
+<p>Besides measuring the loudness <tt>BS1770GAIN</tt> is also able to
+adapt it conformant with the above mentioned statndards. There are two
+ways to achieve this:
+
+<ul>
+<li>write <tt>REPLAYGAIN</tt> tags with the respective information to the file and leave
+  the task of applying the gain to the playback device, or
+<li>actually apply the gain.
+</ul>
+
+<p>Following we describe in more detail how <tt>BS1770GAIN</tt> has to be
+customized.
 
 <a name="usage"><h3>3. Usage</h3>
 
@@ -451,11 +474,13 @@ remuxing "2012_live_at_the_georgia_theatre" ...
 done.
 </pre></blockquote>
 
+<!--
 <blockquote><pre>
 </pre></blockquote>
 
 <blockquote><pre>
 </pre></blockquote>
+-->
 
 <a name="cli"><h3>4. Command Line Syntax</h3>
 
@@ -511,7 +536,7 @@ Options:
    verbose, debug
  --time:  print out duration of program invocation
 
-Command line arguments can be mixed up in any order.
+Command line arguments can appear in any order.
 </pre></blockquote>
 
 <a name="test"><h3>5. Test Cases</h3>

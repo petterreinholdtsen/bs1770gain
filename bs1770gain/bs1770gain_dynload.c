@@ -68,14 +68,14 @@ static wchar_t *bs1770gain_root(void)
   size=MAX_PATH;
 
   if (NULL==(buf=malloc(size*sizeof *buf)))
-    goto error;
+    goto malloc;
 
   for (;;) {
     len=GetModuleFileNameW(NULL,buf,size-1);
 
 	  if (ERROR_INSUFFICIENT_BUFFER==GetLastError()) {
 	    if (NULL==(bp=realloc(buf,(size*=2)*sizeof *buf)))
-	      goto error;
+	      goto realloc;
 	    else
 	      buf=bp;
 	  }
@@ -95,10 +95,9 @@ static wchar_t *bs1770gain_root(void)
   }
 
   return buf;
-error:
-  if (NULL!=buf)
-    free(buf);
-
+realloc:
+  free(buf);
+malloc:
   return NULL;
 }
 

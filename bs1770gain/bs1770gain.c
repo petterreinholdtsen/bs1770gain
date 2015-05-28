@@ -86,7 +86,7 @@ void bs1770gain_usage(char **argv, int code)
   //fprintf(stderr," --bwf-tags:\n");
   /////////////////////////////////////////////////////////////////////////////
   fprintf(stderr,"\n");
-  fprintf(stderr,"Command line arguments can be mixed up in any order.\n");
+  fprintf(stderr,"Command line arguments can appear in any order.\n");
   exit(code);
 }
 
@@ -169,8 +169,14 @@ int main(int argc, char **argv)
   options.audio_ext="flac";
   options.video_ext="mkv";
 
+  opterr=0;
+
   while (0<=(c=getopt_long(argc,argv,bs1770gain_flags,bs1770gain_opts,NULL))) {
     switch (c) {
+    ///////////////////////////////////////////////////////////////////////////
+    case '?':
+      bs1770gain_usage(argv,-1);
+      break;
     /// with argument /////////////////////////////////////////////////////////
     case 'b':
       options.begin=bs1770gain_parse_time(optarg);

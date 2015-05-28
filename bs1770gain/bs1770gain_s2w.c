@@ -1,5 +1,5 @@
 /*
- * bs1770gain_files.c
+ * bs1770gain_s2w.c
  * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
  *
  * This library is free software; you can redistribute it and/or
