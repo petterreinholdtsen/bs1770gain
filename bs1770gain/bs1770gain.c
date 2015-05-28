@@ -529,8 +529,8 @@ int main(int argc, char **argv)
   }
 
   if (BS1770GAIN_MODE_APPLY==options.mode&&NULL!=options.format) {
-    fprintf(stderr,"Warning: Format \"%s\" potentially not available when\n"
-        "  applying the gain.\n",options.format);
+    fprintf(stderr,"Warning: Format \"%s\" potentially not available.\n",
+        options.format);
     options.format=NULL;
   }
 
@@ -565,14 +565,8 @@ int main(int argc, char **argv)
   }
 
   // load the FFmpeg and SoX libraries from "bs1770gain-tools".
-  if (bs1770gain_dynload("bs1770gain-tools")<0) {
-#if defined (WIN32) // {
-    fprintf(stderr,"Error loading dynamic link libraries: \"%s\" (%d).\n",
-        bs1770gain_basename(__FILE__),__LINE__);
-#else // } {
-    fprintf(stderr,"Error loading shared objects: \"%s\" (%d).\n",
-        bs1770gain_basename(__FILE__),__LINE__);
-#endif // }
+  if (ffsox_dynload("bs1770gain-tools")<0) {
+	FFSOX_MESSAGE("loading shared libraries");
     goto dynload;
   }
 

@@ -1,5 +1,5 @@
 /*
- * bs1770gain_audiostream.c
+ * ffsox_strtok.c
  * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
  *
  * This library is free software; you can redistribute it and/or
@@ -17,47 +17,33 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
-#include <bs1770gain.h>
+#if defined (WIN32) // {
+#include <ffsox.h>
 
-int bs1770gain_audiostream(AVFormatContext *ic, int *aip, int *vip,
-    const bs1770gain_options_t *options)
+static char *ffsox_strtok(char *str, const char *delim, char **saveptr)
 {
-  AVStream *is;
-  int i,ai,vi;
-
-  ai=-1;
-  vi=-1;
-
-  for (i=0;i<ic->nb_streams;++i) {
-    switch ((is=ic->streams[i])->codec->codec_type) {
-      case AVMEDIA_TYPE_AUDIO:
-        if (0<=options->audio) {
-          if (options->audio==i)
-            ai=i;
-        }
-        else if (ai<0||2==is->codec->channels)
-          ai=i;
-
-        break;
-      case AVMEDIA_TYPE_VIDEO:
-        if (0<=options->video) {
-          if (options->video==i)
-            vi=i;
-        }
-        else if (vi<0)
-          vi=i;
-
-        break;
-      default:
-        break;
-    }
-  };
-
-  if (NULL!=aip)
-    *aip=ai;
-
-  if (NULL!=vip)
-    *vip=vi;
-
-  return ai;
+  return strtok(str,delim);
 }
+
+char *ffsox_strtok_r(char *str, const char *delim, char **saveptr)
+{
+  typedef typeof (strtok_s) *strtok_s_t;
+  static strtok_s_t strtok_s=NULL;
+  HANDLE hLib;
+
+  if (NULL==strtok_s) {
+    if (NULL==(hLib=ffsox_msvcrt()))
+      goto strtok;
+
+    if (NULL==(strtok_s=(strtok_s_t)GetProcAddress(hLib,"strtok_s")))
+      goto strtok;
+
+    goto strtok_s;
+  strtok:
+    strtok_s=ffsox_strtok;
+    goto strtok_s;
+  }
+strtok_s:
+  return strtok_s(str,delim,saveptr);
+}
+#endif // }

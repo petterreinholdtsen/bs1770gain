@@ -28,7 +28,8 @@ bs1770gain_read_t *bs1770gain_read_new(const bs1770gain_options_t *options,
   AVCodecContext *adc;
   AVDictionary *opts;
   AVCodec *ad;
-  int ai,vi;
+  //int ai,vi;
+  int ai=options->audio;
   sox_signalinfo_t *signal;
   char drc[32];
 
@@ -54,8 +55,12 @@ bs1770gain_read_t *bs1770gain_read_new(const bs1770gain_options_t *options,
 
   BS1770GAIN_GOTO(avformat_find_stream_info(ifc,NULL)<0,
       "finding stream info",find);
+#if 0 // {
   BS1770GAIN_GOTO(bs1770gain_audiostream(ifc,&ai,&vi,options)<0,
       "finding audio",find);
+#else // } {
+  BS1770GAIN_GOTO(ffsox_audiostream(ifc,&ai,NULL)<0,"finding audio",find);
+#endif // }
 ////
   read->ai=ai;
 

@@ -1,5 +1,5 @@
 /*
- * bs1770gain_dynload.c
+ * ffsox_path3.c
  * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
  *
  * This library is free software; you can redistribute it and/or
@@ -17,12 +17,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
-#include <bs1770gain.h>
+#include <ffsox.h>
 
 #if defined (WIN32) // {
-#include <windows.h>
-
-wchar_t *bs1770gain_path3(const wchar_t *ws1, const char *s2, const char *s3)
+wchar_t *ffsox_path3(const wchar_t *ws1, const char *s2, const char *s3)
 {
   wchar_t *path,*pp;
   int size1,size2,size3,size;
@@ -98,7 +96,7 @@ empty:
   return path;
 }
 #else // } {
-char *bs1770gain_path3(const char *s1, const char *s2, const char *s3)
+char *ffsox_path3(const char *s1, const char *s2, const char *s3)
 {
   char *path,*pp;
   int size1,size2,size3,size;

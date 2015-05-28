@@ -101,13 +101,16 @@ int bs1770gain_tree_analyze(bs1770gain_tree_t *tree, const char *odirname,
     for (track=album->head;NULL!=track;track=track->next) {
       fprintf(f,"  [%d/%d] \"%s\"",track->n,album->n,
           bs1770gain_basename(track->ipath));
-      fprintf(f,stdout==f?": ":":\n");
+      fprintf(f,": ");
       fflush(f);
-      BS1770GAIN_GOTO(bs1770gain_sox(options,track->ipath,track->stats)<0,
-          "gathering track statistics",track);
-      fprintf(f,stdout==f?"        \n":"");
-      bs1770gain_stats_print(track->stats,options);
-      bs1770gain_stats_merge(album->stats,track->stats);
+
+      if (bs1770gain_sox(options,track->ipath,track->stats)<0)
+        fprintf(f,"Error gathering track statistics.\n");
+      else {
+        fprintf(f,stdout==f?"        \n":"\n");
+        bs1770gain_stats_print(track->stats,options);
+        bs1770gain_stats_merge(album->stats,track->stats);
+      }
     }
 
     fprintf(f,"  [ALBUM]:\n");
@@ -141,12 +144,17 @@ int bs1770gain_tree_analyze(bs1770gain_tree_t *tree, const char *odirname,
           }
 
           // copy the track.
-          BS1770GAIN_GOTO(bs1770gain_transcode(track->stats,album->stats,
-              track->ipath,track->opath,options)<0,"transcoding track",track);
+          if (bs1770gain_transcode(track->stats,album->stats,track->ipath,
+              track->opath,options)<0) {
 
-          // print a done massage.
-          if (stdout==f)
-            fprintf(f,"done.\n");
+            if (stdout==f)
+              fprintf(f,"Error %s track.",label);
+          }
+          else {
+            // print a done massage.
+            if (stdout==f)
+              fprintf(f,"done.\n");
+          }
         }
         else if (stdout==f)
           fprintf(f,"not written.\n");
@@ -273,7 +281,10 @@ static int bs1770gain_tree_multimedia(bs1770gain_tree_t *tree,
   if (avformat_find_stream_info(ifc,NULL)<0)
     goto find;
 
-  if (bs1770gain_audiostream(ifc,&tree->ai,&tree->vi,options)<0) {
+  tree->ai=options->audio;
+  tree->vi=options->video;
+
+  if (ffsox_audiostream(ifc,&tree->ai,&tree->vi)<0) {
     BS1770GAIN_MESSAGE("finding streams");
     goto find;
   }

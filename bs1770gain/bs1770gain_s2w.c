@@ -18,7 +18,7 @@
  * MA  02110-1301  USA
  */
 #if defined (WIN32) // {
-#include <windows.h>
+#include <bs1770gain.h>
 
 wchar_t *bs1770gain_s2w(const char *s)
 {
