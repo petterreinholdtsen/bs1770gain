@@ -128,7 +128,7 @@ HMODULE bs1770gain_loadlib(const wchar_t *root, const char *dirname,
     if (NULL==(path=_wcsdup(path)))
       goto path;
 
-    cur=wcstok_s(path,L";",&next);
+    cur=bs1770gain_wcstok_r(path,L";",&next);
 
     while (NULL!=cur) {
       if (NULL!=(hLib=bs1770gain_loadlib_try(cur,NULL,basename))) {
@@ -136,7 +136,7 @@ HMODULE bs1770gain_loadlib(const wchar_t *root, const char *dirname,
         goto found; 
       }
 
-      cur=wcstok_s(NULL,L";",&next);
+      cur=bs1770gain_wcstok_r(NULL,L";",&next);
     }
 
     free(path);

@@ -23,8 +23,6 @@
 typedef struct bs1770gain_streams bs1770gain_streams_t;
 
 struct bs1770gain_streams {
-  double q;
-
   struct {
     int ai;
     int vi;

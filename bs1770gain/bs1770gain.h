@@ -68,6 +68,9 @@ char *bs1770gain_opath(const char *ipath, const char *odirname,
     const char *oext);
 #if defined (WIN32) // {
 wchar_t *bs1770gain_s2w(const char *s);
+char *bs1770gain_strtok_r(char *str, const char *delim, char **saveptr);
+wchar_t *bs1770gain_wcstok_r(wchar_t *str, const wchar_t *delim,
+    wchar_t **saveptr);
 #endif // }
 
 int bs1770gain_audiostream(AVFormatContext *ic, int *aip, int *vip,
@@ -95,14 +98,16 @@ int bs1770gain_transcode(bs1770gain_stats_t *track, bs1770gain_stats_t *album,
     const char *ipath, const char *opath, const bs1770gain_options_t *options);
 
 ///////////////////////////////////////////////////////////////////////////////
-#define BS1770GAIN_MODE_RG_TAGS               1
-#define BS1770GAIN_MODE_BWF_TAGS              2
-#define BS1770GAIN_MODE_APPLY                 3
+// *must* begin with 0 (defines default)
+#define BS1770GAIN_MODE_RG_TAGS               0
+#define BS1770GAIN_MODE_BWF_TAGS              1
+#define BS1770GAIN_MODE_APPLY                 2
 
-#define BS1770GAIN_METHOD_MOMENTARY_MEAN      1
-#define BS1770GAIN_METHOD_MOMENTARY_MAXIMUM   2
-#define BS1770GAIN_METHOD_SHORTTERM_MEAN      3
-#define BS1770GAIN_METHOD_SHORTTERM_MAXIMUM   4
+// *must* begin with 0 (defines default)
+#define BS1770GAIN_METHOD_MOMENTARY_MEAN      0
+#define BS1770GAIN_METHOD_MOMENTARY_MAXIMUM   1
+#define BS1770GAIN_METHOD_SHORTTERM_MEAN      2
+#define BS1770GAIN_METHOD_SHORTTERM_MAXIMUM   3
 
 #define BS1770GAIN_BLOCK_OPTIONS_EMPTY_METHOD(o) \
   (0==(o)->maximum&&0==(o)->mean)
@@ -168,6 +173,7 @@ struct bs1770gain_tree_vmt {
 
 struct bs1770gain_tree {
   const bs1770gain_tree_vmt_t *vmt;
+  bs1770gain_tree_t *root;
   const bs1770gain_tree_t *parent;
   const char *path;
   const char *basename;
@@ -179,6 +185,7 @@ struct bs1770gain_tree {
       int argc;
       char **argv;
       int optind;
+      int count;
     } cli;
 
     struct {
@@ -190,7 +197,8 @@ struct bs1770gain_tree {
 };
 
 bs1770gain_tree_t *bs1770gain_tree_init(bs1770gain_tree_t *tree,
-    const bs1770gain_tree_vmt_t *vmt, const bs1770gain_tree_t *parent);
+    const bs1770gain_tree_vmt_t *vmt, bs1770gain_tree_t *root,
+    const bs1770gain_tree_t *parent);
 
 int bs1770gain_tree_analyze(bs1770gain_tree_t *tree, const char *odirname,
     bs1770gain_options_t *options);
@@ -211,7 +219,8 @@ int bs1770gain_tree_cli_next(bs1770gain_tree_t *tree,
 
 ///////////////////////////////////////////////////////////////////////////////
 bs1770gain_tree_t *bs1770gain_tree_dir_init(bs1770gain_tree_t *tree,
-    const bs1770gain_tree_t *parent, const char *root);
+    bs1770gain_tree_t *cli, const bs1770gain_tree_t *parent,
+    const char *root);
 void bs1770gain_tree_dir_cleanup(bs1770gain_tree_t *tree);
 int bs1770gain_tree_dir_next(bs1770gain_tree_t *tree,
     const bs1770gain_options_t *options);

@@ -24,9 +24,11 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 bs1770gain_tree_t *bs1770gain_tree_init(bs1770gain_tree_t *tree,
-    const bs1770gain_tree_vmt_t *vmt, const bs1770gain_tree_t *parent)
+    const bs1770gain_tree_vmt_t *vmt, bs1770gain_tree_t *root,
+    const bs1770gain_tree_t *parent)
 {
   tree->vmt=vmt;
+  tree->root=root;
   tree->parent=parent;
   tree->path=NULL;
   tree->basename=NULL;
@@ -221,8 +223,8 @@ int bs1770gain_tree_album(const bs1770gain_tree_t *root, const char *odirname,
   else
     path=NULL;
 
-  BS1770GAIN_GOTO(NULL==bs1770gain_tree_dir_init(&tree,root,root->path),
-      "initilaizing directory",dir);
+  BS1770GAIN_GOTO(NULL==bs1770gain_tree_dir_init(&tree,root->root,root,
+      root->path),"initilaizing directory",dir);
   fprintf(options->f,"%s\n",root->path);
   bs1770gain_tree_analyze(&tree,path,options);
   code=0;
@@ -336,6 +338,9 @@ int bs1770gain_tree_stat(bs1770gain_tree_t *tree, char *path,
     free(wpath);
 #endif // }
 
+  if (BS1770GAIN_TREE_STATE_REG==tree->state)
+    ++tree->root->cli.count;
+
   return tree->state;
 }
 
@@ -348,10 +353,11 @@ bs1770gain_tree_vmt_t bs1770gain_tree_cli_vmt={
 bs1770gain_tree_t *bs1770gain_tree_cli_init(bs1770gain_tree_t *tree,
     int argc, char **argv, int optind)
 {
-  bs1770gain_tree_init(tree,&bs1770gain_tree_cli_vmt,NULL);
+  bs1770gain_tree_init(tree,&bs1770gain_tree_cli_vmt,tree,NULL);
   tree->cli.argc=argc;
   tree->cli.argv=argv;
   tree->cli.optind=optind;
+  tree->cli.count=0;
 
   return tree;
 }
@@ -382,9 +388,10 @@ bs1770gain_tree_vmt_t bs1770gain_tree_dir_vmt={
 };
 
 bs1770gain_tree_t *bs1770gain_tree_dir_init(bs1770gain_tree_t *tree,
-    const bs1770gain_tree_t *parent, const char *root)
+    bs1770gain_tree_t *cli, const bs1770gain_tree_t *parent,
+    const char *root)
 {
-  bs1770gain_tree_init(tree,&bs1770gain_tree_dir_vmt,parent);
+  bs1770gain_tree_init(tree,&bs1770gain_tree_dir_vmt,cli,parent);
   tree->dir.root=root;
   tree->dir.path=NULL;
 
