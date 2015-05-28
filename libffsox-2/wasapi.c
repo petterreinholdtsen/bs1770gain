@@ -1,5 +1,5 @@
 /*
- * ffsox.c
+ * wasapi.c
  * Copyright (C) 2015 Peter Belkner <pbelkner@snafu.de>
  *
  * This library is free software; you can redistribute it and/or
@@ -17,11 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
-#include <ffsox_priv.h>
-#define COBJMACROS
 #include <initguid.h>
-#include <mmdeviceapi.h>
-#include <audioclient.h>
+#include <ffsox_priv.h>
 
 #if ! defined (PKEY_Device_FriendlyName) // {
 DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName,
@@ -41,30 +38,38 @@ HRESULT DevicePrint(IMMDevice *pDevice, UINT nDevice, FILE *f)
   PropVariantInit(&varName);
 
 #if defined (DEVICE_PRINT_ID) // {
-  hr=IMMDevice_GetId(
-    pDevice,
+  hr=pDevice->lpVtbl->GetId(pDevice,
     &id                         // [out]  LPWSTR *ppstrId
   );
   
   if (FAILED(hr)) {
+    switch (hr) {
+      HR_ERROR_CASE(E_OUTOFMEMORY);
+      HR_ERROR_CASE(E_POINTER);
+    }
+
     MESSAGE("getting device id");
     goto id;
   }
 #endif // }
 
-  hr=IMMDevice_OpenPropertyStore(
-    pDevice,
+  hr=pDevice->lpVtbl->OpenPropertyStore(pDevice,
     STGM_READ,                  // [in]   DWORD stgmAccess,
     &pProperties                // [out]  IPropertyStore **ppProperties
   );
   
   if (FAILED(hr)) {
+    switch (hr) {
+      HR_ERROR_CASE(E_INVALIDARG);
+      HR_ERROR_CASE(E_POINTER);
+      HR_ERROR_CASE(E_OUTOFMEMORY);
+    }
+
     MESSAGE("opening device property store");
     goto prop;
   }
 
-  hr=IPropertyStore_GetValue(
-    pProperties,
+  hr=pProperties->lpVtbl->GetValue(pProperties,
     &PKEY_Device_FriendlyName,  // [in]   REFPROPERTYKEY key,
     &varName                    // [out]  PROPVARIANT *pv
   );
@@ -83,7 +88,7 @@ HRESULT DevicePrint(IMMDevice *pDevice, UINT nDevice, FILE *f)
 
 // cleanup:
 name:
-  IPropertyStore_Release(pProperties);
+  pProperties->lpVtbl->Release(pProperties);
 prop:
 #if defined (DEVICE_PRINT_ID) // {
   CoTaskMemFree(id);
@@ -100,12 +105,11 @@ HRESULT DeviceUse(IMMDevice *pDevice, AUDCLNT_SHAREMODE eShareMode,
   IAudioClient *pAudioClient;
   WAVEFORMATEXTENSIBLE wfx;
   WAVEFORMATEX *pwfx,**ppClosestMatch;
-  const wchar_t *pfx;
-  //REFERENCE_TIME hnsDuration=0;
+  REFERENCE_TIME hnsDevicePeriod;
+  UINT32 numBufferFrames;
 
   // from the device, get an audio client ("audioclient.h").
-  hr=IMMDevice_Activate(
-    pDevice,
+  hr=pDevice->lpVtbl->Activate(pDevice,
     &IID_IAudioClient,        // [in]   REFIID iid,
     CLSCTX_ALL,               // [in]   DWORD dwClsCtx,
     NULL,                     // [in]   PROPVARIANT *pActivationParams,
@@ -113,7 +117,15 @@ HRESULT DeviceUse(IMMDevice *pDevice, AUDCLNT_SHAREMODE eShareMode,
   );
 
   if (FAILED(hr)) {
-    MESSAGE("activationg audio client");
+    switch (hr) {
+      HR_ERROR_CASE(E_NOINTERFACE);
+      HR_ERROR_CASE(E_POINTER);
+      HR_ERROR_CASE(E_INVALIDARG);
+      HR_ERROR_CASE(E_OUTOFMEMORY);
+      HR_ERROR_CASE(AUDCLNT_E_DEVICE_INVALIDATED);
+    }
+
+    MESSAGE("activating audio client");
     goto client;
   }
 
@@ -134,157 +146,148 @@ HRESULT DeviceUse(IMMDevice *pDevice, AUDCLNT_SHAREMODE eShareMode,
   pwfx=NULL;
   ppClosestMatch=AUDCLNT_SHAREMODE_EXCLUSIVE==eShareMode?NULL:&pwfx;
 
-  hr=IAudioClient_IsFormatSupported(
-    pAudioClient,
+  hr=pAudioClient->lpVtbl->IsFormatSupported(pAudioClient,
     eShareMode,             // [in]   AUDCLNT_SHAREMODE ShareMode,
     &wfx.Format,            // [in]   const WAVEFORMATEX *pFormat,
     ppClosestMatch          // [out]  WAVEFORMATEX **ppClosestMatch
   );
 
-  if (S_OK==hr) {
-    // the format is supported.
-    pwfx=&wfx.Format;
-    pfx=L"SUPPORTED";
-  }
-  else if (S_FALSE==hr) {
-    // the format is not supported but an alternative is proposed.
-    pfx=L"ALTERNATE";
-  }
-  else {
-    // the format is not supported at all.
+  if (FAILED(hr)) {
+    switch (hr) {
+      HR_ERROR_CASE(S_FALSE);
+      HR_ERROR_CASE(AUDCLNT_E_UNSUPPORTED_FORMAT);
+      HR_ERROR_CASE(E_POINTER);
+      HR_ERROR_CASE(E_INVALIDARG);
+      HR_ERROR_CASE(AUDCLNT_E_DEVICE_INVALIDATED);
+      HR_ERROR_CASE(AUDCLNT_E_SERVICE_NOT_RUNNING);
+    }
+
     MESSAGE("format not supported");
     goto support;
   }
 
+  pwfx=&wfx.Format;
+
   if (NULL!=f) {
-    fwprintf(f,L"  %s: NCH=%d, RATE=%d, BPS=%d.\n",pfx,pwfx->nChannels,
+    fwprintf(f,L"  NCH=%d, RATE=%d, BPS=%d.\n",pwfx->nChannels,
 	    pwfx->nSamplesPerSec,pwfx->wBitsPerSample);
   }
 
-  // we're only interested in an exact match.
-  if (FAILED(hr)) {
-    MESSAGE("format not supported");
-    goto alternate;
-  }
-
-#if 0 // {
-#if 0 // {
-  //
-  hr=pAudioClient->GetDevicePeriod(
+  // get the minimum device period (low latency).
+  hr=pAudioClient->lpVtbl->GetDevicePeriod(pAudioClient,
     NULL,                 // [out]  REFERENCE_TIME *phnsDefaultDevicePeriod,
-    &hnsDuration          // [out]  REFERENCE_TIME *phnsMinimumDevicePeriod
+    &hnsDevicePeriod      // [out]  REFERENCE_TIME *phnsMinimumDevicePeriod
   );
-  
-  if (FAILED(hr)) {
-    MESSAGE("getting audio client period");
-    goto period;
-  }
 
-  // initialize the audio client.
-  hr=pAudioClient->Initialize(
-    eShareMode,           // [in]  AUDCLNT_SHAREMODE ShareMode,
-    AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-                          // [in]  DWORD StreamFlags,
-    hnsDuration,          // [in]  REFERENCE_TIME hnsBufferDuration,
-    hnsDuration,          // [in]  REFERENCE_TIME hnsPeriodicity,
-    pwfx,                 // [in]  const WAVEFORMATEX *pFormat,
-    NULL                  // [in]  LPCGUID AudioSessionGuid
-  );
-#else // } {
-  //
-  hr=IAudioClient_GetDevicePeriod(
-    pAudioClient,
-    NULL,                 // [out]  REFERENCE_TIME *phnsDefaultDevicePeriod,
-    &hnsDuration          // [out]  REFERENCE_TIME *phnsMinimumDevicePeriod
-  );
-fprintf(stderr,">>> %I64d\n",hnsDuration);
-  
-  if (FAILED(hr)) {
-    MESSAGE("getting audio client period");
-    goto period;
-  }
-
-  // initialize the audio client.
-  hr=IAudioClient_Initialize(
-    pAudioClient,
-    eShareMode,           // [in]  AUDCLNT_SHAREMODE ShareMode,
-    AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-                          // [in]  DWORD StreamFlags,
-    30000,//hnsDuration,          // [in]  REFERENCE_TIME hnsBufferDuration,
-    3,//hnsDuration,          // [in]  REFERENCE_TIME hnsPeriodicity,
-    pwfx,                 // [in]  const WAVEFORMATEX *pFormat,
-    NULL                  // [in]  LPCGUID AudioSessionGuid
-  );
-#endif // }
-  
   if (FAILED(hr)) {
     switch (hr) {
-    case AUDCLNT_E_ALREADY_INITIALIZED:
-      fputs("AUDCLNT_E_ALREADY_INITIALIZED\n",stderr);
-      break;
-    case AUDCLNT_E_WRONG_ENDPOINT_TYPE:
-      fputs("AUDCLNT_E_WRONG_ENDPOINT_TYPE\n",stderr);
-      break;
-    case AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED:
-      fputs("AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED\n",stderr);
-      break;
-    case AUDCLNT_E_BUFFER_SIZE_ERROR:
-      fputs("AUDCLNT_E_BUFFER_SIZE_ERROR\n",stderr);
-      break;
-    case AUDCLNT_E_CPUUSAGE_EXCEEDED:
-      fputs("AUDCLNT_E_CPUUSAGE_EXCEEDED\n",stderr);
-      break;
-    case AUDCLNT_E_DEVICE_INVALIDATED:
-      fputs("AUDCLNT_E_DEVICE_INVALIDATED\n",stderr);
-      break;
-    case AUDCLNT_E_DEVICE_IN_USE:
-      fputs("AUDCLNT_E_DEVICE_IN_USE\n",stderr);
-      break;
-    case AUDCLNT_E_ENDPOINT_CREATE_FAILED:
-      fputs("AUDCLNT_E_ENDPOINT_CREATE_FAILED\n",stderr);
-      break;
-    case AUDCLNT_E_INVALID_DEVICE_PERIOD:
-      fputs("AUDCLNT_E_INVALID_DEVICE_PERIOD\n",stderr);
-      break;
-    case AUDCLNT_E_UNSUPPORTED_FORMAT:
-      fputs("AUDCLNT_E_UNSUPPORTED_FORMAT\n",stderr);
-      break;
-    case AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED:
-      fputs("AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED\n",stderr);
-      break;
-    case AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL:
-      fputs("AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL\n",stderr);
-      break;
-    case AUDCLNT_E_SERVICE_NOT_RUNNING:
-      fputs("AUDCLNT_E_SERVICE_NOT_RUNNING\n",stderr);
-      break;
-    case E_POINTER:
-      fputs("E_POINTER\n",stderr);
-      break;
-    case E_INVALIDARG:
-      fputs("E_INVALIDARG\n",stderr);
-      break;
-    case E_OUTOFMEMORY:
-      fputs("E_OUTOFMEMORY\n",stderr);
-      break;
-    default:
-      fputs("default\n",stderr);
-      break;
+      HR_ERROR_CASE(AUDCLNT_E_DEVICE_INVALIDATED);
+      HR_ERROR_CASE(AUDCLNT_E_SERVICE_NOT_RUNNING);
+      HR_ERROR_CASE(E_POINTER);
+    }
+
+    MESSAGE("getting device period");
+    goto period;
+  }
+
+  // initialize the audio client.
+  hr=pAudioClient->lpVtbl->Initialize(pAudioClient,
+    eShareMode,           // [in]  AUDCLNT_SHAREMODE ShareMode,
+    0,                    // [in]  DWORD StreamFlags,
+    hnsDevicePeriod,      // [in]  REFERENCE_TIME hnsBufferDuration,
+    0,                    // [in]  REFERENCE_TIME hnsPeriodicity,
+    pwfx,                 // [in]  const WAVEFORMATEX *pFormat,
+    NULL                  // [in]  LPCGUID AudioSessionGuid
+  );
+
+  if (FAILED(hr)) {
+    switch (hr) {
+      HR_ERROR_CASE(AUDCLNT_E_ALREADY_INITIALIZED);
+      HR_ERROR_CASE(AUDCLNT_E_WRONG_ENDPOINT_TYPE);
+      HR_ERROR_CASE(AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED);
+      HR_ERROR_CASE(AUDCLNT_E_BUFFER_SIZE_ERROR);
+      HR_ERROR_CASE(AUDCLNT_E_CPUUSAGE_EXCEEDED);
+      HR_ERROR_CASE(AUDCLNT_E_DEVICE_INVALIDATED);
+      HR_ERROR_CASE(AUDCLNT_E_DEVICE_IN_USE);
+      HR_ERROR_CASE(AUDCLNT_E_ENDPOINT_CREATE_FAILED);
+      HR_ERROR_CASE(AUDCLNT_E_INVALID_DEVICE_PERIOD);
+      HR_ERROR_CASE(AUDCLNT_E_UNSUPPORTED_FORMAT);
+      HR_ERROR_CASE(AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED);
+      HR_ERROR_CASE(AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL);
+      HR_ERROR_CASE(AUDCLNT_E_SERVICE_NOT_RUNNING);
+      HR_ERROR_CASE(E_POINTER);
+      HR_ERROR_CASE(E_INVALIDARG);
+      HR_ERROR_CASE(E_OUTOFMEMORY);
     }
 
     MESSAGE("initializing audio client");
-    goto init;
+    goto initialize;
   }
+
+  // get the buffer size.
+  //
+  // This method retrieves the length of the endpoint buffer shared
+  // between the client application and the audio engine. The length
+  // is expressed as the number of audio frames the buffer can hold.
+  // The size in bytes of an audio frame is calculated as the number
+  // of channels in the stream multiplied by the sample size per channel.
+  // For example, the frame size is four bytes for a stereo (2-channel)
+  // stream with 16-bit samples.
+  //
+  // numBufferFrames = wfx.Format.nBlockAlign
+  hr=pAudioClient->lpVtbl->GetBufferSize(pAudioClient,
+    &numBufferFrames      // [out]  UINT32 *pNumBufferFrames
+  );
+  
+  if (FAILED(hr)) {
+    switch (hr) {
+      HR_ERROR_CASE(AUDCLNT_E_NOT_INITIALIZED);
+      HR_ERROR_CASE(AUDCLNT_E_DEVICE_INVALIDATED);
+      HR_ERROR_CASE(AUDCLNT_E_SERVICE_NOT_RUNNING);
+      HR_ERROR_CASE(E_POINTER);
+    }
+
+    MESSAGE("getting buffer size");
+    goto size;
+  }
+
+  // calculate how many samples fit into the buffer.
+
+  fprintf(stderr,"  yep!\n");
 // cleanup:
-init:
+size:
+initialize:
 period:
-#endif // }
-alternate:
   if (AUDCLNT_SHAREMODE_EXCLUSIVE==eShareMode)
     CoTaskMemFree(pwfx);
 support:
-  IAudioClient_Release(pAudioClient);
+  pAudioClient->lpVtbl->Release(pAudioClient);
 client:
+  return hr;
+}
+
+HRESULT Device(IMMDevice *pDevice, UINT nDevice)
+{
+  HRESULT hr;
+
+  // print the device's name, and finally
+  hr=DevicePrint(pDevice,nDevice,stdout);
+
+  if (FAILED(hr)) {
+    MESSAGE("printing device");
+    goto print;
+  }
+
+  // use the device.
+  hr=DeviceUse(pDevice,AUDCLNT_SHAREMODE_EXCLUSIVE,24,2,48000,stdout);
+  //hr=DeviceUse(pDevice,AUDCLNT_SHAREMODE_SHARED,24,2,48000,stdout);
+
+  if (FAILED(hr)) {
+    MESSAGE("using device");
+    goto device;
+  }
+device:
+print:
   return hr;
 }
 
@@ -292,8 +295,10 @@ int main(int argc, char **argv)
 {
   HRESULT hr;
   IMMDeviceEnumerator *pEnumerator;
+#if defined (ENUMERATE) // {
   IMMDeviceCollection *pDevices;
   UINT cDevices,nDevice;
+#endif // }
   IMMDevice *pDevice;
 
   // initialize COM.
@@ -321,10 +326,10 @@ int main(int argc, char **argv)
     goto devnum;
   }
 
+#if defined (ENUMERATE) // {
   // from the device enumerator, create a device collection.
   // we're interested just in the active rendering devices.
-  hr=IMMDeviceEnumerator_EnumAudioEndpoints(
-    pEnumerator,
+  hr=pEnumerator->lpVtbl->EnumAudioEndpoints(pEnumerator,
     eRender,                    // [in]   EDataFlow dataFlow,
     DEVICE_STATE_ACTIVE,        // [in]   DWORD dwStateMask,
     &pDevices                   // [out]  IMMDeviceCollection **ppDevices
@@ -336,8 +341,7 @@ int main(int argc, char **argv)
   }
 
   // from the device collection, get the number of devices.
-  hr=IMMDeviceCollection_GetCount(
-    pDevices,
+  hr=pDevices->lpVtbl->GetCount(pDevices,
     &cDevices                   // [out]  UINT *pcDevices
   );
 
@@ -349,8 +353,7 @@ int main(int argc, char **argv)
   // for each device ...
   for (nDevice=0;nDevice<cDevices;++nDevice) {
     // ... from the device collection, get the respective item,
-    hr=IMMDeviceCollection_Item(
-      pDevices,
+    hr=pDevices->lpVtbl->Item(pDevices,
       nDevice,                  // [in]   UINT nDevice,
       &pDevice                  // [out]  IMMDevice **ppDevice
     );
@@ -360,35 +363,57 @@ int main(int argc, char **argv)
       goto item;
     }
 
-    // print the device's name, and finally
-    hr=DevicePrint(pDevice,nDevice,stdout);
-
-    if (FAILED(hr)) {
-      MESSAGE("printing device");
-      goto print;
-    }
-
-    // use the device.
-    hr=DeviceUse(pDevice,AUDCLNT_SHAREMODE_EXCLUSIVE,24,2,48000,stdout);
-    //hr=DeviceUse(pDevice,AUDCLNT_SHAREMODE_SHARED,24,2,48000,stdout);
-
+    hr=Device(pDevice,nDevice);
+  
     if (FAILED(hr)) {
       MESSAGE("using device");
-      goto device;
+      goto use;
     }
-  device:
-  print:
-    IMMDevice_Release(pDevice);
+  // cleanup:
+  use:
+    pDevice->lpVtbl->Release(pDevice);
   item:
     ;
   }
+#else // } {
+  hr=pEnumerator->lpVtbl->GetDefaultAudioEndpoint(pEnumerator,
+    eRender,          // [in]   EDataFlow dataFlow,
+    eMultimedia,      // [in]   ERole role,
+    &pDevice          // [out]  IMMDevice **ppDevice
+  );
+
+  if (FAILED(hr)) {
+    switch (hr) {
+      HR_ERROR_CASE(E_POINTER);
+      HR_ERROR_CASE(E_INVALIDARG);
+      HR_ERROR_CASE(E_NOTFOUND);
+      HR_ERROR_CASE(E_OUTOFMEMORY);
+    }
+
+    MESSAGE("getting default device");
+    goto device;
+  }
+
+  hr=Device(pDevice,0);
+
+  if (FAILED(hr)) {
+    MESSAGE("using device");
+    goto use;
+  }
+#endif // }
 
   fprintf(stdout,"yep!\n");
 // cleanup:
+#if defined (ENUMERATE) // {
 devcount:
-  IMMDeviceCollection_Release(pDevices);
+  pDevices->lpVtbl->Release(pDevices);
 devcoll:
-  IMMDeviceEnumerator_Release(pEnumerator);
+#else // } {
+use:
+  pDevice->lpVtbl->Release(pDevice);
+device:
+#endif // }
+  pEnumerator->lpVtbl->Release(pEnumerator);
 devnum:
   CoUninitialize();
 coinit:

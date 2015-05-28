@@ -21,9 +21,25 @@
 #define __FFSOX_H__ // {
 #include <lib1770.h>
 #include <ffsox_dynload.h>
+#if defined (WIN32) // {
+#include <mmdeviceapi.h>
+#include <audioclient.h>
+#endif // }
 #ifdef __cpluplus
 extern "C" {
 #endif
+
+///////////////////////////////////////////////////////////////////////////////
+#if defined (WIN32) // {
+#define FFSOX_HR_ERROR_CASE(x) \
+    case x: fputs(#x "\n",stderr); break
+#define FFSOX_REFTIMES_PER_SEC \
+    10000000
+#define FFSOX_REFTIMES_PER_MILLISEC \
+    10000
+#endif // }
+
+#define FFSOX_SAMPLE_FMT_S24 AV_SAMPLE_FMT_NB
 
 ///////////////////////////////////////////////////////////////////////////////
 typedef struct ffsox_intercept ffsox_intercept_t;
@@ -52,6 +68,9 @@ typedef struct ffsox_node_vmt ffsox_node_vmt_t;
     typedef struct ffsox_frame_reader_vmt ffsox_frame_reader_vmt_t;
   typedef struct ffsox_frame_consumer_vmt ffsox_frame_consumer_vmt_t;
     typedef struct ffsox_frame_writer_vmt ffsox_frame_writer_vmt_t;
+#if defined (WIN32) // {
+    typedef struct ffsox_audio_player_vmt ffsox_audio_player_vmt_t;
+#endif // }
     typedef struct ffsox_sox_reader_vmt ffsox_sox_reader_vmt_t;
 
 typedef struct ffsox_node ffsox_node_t;
@@ -61,6 +80,9 @@ typedef struct ffsox_node ffsox_node_t;
     typedef struct ffsox_frame_reader ffsox_frame_reader_t;
   typedef struct ffsox_frame_consumer ffsox_frame_consumer_t;
     typedef struct ffsox_frame_writer ffsox_frame_writer_t;
+#if defined (WIN32) // {
+    typedef struct ffsox_audio_player ffsox_audio_player_t;
+#endif // }
     typedef struct ffsox_sox_reader ffsox_sox_reader_t;
 
 /// utilities /////////////////////////////////////////////////////////////////
@@ -572,6 +594,66 @@ int ffsox_frame_writer_create(ffsox_frame_writer_t *fc, ffsox_sink_t *so,
 ffsox_frame_writer_t *ffsox_frame_writer_new(ffsox_sink_t *so,
     ffsox_frame_reader_t *fr, int codec_id, int sample_fmt, double q);
 const ffsox_frame_writer_vmt_t *ffsox_frame_writer_get_vmt(void);
+
+#if defined (WIN32) // {
+/// audio_player ////////////////////////////////////////////////////////////
+#define FFSOX_AUDIO_PLAYER_RENDER   1
+#define FFSOX_AUDIO_PLAYER_END      2
+
+struct ffsox_audio_player_vmt {
+  union {
+#define FFSOX_AUDIO_PLAYER_PARENT_VMT \
+    FFSOX_FRAME_CONSUMER_PARENT_VMT \
+    ffsox_frame_consumer_vmt_t frame_consumer;
+    FFSOX_AUDIO_PLAYER_PARENT_VMT
+
+    struct {
+#define FFSOX_AUDIO_PLAYER_VMT(T,P) \
+      FFSOX_FRAME_CONSUMER_VMT(T,P)
+      FFSOX_AUDIO_PLAYER_VMT(ffsox_audio_player_t,ffsox_frame_consumer_vmt_t)
+    };
+  };
+};
+
+struct ffsox_audio_player {
+  union {
+#define FFSOX_AUDIO_PLAYER_PARENT_MEM \
+    FFSOX_FRAME_CONSUMER_PARENT_MEM \
+    ffsox_frame_consumer_t frame_consumer;
+    FFSOX_AUDIO_PLAYER_PARENT_MEM
+
+    struct {
+#define FFSOX_AUDIO_PLAYER_MEM(T) \
+      FFSOX_FRAME_CONSUMER_MEM(T) \
+      double q; \
+ \
+      struct { \
+        int state; \
+        HANDLE hMutex; \
+        HANDLE hEvent; \
+      } sync; \
+ \
+      ffsox_frame_t fo; \
+      IAudioClient *pAudioClient; \
+      WAVEFORMATEXTENSIBLE wfx; \
+      REFERENCE_TIME hnsDuration; \
+      int nb_samples; \
+      IAudioRenderClient *pRenderClient;
+      FFSOX_AUDIO_PLAYER_MEM(ffsox_audio_player_vmt_t)
+    };
+  };
+};
+
+int ffsox_audio_player_create(ffsox_audio_player_t *fc,
+    ffsox_frame_reader_t *fr, double q, IMMDevice *pDevice,
+    AUDCLNT_SHAREMODE eShareMode);
+ffsox_audio_player_t *ffsox_audio_player_new(ffsox_frame_reader_t *fr,
+    double q, IMMDevice *pDevice, AUDCLNT_SHAREMODE eShareMode);
+const ffsox_audio_player_vmt_t *ffsox_audio_player_get_vmt(void);
+
+int ffsox_audio_player_play(ffsox_audio_player_t *ap);
+void ffsox_audio_player_kill(ffsox_audio_player_t *ap);
+#endif // }
 
 /// sox_reader ////////////////////////////////////////////////////////////
 struct ffsox_sox_reader_vmt {

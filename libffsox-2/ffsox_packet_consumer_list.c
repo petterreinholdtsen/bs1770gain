@@ -21,6 +21,14 @@
 
 void ffsox_packet_consumer_list_free(packet_consumer_list_t *n)
 {
-  ffsox_node_destroy(&n->consumer->node);
+  ffsox_node_t *tmp1=&n->consumer->node;
+  ffsox_node_t *tmp2;
+
+  while (NULL!=tmp1) {
+    tmp2=tmp1;
+    tmp1=tmp2->vmt->next(tmp2);
+    ffsox_node_destroy(tmp2);
+  }
+
   free(n);
 }
