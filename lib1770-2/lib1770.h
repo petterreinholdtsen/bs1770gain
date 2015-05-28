@@ -19,6 +19,7 @@
  */
 #ifndef __LIB1770_H__ // {
 #define __LIB1770_H__
+#include <pbutil.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

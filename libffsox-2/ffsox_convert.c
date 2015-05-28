@@ -19,12 +19,15 @@
  */
 #include <ffsox_priv.h>
 
-void ffsox_convert_setup(convert_t *convert, frame_t *fr, frame_t *fw)
+void ffsox_convert_setup(convert_t *convert, frame_t *fr, frame_t *fw,
+    double q, intercept_t *intercept)
 {
   int nb_samples1,nb_samples2;
 
   convert->fr=fr;
   convert->fw=fw;
+  convert->q=q;
+  convert->intercept=intercept;
   convert->channels=av_frame_get_channels(fr->frame);
 
   nb_samples1=fr->frame->nb_samples-fr->nb_samples.frame;

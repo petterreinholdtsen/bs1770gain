@@ -189,7 +189,7 @@ int main(int argc, char **argv)
     goto fr;
   }
 
-  if (NULL==(in=ffsox_sox_reader_new(fr,1.0))) {
+  if (NULL==(in=ffsox_sox_reader_new(fr,1.0,NULL))) {
     MESSAGE("creating sox addapter");
     goto sa;
   }

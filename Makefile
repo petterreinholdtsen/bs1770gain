@@ -124,7 +124,7 @@ build/$(EXAMPLES)/Makefile: $(SRCDIR)/examples/configure
 ###############################################################################
 $(LIBFFSOX_INSTALL): build/$(LIBFFSOX)/Makefile FORCE
 	cd $(<D) && $(MAKE) install
-build/$(LIBFFSOX)/Makefile: $(LIBPBUTIL_INSTALL)
+build/$(LIBFFSOX)/Makefile: $(LIB1770_INSTALL)
 build/$(LIBFFSOX)/Makefile: $(SOX_INSTALL)
 build/$(LIBFFSOX)/Makefile: $(FFMPEG_INSTALL)
 build/$(LIBFFSOX)/Makefile: $(SRCDIR)/libffsox-2/Makefile

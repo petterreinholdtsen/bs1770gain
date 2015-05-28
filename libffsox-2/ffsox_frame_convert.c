@@ -19,8 +19,6 @@
  */
 #include <ffsox_priv.h>
 
-enum { X=-1 };
-
 ///////////////////////////////////////////////////////////////////////////////
 // interleaved int -> interleaved int.
 #define CONVERT_INT_INT_II() do { \
@@ -70,12 +68,13 @@ enum { X=-1 };
 
 // interleaved -> interleaved int.
 #define CONVERT_II(r,w,R,W,convert) \
-static int convert_##r##i##_##w##i(convert_t *p, double q) \
+static int convert_##r##i##_##w##i(convert_t *p) \
 { \
+  double q=p->q; \
   int channels=p->channels; \
-  int bits; \
   R *rp; \
   W *wp,*mp; \
+  int bits; \
  \
   rp=(R *)p->fr->frame->data[0]; \
   rp+=channels*p->fr->nb_samples.frame; \
@@ -110,7 +109,7 @@ CONVERT_II(dbl,s32,double,int32_t,CONVERT_FLOAT_INT_II)
 ///////////////////////////////////////////////////////////////////////////////
 // planar int -> interleaved int.
 #define CONVERT_INT_INT_PI() do { \
- bits=sizeof *rp; \
+ bits=sizeof *rp[0]; \
  bits-=sizeof *wp; \
  bits*=8; \
  \
@@ -165,12 +164,13 @@ CONVERT_II(dbl,s32,double,int32_t,CONVERT_FLOAT_INT_II)
 
 // planar -> interleaved int.
 #define CONVERT_PI(r,w,R,W,convert) \
-static int convert_##r##p##_##w##i(convert_t *p, double q) \
+static int convert_##r##p##_##w##i(convert_t *p) \
 { \
+  double q=p->q; \
   int ch,channels=p->channels; \
-  int bits; \
   R *rp[AV_NUM_DATA_POINTERS]; \
   W *wp,*mp; \
+  int bits; \
  \
   for (ch=0;ch<channels;++ch) { \
     rp[ch]=(R *)p->fr->frame->data[ch]; \
@@ -207,16 +207,16 @@ CONVERT_PI(dbl,s32,double,int32_t,CONVERT_FLOAT_INT_PI)
 ///////////////////////////////////////////////////////////////////////////////
 // interleaved/planar -> interleaved int.
 #define CONVERT(sfx) \
-static int convert_##sfx(convert_t *convert, double q) \
+static int convert_##sfx(convert_t *convert) \
 { \
   switch (convert->fw->frame->format) { \
   /* interleaved */ \
   case AV_SAMPLE_FMT_U8: \
-    return convert_##sfx##_s8i(convert,q); \
+    return convert_##sfx##_s8i(convert); \
   case AV_SAMPLE_FMT_S16: \
-    return convert_##sfx##_s16i(convert,q); \
+    return convert_##sfx##_s16i(convert); \
   case AV_SAMPLE_FMT_S32: \
-    return convert_##sfx##_s32i(convert,q); \
+    return convert_##sfx##_s32i(convert); \
   /* default */ \
   default: \
     MESSAGE("output sample format not supported yet"); \
@@ -244,40 +244,40 @@ int ffsox_frame_convert(frame_t *fr, frame_t *fw, double q)
   convert_t convert;
   int code;
 
-  ffsox_convert_setup(&convert,fr,fw);
+  ffsox_convert_setup(&convert,fr,fw,q,NULL);
 
   switch (convert.fr->frame->format) {
   /// interleaved /////////////////////////////////////////////////////////////
   case AV_SAMPLE_FMT_U8:
-    code=convert_s8i(&convert,q);
+    code=convert_s8i(&convert);
     break;
   case AV_SAMPLE_FMT_S16:
-    code=convert_s16i(&convert,q);
+    code=convert_s16i(&convert);
     break;
   case AV_SAMPLE_FMT_S32:
-    code=convert_s32i(&convert,q);
+    code=convert_s32i(&convert);
     break;
   case AV_SAMPLE_FMT_FLT:
-    code=convert_flti(&convert,q);
+    code=convert_flti(&convert);
     break;
   case AV_SAMPLE_FMT_DBL:
-    code=convert_dbli(&convert,q);
+    code=convert_dbli(&convert);
     break;
   ///planar ///////////////////////////////////////////////////////////////////
   case AV_SAMPLE_FMT_U8P:
-    code=convert_s8p(&convert,q);
+    code=convert_s8p(&convert);
     break;
   case AV_SAMPLE_FMT_S16P:
-    code=convert_s16p(&convert,q);
+    code=convert_s16p(&convert);
     break;
   case AV_SAMPLE_FMT_S32P:
-    code=convert_s32p(&convert,q);
+    code=convert_s32p(&convert);
     break;
   case AV_SAMPLE_FMT_FLTP:
-    code=convert_fltp(&convert,q);
+    code=convert_fltp(&convert);
     break;
   case AV_SAMPLE_FMT_DBLP:
-    code=convert_dblp(&convert,q);
+    code=convert_dblp(&convert);
     break;
   /////////////////////////////////////////////////////////////////////////////
   default:

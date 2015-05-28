@@ -1,6 +1,6 @@
 /*
  * bs1770gain_tree.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014, 2015 Peter Belkner <pbelkner@snafu.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -69,6 +69,7 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
   bs1770gain_album_t *album;
   bs1770gain_track_t *track;
   const char *label;
+  analyze_config_t ac;
 
   album=bs1770gain_album_new(NULL==parent?NULL:parent->path,odirname,options);
   BS1770GAIN_GOTO(NULL==album,"allocation album",album);
@@ -104,17 +105,28 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
       fprintf(f,": ");
       fflush(f);
 
-      if (bs1770gain_sox(options,track->ipath,track->stats)<0)
+      memset(&ac,0,sizeof ac);
+      ac.path=track->ipath;
+      ac.aggregate=&track->aggregate;
+      ac.drc=options->drc;
+      ac.momentary.ms=options->momentary.ms;
+      ac.momentary.partition=options->momentary.partition;
+      ac.shortterm.ms=options->shortterm.ms;
+      ac.shortterm.partition=options->shortterm.partition;
+      ac.f=stdout==f?f:NULL;
+      ac.dump=0;
+
+      if (ffsox_analyze(&ac)<0)
         fprintf(f,"Error gathering track statistics.\n");
       else {
         fprintf(f,stdout==f?"        \n":"\n");
-        bs1770gain_stats_print(track->stats,options);
-        bs1770gain_stats_merge(album->stats,track->stats);
+        bs1770gain_aggregate_print(&track->aggregate,options);
+        ffsox_aggregate_merge(&album->aggregate,&track->aggregate);
       }
     }
 
     fprintf(f,"  [ALBUM]:\n");
-    bs1770gain_stats_print(album->stats,options);
+    bs1770gain_aggregate_print(&album->aggregate,options);
 
     if (NULL!=odirname) {
       label=BS1770GAIN_MODE_APPLY==options->mode?"transcoding":"remuxing";
@@ -135,7 +147,7 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
         bs1770gain_transcode(track,options);
 
       // copy "folder.jpg" if requested.
-      if (0!=options->extensions&&NULL!=album->ipath)
+      if (0!=(EXTENSION_JPG&options->extensions)&&NULL!=album->ipath)
         bs1770gain_album_copy_file(album,"folder.jpg");
     }
 

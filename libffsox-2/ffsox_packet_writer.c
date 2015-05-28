@@ -55,21 +55,13 @@ int ffsox_packet_writer_create(packet_writer_t *pw, source_t *si,
     pw->so.st->sample_aspect_ratio=ar;
     pw->so.cc->sample_aspect_ratio=ar;
     pw->so.st->avg_frame_rate=pw->si.st->avg_frame_rate;
-    //pw->so.st->time_base=pw->si.st->time_base;
     break;
   case AVMEDIA_TYPE_AUDIO:
-    //pw->so.cc->sample_fmt=sample_fmt;
-    //pw->so.cc->sample_rate=pw->si.cc->sample_rate;
-    //pw->so.cc->channels=pw->si.cc->channels;
-    //pw->so.cc->channel_layout=pw->si.cc->channel_layout;
-    //pw->so.cc->time_base=(AVRational){1,pw->so.cc->sample_rate};
     break;
   default:
     break;
   }
 
-  pw->so.cc->time_base=pw->si.cc->time_base;
-  //pw->so.st->time_base=pw->si.st->time_base;
   pw->so.cc->codec_tag=0;
 
   if (pw->so.fc->oformat->flags&AVFMT_GLOBALHEADER)

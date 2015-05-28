@@ -20,6 +20,10 @@ endif # }
 
 PROGRAM+=mux1
 PROGRAM+=mux2
+PROGRAM+=mux3
+ifeq (mingw,$(OS))
+PROGRAM+=ffsox
+endif
 
 LIBFFSOX_H+=$(INCLUDEDIR)/pbutil.h
 LIBFFSOX_H+=$(INCLUDEDIR)/pbutil_priv.h
@@ -29,6 +33,9 @@ LIBFFSOX_H+=ffsox_dynload.h
 
 LIBFFSOX_A=libffsox-2.a
 ##
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_analyze.o)
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_collect.o)
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_aggregate.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_convert.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_sox_reader.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_frame_writer.o)
@@ -40,6 +47,7 @@ LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_packet_consumer_list.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_stream.o)
 ##
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_source_link.o)
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_source_progress.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_source.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_node.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_sink.o)
@@ -48,6 +56,9 @@ LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_frame_convert_sox.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_frame_convert.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_frame.o)
 # utilities
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_sox_add_effect.o)
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_sox_pull_handler.o)
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_sox_read_handler.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_audiostream.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_find_decoder.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_csv2avdict.o)
@@ -63,6 +74,8 @@ else # } {
 install: $(patsubst %,$(BINDIR)/%,$(PROGRAM))
 endif # }
 $(PROGRAM): $(LIBFFSOX_A)
+mux3: $(LIBDIR)/lib1770-2.a
+ffsox: LDLIBS+=-lole32 -lksguid
 $(PROGRAM): $(LIBDIR)/libpbutil.a
 install: $(patsubst %.h,$(INCLUDEDIR)/%.h,$(LIBFFSOX_H))
 install: $(LIBDIR)/libffsox-2.a
