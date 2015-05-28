@@ -19,108 +19,65 @@
  */
 #include <ffsox_priv.h>
 
-static int source_link_copy(source_t *si, sink_t *so, int stream_index)
+static int ffsox_source_link_copy(source_t *si, sink_t *so, int stream_index)
 {
-  read_copy_t *rc=NULL;
-  write_copy_t *wc=NULL;
-  ffsox_read_list_t reads;
+  packet_writer_t *pw=NULL;
 
-  if (NULL==(rc=ffsox_read_copy_new(si,stream_index))) {
-    MESSAGE("creating read copy node");
-    goto rc;
-  }
-
-  if (NULL==(wc=ffsox_write_copy_new(so,rc))) {
-    MESSAGE("creating write copy node");
-    goto wc;
-  }
-
-  rc->write=&wc->write;
-  rc->prev=si;
-  rc->next=wc;
-  wc->prev=rc;
-  reads.read=&rc->read;
-
-  if (FFSOX_LIST_APPEND(si->reads.h,reads)<0) {
-    MESSAGE("appending chain");
-    goto link;
+  if (NULL==(pw=ffsox_packet_writer_new(si,stream_index,so))) {
+    MESSAGE("creating packet writer");
+    goto pw;
   }
 
   return 0;
-link:
-wc:
-  ffsox_node_destroy(&rc->node);
-rc:
+// cleanup:
+  ffsox_node_destroy(&pw->node);
+pw:
   return -1;
 }
 
-static int source_link_codec(source_t *si, sink_t *so, int i, double drc,
-    int codec_id, int sample_fmt, double q)
+static int ffsox_source_link_codec(source_t *si, sink_t *so, int stream_index,
+    double drc, int codec_id, int sample_fmt, double q)
 {
-  read_decode_t *rd=NULL;
-  write_encode_t *we=NULL;
-  filter_t *f=NULL;
-  ffsox_read_list_t reads;
+  frame_reader_t *fr=NULL;
+  frame_writer_t *fw=NULL;
 
-  if (NULL==(rd=ffsox_read_decode_new(si,i,drc))) {
-    MESSAGE("creating read decode node");
+  if (NULL==(fr=ffsox_frame_reader_new(si,stream_index,drc))) {
+    MESSAGE("creating frame reader");
     goto read;
   }
 
-  if (NULL==(we=ffsox_write_encode_new(so,rd,codec_id,sample_fmt))) {
-    MESSAGE("creating write encode node");
+  if (NULL==(fw=ffsox_frame_writer_new(so,fr,codec_id,sample_fmt,q))) {
+    MESSAGE("creating frwiter");
     goto write;
   }
 
-  if (NULL==(f=ffsox_filter_new(we,q))) {
-    MESSAGE("creating write filter node");
-    goto filter;
-  }
-
-  rd->write=&we->write;
-  rd->prev=si;
-  rd->next=f;
-  f->prev=rd;
-  f->next=we;
-  we->prev=f;
-  reads.read=&rd->read;
-
-  if (FFSOX_LIST_APPEND(si->reads.h,reads)<0) {
-    MESSAGE("appending chain");
-    goto link;
-  }
+  fr->next=&fw->frame_consumer;
+  fw->prev=&fr->node;
 
   return 0;
-link:
-  ffsox_node_destroy(&f->node);
-filter:
-  ffsox_node_destroy(&we->node);
+// cleanup:
+  ffsox_node_destroy(&fw->node);
 write:
-  ffsox_node_destroy(&rd->node);
+  ffsox_node_destroy(&fr->node);
 read:
   return -1;
 }
 
-int ffsox_source_link_create(source_t *si, sink_t *so, double drc,
-    int codec_id, int sample_fmt, double q, int ai, int vi)
+int ffsox_source_link(source_t *si, sink_t *so, double drc, int codec_id,
+    int sample_fmt, double q)
 {
   int i;
 
-  if (ffsox_audiostream(si->f.fc,&ai,&vi)<0) {
-    MESSAGE("no audio");
-    goto audio;
-  }
-
   for (i=0;i<si->f.fc->nb_streams;++i) {
-    if (ai==i||vi==i) {
-      if (vi==i||q<0.0) {
-        if (source_link_copy(si,so,i)<0) {
+    if (si->ai==i||si->vi==i) {
+      if (si->vi==i||q<0.0) {
+        if (ffsox_source_link_copy(si,so,i)<0) {
           MESSAGE("copy linking");
           goto link;
         }
       }
       else {
-        if (source_link_codec(si,so,i,drc,codec_id,sample_fmt,q)<0) {
+        if (ffsox_source_link_codec(si,so,i,drc,codec_id,sample_fmt,q)<0) {
           MESSAGE("codec linking");
           goto link;
         }
@@ -130,14 +87,5 @@ int ffsox_source_link_create(source_t *si, sink_t *so, double drc,
 
   return 0;
 link:
-  ffsox_source_link_cleanup(si);
-audio:
   return -1;
-}
-
-void ffsox_source_link_cleanup(source_t *n)
-{
-  ffsox_list_free_full(n->reads.h,ffsox_read_list_free);
-  n->reads.h=NULL;
-  n->reads.n=NULL;
 }

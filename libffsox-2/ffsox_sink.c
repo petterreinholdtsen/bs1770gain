@@ -29,6 +29,8 @@ int ffsox_sink_create(sink_t *s, const char *path)
     goto fc;
   }
 
+  s->streams=NULL;
+
   return 0;
 // cleanup:
   avformat_free_context(s->f.fc);
@@ -38,7 +40,18 @@ fc:
 
 void ffsox_sink_cleanup(sink_t *s)
 {
+  pbu_list_free(s->streams);
   avformat_free_context(s->f.fc);
+}
+
+int ffsox_sink_append(sink_t *sink, stream_t *si, stream_t *so)
+{
+  ffsox_stream_list_t stream;
+
+  stream.si=si;
+  stream.so=so;
+
+  return PBU_LIST_APPEND(sink->streams,stream);
 }
 
 int ffsox_sink_open(sink_t *s)

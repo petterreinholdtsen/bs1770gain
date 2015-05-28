@@ -20,14 +20,17 @@ install: $(EXAMPLES_INSTALL)
 endif # }
 
 ########
+LIBPBUTIL=libpbutil-$(LIBPBUTIL_VERSION)
+LIBPBUTIL_INSTALL+=$(LIBDIR)/libpbutil.a
+install: $(LIBPBUTIL_INSTALL)
+
+########
 LIBFFSOX=libffsox-2-$(LIBFFSOX_VERSION)
-#LIBFFSOX_INSTALL+=$(INCLUDEDIR)/libffsox.h
 LIBFFSOX_INSTALL+=$(LIBDIR)/libffsox-2.a
 install: $(LIBFFSOX_INSTALL)
 
 ########
 LIB1770=lib1770-2-$(LIB1770_VERSION)
-#LIB1770_INSTALL+=$(INCLUDEDIR)/lib1770.h
 LIB1770_INSTALL+=$(LIBDIR)/lib1770-2.a
 install: $(LIB1770_INSTALL)
 
@@ -48,8 +51,9 @@ LIBSNDFILE_INSTALL+=$(INCLUDEDIR)/sndfile.h
 LIBSNDFILE_INSTALL+=$(LIBDIR)/libsndfile.a
 
 ########
-#LIBFLAC=flac-1.3.1
-LIBFLAC=flac-1.3.0
+LIBFLAC=flac-1.3.1
+#LIBFLAC=flac-1.3.0
+#LIBFLAC=flac-1.2.1
 LIBFLAC_INSTALL+=$(INCLUDEDIR)/FLAC/all.h
 LIBFLAC_INSTALL+=$(LIBDIR)/libFLAC.a
 #install: $(LIBFLAC_INSTALL)
@@ -98,6 +102,7 @@ build/$(BS1770GAIN)/Makefile: $(SOX_INSTALL)
 build/$(BS1770GAIN)/Makefile: $(FFMPEG_INSTALL)
 build/$(BS1770GAIN)/Makefile: $(LIBFFSOX_INSTALL)
 build/$(BS1770GAIN)/Makefile: $(LIB1770_INSTALL)
+build/$(BS1770GAIN)/Makefile: $(LIBPBUTIL_INSTALL)
 build/$(BS1770GAIN)/Makefile: $(SRCDIR)/bs1770gain/Makefile
 build/$(BS1770GAIN)/Makefile: $(SRCDIR)/bs1770gain/configure
 	mkdir -p $(@D)
@@ -119,6 +124,7 @@ build/$(EXAMPLES)/Makefile: $(SRCDIR)/examples/configure
 ###############################################################################
 $(LIBFFSOX_INSTALL): build/$(LIBFFSOX)/Makefile FORCE
 	cd $(<D) && $(MAKE) install
+build/$(LIBFFSOX)/Makefile: $(LIBPBUTIL_INSTALL)
 build/$(LIBFFSOX)/Makefile: $(SOX_INSTALL)
 build/$(LIBFFSOX)/Makefile: $(FFMPEG_INSTALL)
 build/$(LIBFFSOX)/Makefile: $(SRCDIR)/libffsox-2/Makefile
@@ -130,8 +136,18 @@ build/$(LIBFFSOX)/Makefile: $(SRCDIR)/libffsox-2/configure
 ###############################################################################
 $(LIB1770_INSTALL): build/$(LIB1770)/Makefile FORCE
 	cd $(<D) && $(MAKE) install
+build/$(LIB1770)/Makefile: $(LIBPBUTIL_INSTALL)
 build/$(LIB1770)/Makefile: $(SRCDIR)/lib1770-2/Makefile
 build/$(LIB1770)/Makefile: $(SRCDIR)/lib1770-2/configure
+	mkdir -p $(@D)
+	cd $(@D) && $< --prefix=$(PREFIX) --tooldir=$(TOOLDIR)
+	touch $@
+
+###############################################################################
+$(LIBPBUTIL_INSTALL): build/$(LIBPBUTIL)/Makefile FORCE
+	cd $(<D) && $(MAKE) install
+build/$(LIBPBUTIL)/Makefile: $(SRCDIR)/libpbutil/Makefile
+build/$(LIBPBUTIL)/Makefile: $(SRCDIR)/libpbutil/configure
 	mkdir -p $(@D)
 	cd $(@D) && $< --prefix=$(PREFIX) --tooldir=$(TOOLDIR)
 	touch $@
@@ -149,7 +165,7 @@ SOX_OPTS+='LDFLAGS=-L$(LIBDIR)'
 ifeq (mingw,$(OS)) # {
 SOX_OPTS+=--disable-symlinks
 SOX_OPTS+=--disable-shared
-ifeq (yes,$(ENABLE_EXAMPLES)) # {
+ifeq (mingw,$(OS)) # {
 SOX_LIBS+=-lFLAC
 SOX_LIBS+=-lvorbisfile
 SOX_LIBS+=-lvorbisenc
@@ -166,8 +182,8 @@ else # } {
 $(SOX_INSTALL): build/$(SOX)/Makefile
 	cd $(<D) && $(MAKE) install
 endif # }
-ifeq (yes,$(ENABLE_EXAMPLES)) # {
-build/$(SOX)/Makefile: $(LIBSNDFILE_INSTALL)
+ifeq (mingw,$(OS)) # {
+#build/$(SOX)/Makefile: $(LIBSNDFILE_INSTALL)
 build/$(SOX)/Makefile: $(LIBFLAC_INSTALL)
 build/$(SOX)/Makefile: $(LIBVORBIS_INSTALL)
 endif # }
@@ -227,7 +243,7 @@ LIBFLAC_OPTS+=--disable-xmms-plugin
 LIBFLAC_OPTS+=--disable-doxygen-docs
 LIBFLAC_OPTS+=--disable-oggtest
 $(LIBFLAC_INSTALL): build/$(LIBFLAC)/Makefile
-	cd $(<D) && $(MAKE) install
+	cd $(<D) && $(MAKE) all install
 build/$(LIBFLAC)/Makefile: $(LIBOGG_INSTALL)
 build/$(LIBFLAC)/Makefile: $(UNPACKDIR)/$(LIBFLAC)/configure
 	mkdir -p $(@D)
@@ -240,6 +256,7 @@ $(UNPACKDIR)/$(LIBFLAC)/configure: $(TOOLDIR)/$(LIBFLAC).tar.xz
 $(TOOLDIR)/$(LIBFLAC).tar.xz:
 	mkdir -p $(@D)
 	wget -O $@ http://downloads.xiph.org/releases/flac/$(@F)
+#	wget -O $@ http://sourceforge.net/projects/flac/files/flac-src/$(LIBFLAC)-src/$(@F)/download
 
 ###############################################################################
 LIBVORBIS_OPTS+=--prefix=$(PREFIX)

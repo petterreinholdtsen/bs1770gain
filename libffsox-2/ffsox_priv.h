@@ -19,56 +19,53 @@
  */
 #ifndef __FFSOX_PRIV_H__
 #define __FFSOX_PRIV_H__ // {
+#include <pbutil_priv.h>
 #include <ffsox.h>
 #ifdef __cpluplus
 extern "C" {
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-#define MESSAGE(m)          FFSOX_MESSAGE(m)
-
-///////////////////////////////////////////////////////////////////////////////
-#define LIST_NEXT(n,l)      FFSOX_LIST_NEXT(n,l)
-#define LIST_FOREACH(n,l)   FFSOX_LIST_FOREACH(n,l)
-
-///////////////////////////////////////////////////////////////////////////////
 #define STATE_RUN           FFSOX_STATE_RUN
 #define STATE_FLUSH         FFSOX_STATE_FLUSH
 #define STATE_END           FFSOX_STATE_END
 
-#define MACHINE_STAY        FFSOX_MACHINE_STAY
 #define MACHINE_PUSH        FFSOX_MACHINE_PUSH
 #define MACHINE_POP         FFSOX_MACHINE_POP
 
 ///////////////////////////////////////////////////////////////////////////////
-typedef ffsox_list_t list_t;
+typedef ffsox_read_ptr_t read_ptr_t;
+typedef ffsox_convert_t convert_t;
 typedef ffsox_format_t format_t;
 typedef ffsox_stream_t stream_t;
 typedef ffsox_frame_t frame_t;
 typedef ffsox_machine_t machine_t;
 typedef ffsox_read_list_t read_list_t;
+typedef ffsox_packet_consumer_list_t packet_consumer_list_t;
+typedef ffsox_stream_list_t stream_list_t;
 typedef ffsox_sink_t sink_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 typedef ffsox_node_vmt_t node_vmt_t;
   typedef ffsox_source_vmt_t source_vmt_t;
-  typedef ffsox_read_vmt_t read_vmt_t;
-    typedef ffsox_read_copy_vmt_t read_copy_vmt_t;
-    typedef ffsox_read_decode_vmt_t read_decode_vmt_t;
-  typedef ffsox_write_vmt_t write_vmt_t;
-    typedef ffsox_write_copy_vmt_t write_copy_vmt_t;
-    typedef ffsox_write_encode_vmt_t write_encode_vmt_t;
-  typedef ffsox_filter_vmt_t filter_vmt_t;
+  typedef ffsox_packet_consumer_vmt_t packet_consumer_vmt_t;
+    typedef ffsox_packet_writer_vmt_t packet_writer_vmt_t;
+    typedef ffsox_frame_reader_vmt_t frame_reader_vmt_t;
+  typedef ffsox_frame_consumer_vmt_t frame_consumer_vmt_t;
+    typedef ffsox_frame_writer_vmt_t frame_writer_vmt_t;
+    typedef ffsox_sox_reader_vmt_t sox_reader_vmt_t;
 
 typedef ffsox_node_t node_t;
   typedef ffsox_source_t source_t;
-  typedef ffsox_read_t read_t;
-    typedef ffsox_read_copy_t read_copy_t;
-    typedef ffsox_read_decode_t read_decode_t;
-  typedef ffsox_write_t write_t;
-    typedef ffsox_write_copy_t write_copy_t;
-    typedef ffsox_write_encode_t write_encode_t;
-  typedef ffsox_filter_t filter_t;
+  typedef ffsox_packet_consumer_t packet_consumer_t;
+    typedef ffsox_packet_writer_t packet_writer_t;
+    typedef ffsox_frame_reader_t frame_reader_t;
+  typedef ffsox_frame_consumer_t frame_consumer_t;
+    typedef ffsox_frame_writer_t frame_writer_t;
+    typedef ffsox_sox_reader_t sox_reader_t;
+
+///////////////////////////////////////////////////////////////////////////////
+typedef ffsox_source_callback_t source_cb_t;
 
 #ifdef __cpluplus
 }

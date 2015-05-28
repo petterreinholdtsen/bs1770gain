@@ -28,7 +28,7 @@
 void bs1770gain_usage(char **argv, int code)
 {
   fprintf(stderr,"Usage:  %s [options] <file/dir> [<file/dir> ...]\n",
-      bs1770gain_basename(argv[0]));
+      pbu_basename(argv[0]));
   fprintf(stderr,"\n");
   fprintf(stderr,"Options:\n");
   fprintf(stderr," -h,--help:  print this message and exit\n");
@@ -59,8 +59,9 @@ void bs1770gain_usage(char **argv, int code)
       "   and output to folder\n");
   fprintf(stderr," -f <file>,--file <file>:  write analysis to file\n");
   fprintf(stderr," -x,--extensions:  enable extensions:\n"
-      "   1) read metadata from per-folder CSV file \"folder.csv\"\n"
-      "   2) copy file \"folder.jpg\" from source to destination\n"
+      "   1) rename files according to TITLE tag\n"
+      "   2) read metadata from per-folder CSV file \"folder.csv\"\n"
+      "   3) copy file \"folder.jpg\" from source to destination\n"
       "      folder\n");
   fprintf(stderr," -l,--list:  print FFmpeg format/stream information\n");
   /////////////////////////////////////////////////////////////////////////////
@@ -566,7 +567,7 @@ int main(int argc, char **argv)
 
   // load the FFmpeg and SoX libraries from "bs1770gain-tools".
   if (ffsox_dynload("bs1770gain-tools")<0) {
-	FFSOX_MESSAGE("loading shared libraries");
+    PBU_MESSAGE("loading shared libraries");
     goto dynload;
   }
 

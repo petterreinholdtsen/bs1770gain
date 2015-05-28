@@ -19,85 +19,82 @@
  */
 #ifndef __FFSOX_H__
 #define __FFSOX_H__ // {
+#include <pbutil.h>
 #include <ffsox_dynload.h>
-#if defined (WIN32) // {
-#include <windows.h>
-#endif // }
-#include <stdlib.h>
-#include <string.h>
 #ifdef __cpluplus
 extern "C" {
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-#define FFSOX_MESSAGE(m) fprintf(stderr,"Error " m ": \"%s\" (%d).\n", \
-    ffsox_basename(__FILE__),__LINE__)
-
-///////////////////////////////////////////////////////////////////////////////
-typedef struct ffsox_list ffsox_list_t;
+typedef union ffsox_read_ptr ffsox_read_ptr_t;
+typedef struct ffsox_convert ffsox_convert_t;
 typedef struct ffsox_format ffsox_format_t;
 typedef struct ffsox_stream ffsox_stream_t;
 typedef struct ffsox_frame ffsox_frame_t;
 typedef struct ffsox_machine ffsox_machine_t;
 typedef struct ffsox_read_list ffsox_read_list_t;
+typedef struct ffsox_packet_consumer_list ffsox_packet_consumer_list_t;
+typedef struct ffsox_stream_list ffsox_stream_list_t;
 typedef struct ffsox_sink ffsox_sink_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 typedef struct ffsox_node_vmt ffsox_node_vmt_t;
   typedef struct ffsox_source_vmt ffsox_source_vmt_t;
-  typedef struct ffsox_read_vmt ffsox_read_vmt_t;
-    typedef struct ffsox_read_copy_vmt ffsox_read_copy_vmt_t;
-    typedef struct ffsox_read_decode_vmt ffsox_read_decode_vmt_t;
-  typedef struct ffsox_write_vmt ffsox_write_vmt_t;
-    typedef struct ffsox_write_copy_vmt ffsox_write_copy_vmt_t;
-    typedef struct ffsox_write_encode_vmt ffsox_write_encode_vmt_t;
-  typedef struct ffsox_filter_vmt ffsox_filter_vmt_t;
+  typedef struct ffsox_packet_consumer_vmt ffsox_packet_consumer_vmt_t;
+    typedef struct ffsox_packet_writer_vmt ffsox_packet_writer_vmt_t;
+    typedef struct ffsox_frame_reader_vmt ffsox_frame_reader_vmt_t;
+  typedef struct ffsox_frame_consumer_vmt ffsox_frame_consumer_vmt_t;
+    typedef struct ffsox_frame_writer_vmt ffsox_frame_writer_vmt_t;
+    typedef struct ffsox_sox_reader_vmt ffsox_sox_reader_vmt_t;
 
 typedef struct ffsox_node ffsox_node_t;
   typedef struct ffsox_source ffsox_source_t;
-  typedef struct ffsox_read ffsox_read_t;
-    typedef struct ffsox_read_copy ffsox_read_copy_t;
-    typedef struct ffsox_read_decode ffsox_read_decode_t;
-  typedef struct ffsox_write ffsox_write_t;
-    typedef struct ffsox_write_copy ffsox_write_copy_t;
-    typedef struct ffsox_write_encode ffsox_write_encode_t;
-  typedef struct ffsox_filter ffsox_filter_t;
+  typedef struct ffsox_packet_consumer ffsox_packet_consumer_t;
+    typedef struct ffsox_packet_writer ffsox_packet_writer_t;
+    typedef struct ffsox_frame_reader ffsox_frame_reader_t;
+  typedef struct ffsox_frame_consumer ffsox_frame_consumer_t;
+    typedef struct ffsox_frame_writer ffsox_frame_writer_t;
+    typedef struct ffsox_sox_reader ffsox_sox_reader_t;
 
-///////////////////////////////////////////////////////////////////////////////
+/// utilities /////////////////////////////////////////////////////////////////
 #if defined (WIN32) // {
 wchar_t *ffsox_path3(const wchar_t *ws1, const char *s2, const char *s3);
-wchar_t *ffsox_wcstok_r(wchar_t *str, const wchar_t *delim,
-    wchar_t **saveptr);
-char *ffsox_strtok_r(char *str, const char *delim, char **saveptr);
-HANDLE ffsox_msvcrt(void);
 #else // } {
 char *ffsox_path3(const char *s1, const char *s2, const char *s3);
 #endif // }
 int ffsox_csv2avdict(const char *file, char sep, AVDictionary **metadata);
-const char *ffsox_basename(const char *path);
 
+AVCodec *ffsox_find_decoder(enum AVCodecID id);
 int ffsox_audiostream(AVFormatContext *ic, int *aip, int *vip);
 
-/// list //////////////////////////////////////////////////////////////////////
-#define FFSOX_LIST_APPEND(l,n) \
-  ffsox_list_append(&(l),&(n),sizeof (n))
-#define FFSOX_LIST_NEXT(n,l) \
-  (*(n)=(*(n)==NULL||(l)==(*(n))->next?NULL:(*(n))->next))
-#define FFSOX_LIST_FOREACH(n,l) \
-  for (*(n)=(l);NULL!=*(n);FFSOX_LIST_NEXT(n,l))
-
-struct ffsox_list {
-#define FFSOX_LIST_MEM(T) \
-  T *prev; \
-  T *next;
-  FFSOX_LIST_MEM(ffsox_list_t)
+/// ffsox_read_pointer ////////////////////////////////////////////////////////
+union ffsox_read_ptr {
+  // interleaved.
+  struct { const uint8_t *rp; } u8i;
+  struct { const int8_t  *rp; } s8i;
+  struct { const int16_t *rp; } s16i;
+  struct { const int32_t *rp; } s32i;
+  struct { const float   *rp; } flti;
+  struct { const double  *rp; } dbli;
+  // planar.
+  struct { const uint8_t *rp[AV_NUM_DATA_POINTERS]; } u8p;
+  struct { const int8_t  *rp[AV_NUM_DATA_POINTERS]; } s8p;
+  struct { const int16_t *rp[AV_NUM_DATA_POINTERS]; } s16p;
+  struct { const int32_t *rp[AV_NUM_DATA_POINTERS]; } s32p;
+  struct { const float   *rp[AV_NUM_DATA_POINTERS]; } fltp;
+  struct { const double  *rp[AV_NUM_DATA_POINTERS]; } dblp;
 };
 
-void *ffsox_list_create(void *node);
-int ffsox_list_append(void *head, void *node, size_t size);
-void *ffsox_list_remove_link(void *head, void *node);
-void ffsox_list_free_full(void *head, void *free_func);
-void ffsox_list_free(void *head);
+/// convert ///////////////////////////////////////////////////////////////////
+struct ffsox_convert {
+  ffsox_frame_t *fr;
+  ffsox_frame_t *fw;
+  int channels;
+  int nb_samples;
+};
+
+void ffsox_convert_setup(ffsox_convert_t *convert, ffsox_frame_t *fr,
+    ffsox_frame_t *fw);
 
 /// format ////////////////////////////////////////////////////////////////////
 struct ffsox_format {
@@ -114,55 +111,70 @@ struct ffsox_stream {
   const AVCodec *codec;
 };
 
+int ffsox_stream_new(ffsox_stream_t *s, ffsox_sink_t *so, AVCodec *codec);
+int ffsox_stream_interleaved_write(ffsox_stream_t *s, AVPacket *pkt);
+
 /// frame /////////////////////////////////////////////////////////////////////
 struct ffsox_frame {
   AVFrame *frame;
 
   struct {
-    int64_t frame;
+    int frame;
     int64_t stream;
   } nb_samples;
 };
 
 int ffsox_frame_create(ffsox_frame_t *f);
+int ffsox_frame_create_cc(ffsox_frame_t *f, AVCodecContext *cc);
 void ffsox_frame_cleanup(ffsox_frame_t *f);
 
 int ffsox_frame_complete(ffsox_frame_t *f);
 void ffsox_frame_reset(ffsox_frame_t *f);
 int ffsox_frame_convert(ffsox_frame_t *fr, ffsox_frame_t *fw, double q);
+int ffsox_frame_convert_sox(ffsox_frame_t *fr, ffsox_frame_t *fw, double q,
+    sox_uint64_t *clipsp);
 
 /// machine ///////////////////////////////////////////////////////////////////
-#define FFSOX_MACHINE_STAY   0
-#define FFSOX_MACHINE_PUSH   1
-#define FFSOX_MACHINE_POP    2
+#define FFSOX_MACHINE_PUSH   0
+#define FFSOX_MACHINE_POP    1
 
 struct ffsox_machine {
   ffsox_source_t *source;
   ffsox_node_t *node;
 };
 
-int ffsox_machine_create(ffsox_machine_t *m, ffsox_source_t *s);
-void ffsox_machine_cleanup(ffsox_machine_t *m);
+int ffsox_machine_run(ffsox_machine_t *m, ffsox_node_t *node);
 
-int ffsox_machine_loop(ffsox_machine_t *m);
-
-/// read_list /////////////////////////////////////////////////////////////////
-struct ffsox_read_list {
-#define FFSOX_READ_LIST_MEM(T) \
-  FFSOX_LIST_MEM(T) \
-  ffsox_read_t *read;
-  FFSOX_READ_LIST_MEM(ffsox_read_list_t)
+/// stream_list ///////////////////////////////////////////////////////////////
+struct ffsox_stream_list {
+#define FFSOX_STREAM_LIST_MEM(T) \
+  PBU_LIST_MEM(T) \
+  ffsox_stream_t *si; \
+  ffsox_stream_t *so;
+  FFSOX_STREAM_LIST_MEM(ffsox_stream_list_t)
 };
 
-void ffsox_read_list_free(ffsox_read_list_t *n);
+/// packet_consumer_list //////////////////////////////////////////////////////
+struct ffsox_packet_consumer_list {
+#define FFSOX_PACKET_CONSUMER_LIST_MEM(T) \
+  PBU_LIST_MEM(T) \
+  ffsox_packet_consumer_t *consumer;
+  FFSOX_PACKET_CONSUMER_LIST_MEM(ffsox_packet_consumer_list_t)
+};
+
+void ffsox_packet_consumer_list_free(ffsox_packet_consumer_list_t *n);
 
 //// sink /////////////////////////////////////////////////////////////////////
 struct ffsox_sink {
   ffsox_format_t f;
+  ffsox_stream_list_t *streams;
 };
 
 int ffsox_sink_create(ffsox_sink_t *s, const char *path);
 void ffsox_sink_cleanup(ffsox_sink_t *s);
+
+int ffsox_sink_append(ffsox_sink_t *sink, ffsox_stream_t *si,
+    ffsox_stream_t *so);
 
 int ffsox_sink_open(ffsox_sink_t *s);
 void ffsox_sink_close(ffsox_sink_t *s);
@@ -178,14 +190,14 @@ struct ffsox_node_vmt {
     FFSOX_NODE_PARENT_VMT
 
     struct {
-      const void *parent;
-#define FFSOX_NODE_VMT(T) \
+#define FFSOX_NODE_VMT(T,P) \
+      const P *parent; \
       const char *name; \
       void (*cleanup)(T *n); \
       ffsox_node_t *(*prev)(T *n); \
       ffsox_node_t *(*next)(T *n); \
       int (*run)(T *n);
-      FFSOX_NODE_VMT(ffsox_node_t)
+      FFSOX_NODE_VMT(ffsox_node_t,void)
     };
   };
 };
@@ -209,6 +221,8 @@ void ffsox_node_destroy(ffsox_node_t *n);
 const ffsox_node_vmt_t *ffsox_node_get_vmt(void);
 
 /// source ////////////////////////////////////////////////////////////////////
+typedef void (*ffsox_source_callback_t)(const ffsox_source_t *, void *);
+
 struct ffsox_source_vmt {
   union {
 #define FFSOX_SOURCE_PARENT_VMT \
@@ -217,10 +231,9 @@ struct ffsox_source_vmt {
     FFSOX_SOURCE_PARENT_VMT
 
     struct {
-      const ffsox_node_vmt_t *parent;
-#define FFSOX_SOURCE_VMT(T) \
-      FFSOX_NODE_VMT(T)
-      FFSOX_SOURCE_VMT(ffsox_source_t)
+#define FFSOX_SOURCE_VMT(T,P) \
+      FFSOX_NODE_VMT(T,P)
+      FFSOX_SOURCE_VMT(ffsox_source_t,ffsox_node_vmt_t)
     };
   };
 };
@@ -236,13 +249,16 @@ struct ffsox_source {
 #define FFSOX_SOURCE_MEM(T) \
       FFSOX_NODE_MEM(T) \
       ffsox_format_t f; \
+      int ai,vi; \
+      ffsox_source_callback_t cb; \
+      void *data; \
  \
       struct { \
-        ffsox_read_list_t *h; \
-        ffsox_read_list_t *n; \
-      } reads; \
+        ffsox_packet_consumer_list_t *h; \
+        ffsox_packet_consumer_list_t *n; \
+      } consumer; \
  \
-      ffsox_read_t *next; \
+      ffsox_packet_consumer_t *next; \
       int64_t ts; \
       AVPacket pkt;
 
@@ -251,292 +267,258 @@ struct ffsox_source {
   };
 };
 
-int ffsox_source_create(ffsox_source_t *n, const char *path);
+int ffsox_source_create(ffsox_source_t *n, const char *path, int ai, int vi,
+    ffsox_source_callback_t cb, void *data);
 const ffsox_source_vmt_t *ffsox_source_get_vmt(void);
 
+int ffsox_source_append(ffsox_source_t *si, ffsox_packet_consumer_t *pc);
 int ffsox_source_seek(ffsox_source_t *n, int64_t ts);
 
-int ffsox_source_link_create(ffsox_source_t *si, ffsox_sink_t *so, double drc,
-    int codec_id, int sample_fmt, double q, int ai, int vi);
-void ffsox_source_link_cleanup(ffsox_source_t *n);
+int ffsox_source_link(ffsox_source_t *si, ffsox_sink_t *so, double drc,
+    int codec_id, int sample_fmt, double q);
 
-/// read //////////////////////////////////////////////////////////////////////
-struct ffsox_read_vmt {
+/// packet_consumer ///////////////////////////////////////////////////////////
+struct ffsox_packet_consumer_vmt {
   union {
-#define FFSOX_READ_PARENT_VMT \
+#define FFSOX_PACKET_CONSUMER_PARENT_VMT \
     FFSOX_NODE_PARENT_VMT \
     ffsox_node_vmt_t node;
-    FFSOX_READ_PARENT_VMT
+    FFSOX_PACKET_CONSUMER_PARENT_VMT
 
     struct {
-      const ffsox_node_vmt_t *parent;
-#define FFSOX_READ_VMT(T) \
-      FFSOX_NODE_VMT(T) \
-      void (*set_packet)(T *n, AVPacket *pkt);
-      FFSOX_READ_VMT(ffsox_read_t)
+#define FFSOX_PACKET_CONSUMER_VMT(T,P) \
+      FFSOX_NODE_VMT(T,P) \
+      int (*set_packet)(T *n, AVPacket *pkt);
+      FFSOX_PACKET_CONSUMER_VMT(ffsox_packet_consumer_t,ffsox_node_vmt_t)
     };
   };
 };
 
-struct ffsox_read {
+struct ffsox_packet_consumer {
   union {
-#define FFSOX_READ_PARENT_MEM \
+#define FFSOX_PACKET_CONSUMER_PARENT_MEM \
     FFSOX_NODE_PARENT_MEM \
     ffsox_node_t node;
-    FFSOX_READ_PARENT_MEM
+    FFSOX_PACKET_CONSUMER_PARENT_MEM
 
     struct {
-#define FFSOX_READ_MEM(T) \
+#define FFSOX_PACKET_CONSUMER_MEM(T) \
       FFSOX_NODE_MEM(T) \
-      ffsox_stream_t s; \
-      ffsox_write_t *write; \
+      ffsox_stream_t si; \
       ffsox_source_t *prev;
-      FFSOX_READ_MEM(ffsox_read_vmt_t)
+      FFSOX_PACKET_CONSUMER_MEM(ffsox_packet_consumer_vmt_t)
     };
   };
 };
 
-int ffsox_read_create(ffsox_read_t *n, ffsox_source_t *s, int stream_index);
-const ffsox_read_vmt_t *ffsox_read_get_vmt(void);
+int ffsox_packet_consumer_create(ffsox_packet_consumer_t *n,
+    ffsox_source_t *si, int stream_index);
+const ffsox_packet_consumer_vmt_t *ffsox_packet_consumer_get_vmt(void);
 
-/// read_copy /////////////////////////////////////////////////////////////////
-struct ffsox_read_copy_vmt {
+/// packet_writer /////////////////////////////////////////////////////////////
+struct ffsox_packet_writer_vmt {
   union {
-#define FFSOX_READ_COPY_PARENT_VMT \
-    FFSOX_READ_PARENT_VMT \
-    ffsox_read_vmt_t read;
-    FFSOX_READ_COPY_PARENT_VMT
+#define FFSOX_PACKET_WRITER_PARENT_VMT \
+    FFSOX_PACKET_CONSUMER_PARENT_VMT \
+    ffsox_packet_consumer_vmt_t packet_consumer;
+    FFSOX_PACKET_WRITER_PARENT_VMT
 
     struct {
-      const ffsox_read_vmt_t *parent;
-#define FFSOX_READ_COPY_VMT(T) \
-      FFSOX_READ_VMT(T)
-      FFSOX_READ_COPY_VMT(ffsox_read_copy_t)
+#define FFSOX_PACKET_WRITER_VMT(T,P) \
+      FFSOX_PACKET_CONSUMER_VMT(T,P)
+      FFSOX_PACKET_WRITER_VMT(ffsox_packet_writer_t,
+          ffsox_packet_consumer_vmt_t)
     };
   };
 };
 
-struct ffsox_read_copy {
+struct ffsox_packet_writer {
   union {
-#define FFSOX_READ_COPY_PARENT_MEM \
-    FFSOX_READ_PARENT_MEM \
-    ffsox_read_t read;
-    FFSOX_READ_COPY_PARENT_MEM
+#define FFSOX_PACKET_WRITER_PARENT_MEM \
+    FFSOX_PACKET_CONSUMER_PARENT_MEM \
+    ffsox_packet_consumer_t packet_consumer;
+    FFSOX_PACKET_WRITER_PARENT_MEM
 
     struct {
-#define FFSOX_READ_COPY_MEM(T) \
-      FFSOX_READ_MEM(T) \
-      ffsox_write_copy_t *next; \
-      AVPacket *pkt;
-      FFSOX_READ_COPY_MEM(ffsox_read_copy_vmt_t)
+#define FFSOX_PACKET_WRITER_MEM(T) \
+      FFSOX_PACKET_CONSUMER_MEM(T) \
+      ffsox_stream_t so;
+      FFSOX_PACKET_WRITER_MEM(ffsox_packet_writer_vmt_t)
     };
   };
 };
 
-int ffsox_read_copy_create(ffsox_read_copy_t *n, ffsox_source_t *s,
-    int stream_index);
-ffsox_read_copy_t *ffsox_read_copy_new(ffsox_source_t *s, int stream_index);
-const ffsox_read_copy_vmt_t *ffsox_read_copy_get_vmt(void);
+int ffsox_packet_writer_create(ffsox_packet_writer_t *n, ffsox_source_t *si,
+    int stream_index, ffsox_sink_t *so);
+ffsox_packet_writer_t *ffsox_packet_writer_new(ffsox_source_t *si,
+    int stream_index, ffsox_sink_t *so);
+const ffsox_packet_writer_vmt_t *ffsox_packet_writer_get_vmt(void);
 
-/// read_decode ///////////////////////////////////////////////////////////////
-struct ffsox_read_decode_vmt {
+/// frame_reader //////////////////////////////////////////////////////////////
+struct ffsox_frame_reader_vmt {
   union {
-#define FFSOX_READ_DECODE_PARENT_VMT \
-    FFSOX_READ_PARENT_VMT \
-    ffsox_read_vmt_t read;
-    FFSOX_READ_DECODE_PARENT_VMT
+#define FFSOX_FRAME_READER_PARENT_VMT \
+    FFSOX_PACKET_CONSUMER_PARENT_VMT \
+    ffsox_packet_consumer_vmt_t packet_consumer;
+    FFSOX_FRAME_READER_PARENT_VMT
 
     struct {
-      const ffsox_read_vmt_t *parent;
-#define FFSOX_READ_DECODE_VMT(T) \
-      FFSOX_READ_VMT(T)
-      FFSOX_READ_DECODE_VMT(ffsox_read_decode_t)
+#define FFSOX_FRAME_READER_VMT(T,P) \
+      FFSOX_PACKET_CONSUMER_VMT(T,P)
+      FFSOX_FRAME_READER_VMT(ffsox_frame_reader_t,
+          ffsox_packet_consumer_vmt_t)
     };
   };
 };
 
-struct ffsox_read_decode {
+struct ffsox_frame_reader {
   union {
-#define FFSOX_READ_DECODE_PARENT_MEM \
-    FFSOX_READ_PARENT_MEM \
-    ffsox_read_t read;
-    FFSOX_READ_DECODE_PARENT_MEM
+#define FFSOX_FRAME_READER_PARENT_MEM \
+    FFSOX_PACKET_CONSUMER_PARENT_MEM \
+    ffsox_packet_consumer_t packet_consumer;
+    FFSOX_FRAME_READER_PARENT_MEM
 
     struct {
-#define FFSOX_READ_DECODE_MEM(T) \
-      FFSOX_READ_MEM(T) \
-      ffsox_filter_t *next; \
+#define FFSOX_FRAME_READER_MEM(T) \
+      FFSOX_PACKET_CONSUMER_MEM(T) \
       AVPacket pkt; \
-      ffsox_frame_t f;
-      FFSOX_READ_DECODE_MEM(ffsox_read_decode_vmt_t)
+      ffsox_frame_t fo; \
+      ffsox_frame_consumer_t *next;
+      FFSOX_FRAME_READER_MEM(ffsox_frame_reader_vmt_t)
     };
   };
 };
 
-int ffsox_read_decode_create(ffsox_read_decode_t *n, ffsox_source_t *s,
+int ffsox_frame_reader_create(ffsox_frame_reader_t *fr, ffsox_source_t *si,
     int stream_index, double drc);
-ffsox_read_decode_t *ffsox_read_decode_new(ffsox_source_t *s,
+ffsox_frame_reader_t *ffsox_frame_reader_new(ffsox_source_t *si,
     int stream_index, double drc);
-const ffsox_read_decode_vmt_t *ffsox_read_decode_get_vmt(void);
+const ffsox_frame_reader_vmt_t *ffsox_frame_reader_get_vmt(void);
 
-/// write /////////////////////////////////////////////////////////////////////
-struct ffsox_write_vmt {
+/// frame_consumer ////////////////////////////////////////////////////////////
+struct ffsox_frame_consumer_vmt {
   union {
-#define FFSOX_WRITE_PARENT_VMT \
+#define FFSOX_FRAME_CONSUMER_PARENT_VMT \
     FFSOX_NODE_PARENT_VMT \
     ffsox_node_vmt_t node;
-    FFSOX_WRITE_PARENT_VMT
+    FFSOX_FRAME_CONSUMER_PARENT_VMT
 
     struct {
-      const ffsox_node_vmt_t *parent;
-#define FFSOX_WRITE_VMT(T) \
-      FFSOX_NODE_VMT(T)
-      FFSOX_WRITE_VMT(ffsox_write_t)
+#define FFSOX_FRAME_CONSUMER_VMT(T,P) \
+      FFSOX_NODE_VMT(T,P) \
+      int (*set_frame)(T *n, ffsox_frame_t *fi);
+      FFSOX_FRAME_CONSUMER_VMT(ffsox_frame_consumer_t,ffsox_node_vmt_t)
     };
   };
 };
 
-struct ffsox_write {
+struct ffsox_frame_consumer {
   union {
-#define FFSOX_WRITE_PARENT_MEM \
+#define FFSOX_FRAME_CONSUMER_PARENT_MEM \
     FFSOX_NODE_PARENT_MEM \
     ffsox_node_t node;
-    FFSOX_WRITE_PARENT_MEM
+    FFSOX_FRAME_CONSUMER_PARENT_MEM
 
     struct {
-#define FFSOX_WRITE_MEM(T) \
+#define FFSOX_FRAME_CONSUMER_MEM(T) \
       FFSOX_NODE_MEM(T) \
-      ffsox_stream_t s;
-      FFSOX_WRITE_MEM(ffsox_write_vmt_t)
+      ffsox_node_t *prev; \
+      ffsox_frame_t *fi;
+      FFSOX_FRAME_CONSUMER_MEM(ffsox_frame_consumer_vmt_t)
     };
   };
 };
 
-int ffsox_write_create(ffsox_write_t *n, ffsox_sink_t *s,
-    const AVCodec *codec);
-int ffsox_write_interleaved(ffsox_write_t *n, AVPacket *pkt);
-const ffsox_write_vmt_t *ffsox_write_get_vmt(void);
+int ffsox_frame_consumer_create(ffsox_frame_consumer_t *n);
+const ffsox_frame_consumer_vmt_t *ffsox_frame_consumer_get_vmt(void);
 
-/// write_copy ////////////////////////////////////////////////////////////////
-struct ffsox_write_copy_vmt {
+/// frame_writer ////////////////////////////////////////////////////////////
+struct ffsox_frame_writer_vmt {
   union {
-#define FFSOX_WRITE_COPY_PARENT_VMT \
-    FFSOX_WRITE_PARENT_VMT \
-    ffsox_write_vmt_t write;
-    FFSOX_WRITE_COPY_PARENT_VMT
+#define FFSOX_FRAME_WRITER_PARENT_VMT \
+    FFSOX_FRAME_CONSUMER_PARENT_VMT \
+    ffsox_frame_consumer_vmt_t frame_consumer;
+    FFSOX_FRAME_WRITER_PARENT_VMT
 
     struct {
-      const ffsox_write_vmt_t *parent;
-#define FFSOX_WRITE_COPY_VMT(T) \
-      FFSOX_WRITE_VMT(T)
-      FFSOX_WRITE_COPY_VMT(ffsox_write_copy_t)
+#define FFSOX_FRAME_WRITER_VMT(T,P) \
+      FFSOX_FRAME_CONSUMER_VMT(T,P)
+      FFSOX_FRAME_WRITER_VMT(ffsox_frame_writer_t,ffsox_frame_consumer_vmt_t)
     };
   };
 };
 
-struct ffsox_write_copy {
+struct ffsox_frame_writer {
   union {
-#define FFSOX_WRITE_COPY_PARENT_MEM \
-    FFSOX_WRITE_PARENT_MEM \
-    ffsox_write_t write;
-    FFSOX_WRITE_COPY_PARENT_MEM
+#define FFSOX_FRAME_WRITER_PARENT_MEM \
+    FFSOX_FRAME_CONSUMER_PARENT_MEM \
+    ffsox_frame_consumer_t frame_consumer;
+    FFSOX_FRAME_WRITER_PARENT_MEM
 
     struct {
-#define FFSOX_WRITE_COPY_MEM(T) \
-      FFSOX_WRITE_MEM(T) \
-      ffsox_read_copy_t *prev; \
-      AVPacket **pkt;
-      FFSOX_WRITE_COPY_MEM(ffsox_write_copy_vmt_t)
-    };
-  };
-};
-
-int ffsox_write_copy_create(ffsox_write_copy_t *no, ffsox_sink_t *so,
-    ffsox_read_copy_t *ni);
-ffsox_write_copy_t *ffsox_write_copy_new(ffsox_sink_t *so,
-    ffsox_read_copy_t *ni);
-const ffsox_write_copy_vmt_t *ffsox_write_copy_get_vmt(void);
-
-/// write_encode //////////////////////////////////////////////////////////////
-struct ffsox_write_encode_vmt {
-  union {
-#define FFSOX_WRITE_ENCODE_PARENT_VMT \
-    FFSOX_WRITE_PARENT_VMT \
-    ffsox_write_vmt_t write;
-    FFSOX_WRITE_ENCODE_PARENT_VMT
-
-    struct {
-      const ffsox_write_vmt_t *parent;
-#define FFSOX_WRITE_ENCODE_VMT(T) \
-      FFSOX_WRITE_VMT(T)
-      FFSOX_WRITE_ENCODE_VMT(ffsox_write_encode_t)
-    };
-  };
-};
-
-struct ffsox_write_encode {
-  union {
-#define FFSOX_WRITE_ENCODE_PARENT_MEM \
-    FFSOX_WRITE_PARENT_MEM \
-    ffsox_write_t write;
-    FFSOX_WRITE_ENCODE_PARENT_MEM
-
-    struct {
-#define FFSOX_WRITE_ENCODE_MEM(T) \
-      FFSOX_WRITE_MEM(T) \
-      ffsox_filter_t *prev; \
-      AVPacket pkt;
-      FFSOX_WRITE_ENCODE_MEM(ffsox_write_encode_vmt_t)
-    };
-  };
-};
-
-int ffsox_write_encode_create(ffsox_write_encode_t *we, ffsox_sink_t *so,
-    ffsox_read_decode_t *rd, int codec_id, int sample_fmt);
-ffsox_write_encode_t *ffsox_write_encode_new(ffsox_sink_t *so,
-    ffsox_read_decode_t *rd, int codec_id, int sample_fmt);
-const ffsox_write_encode_vmt_t *ffsox_write_encode_get_vmt(void);
-
-/// filter ////////////////////////////////////////////////////////////////////
-struct ffsox_filter_vmt {
-  union {
-#define FFSOX_FILTER_PARENT_VMT \
-    FFSOX_NODE_PARENT_VMT \
-    ffsox_node_vmt_t node;
-    FFSOX_FILTER_PARENT_VMT
-
-    struct {
-      const ffsox_node_vmt_t *parent;
-#define FFSOX_FILTER_VMT(T) \
-      FFSOX_NODE_VMT(T)
-      FFSOX_FILTER_VMT(ffsox_filter_t)
-    };
-  };
-};
-
-struct ffsox_filter {
-  union {
-#define FFSOX_FILTER_PARENT_MEM \
-    FFSOX_NODE_PARENT_MEM \
-    ffsox_node_t node;
-    FFSOX_FILTER_PARENT_MEM
-
-    struct {
-#define FFSOX_FILTER_MEM(T) \
-      FFSOX_NODE_MEM(T) \
-      ffsox_frame_t f; \
+#define FFSOX_FRAME_WRITER_MEM(T) \
+      FFSOX_FRAME_CONSUMER_MEM(T) \
       double q; \
-      ffsox_read_decode_t *prev; \
-      ffsox_write_encode_t *next;
-      FFSOX_FILTER_MEM(ffsox_filter_vmt_t)
+      ffsox_stream_t so; \
+      ffsox_frame_t fo; \
+      AVPacket pkt;
+      FFSOX_FRAME_WRITER_MEM(ffsox_frame_writer_vmt_t)
     };
   };
 };
 
-int ffsox_filter_create(ffsox_filter_t *en, ffsox_write_encode_t *we,
+int ffsox_frame_writer_create(ffsox_frame_writer_t *fc, ffsox_sink_t *so,
+    ffsox_frame_reader_t *fr, int codec_id, int sample_fmt, double q);
+ffsox_frame_writer_t *ffsox_frame_writer_new(ffsox_sink_t *so,
+    ffsox_frame_reader_t *fr, int codec_id, int sample_fmt, double q);
+const ffsox_frame_writer_vmt_t *ffsox_frame_writer_get_vmt(void);
+
+/// sox_reader ////////////////////////////////////////////////////////////
+struct ffsox_sox_reader_vmt {
+  union {
+#define FFSOX_SOX_READER_PARENT_VMT \
+    FFSOX_FRAME_CONSUMER_PARENT_VMT \
+    ffsox_frame_consumer_vmt_t frame_consumer;
+    FFSOX_SOX_READER_PARENT_VMT
+
+    struct {
+#define FFSOX_SOX_READER_VMT(T,P) \
+      FFSOX_FRAME_CONSUMER_VMT(T,P)
+      FFSOX_SOX_READER_VMT(ffsox_sox_reader_t,ffsox_frame_consumer_vmt_t)
+    };
+  };
+};
+
+struct ffsox_sox_reader {
+  union {
+#define FFSOX_SOX_READER_PARENT_MEM \
+    FFSOX_FRAME_CONSUMER_PARENT_MEM \
+    ffsox_frame_consumer_t frame_consumer;
+    FFSOX_SOX_READER_PARENT_MEM
+
+    struct {
+#define FFSOX_SOX_READER_MEM(T) \
+      FFSOX_FRAME_CONSUMER_MEM(T) \
+      sox_encodinginfo_t encoding; \
+      sox_signalinfo_t signal; \
+      ffsox_frame_t fo; \
+      ffsox_frame_consumer_t *next; \
+      double q; \
+      sox_uint64_t clips; \
+      int sox_errno;
+      FFSOX_SOX_READER_MEM(ffsox_sox_reader_vmt_t)
+    };
+  };
+};
+
+int ffsox_sox_reader_create(ffsox_sox_reader_t *sa,
+    ffsox_frame_reader_t *fr, double q);
+ffsox_sox_reader_t *ffsox_sox_reader_new(ffsox_frame_reader_t *fr,
     double q);
-ffsox_filter_t *ffsox_filter_new(ffsox_write_encode_t *we, double q);
-const ffsox_filter_vmt_t *ffsox_filter_get_vmt(void);
+const ffsox_sox_reader_vmt_t *ffsox_sox_reader_get_vmt(void);
+
+size_t ffsox_sox_reader_read(ffsox_sox_reader_t *sa, sox_sample_t *buf,
+    size_t len);
 
 #ifdef __cpluplus
 }

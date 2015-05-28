@@ -1,6 +1,6 @@
 /*
- * bs1770gain_read.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * ffsox_stream.c
+ * Copyright (C) 2015 Peter Belkner <pbelkner@snafu.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -17,26 +17,29 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
-#include <bs1770gain.h>
+#include <ffsox_priv.h>
 
-AVCodec *bs1770gain_find_decoder(enum AVCodecID id)
+int ffsox_stream_new(stream_t *s, sink_t *so, AVCodec *codec)
 {
-  AVCodec *p;
+  s->fc=so->f.fc;
+  s->stream_index=s->fc->nb_streams;
 
-  switch (id) {
-    case AV_CODEC_ID_MP1:
-      p=avcodec_find_decoder_by_name("mp1float");
-      break;
-    case AV_CODEC_ID_MP2:
-      p=avcodec_find_decoder_by_name("mp2float");
-      break;
-    case AV_CODEC_ID_MP3:
-      p=avcodec_find_decoder_by_name("mp3float");
-      break;
-    default:
-      p=NULL;
-      break;
+  if (NULL==(s->st=avformat_new_stream(s->fc,codec))) {
+    MESSAGE("creating output stream");
+    goto st;
   }
 
-  return NULL==p?avcodec_find_decoder(id):p;
+  s->cc=s->st->codec;
+  s->codec=s->cc->codec;
+
+  return 0;
+st:
+  return -1;
+}
+
+int ffsox_stream_interleaved_write(stream_t *s, AVPacket *pkt)
+{
+  pkt->stream_index=s->stream_index;
+
+  return av_interleaved_write_frame(s->fc,pkt);
 }

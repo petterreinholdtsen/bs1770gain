@@ -112,7 +112,7 @@ void bs1770gain_stats_merge(bs1770gain_stats_t *lhs, bs1770gain_stats_t *rhs)
 }
 
 static int bs1770gain_stats_width(bs1770gain_stats_t *stats,
-    bs1770gain_options_t *options)
+    const bs1770gain_options_t *options)
 {
   int width=0;
   int len;
@@ -174,7 +174,7 @@ static void bs1770gain_stats_label(const char *label, int width, FILE *f)
 }
 
 void bs1770gain_stats_print(bs1770gain_stats_t *stats,
-    bs1770gain_options_t *options)
+    const bs1770gain_options_t *options)
 {
   FILE *f=options->f;
   double level=options->preamp+options->level;

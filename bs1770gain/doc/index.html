@@ -30,7 +30,7 @@ else {
 <h2>BS1770GAIN</h2>
 
 <div class="preamble">
-Copyright &copy; 2014 by Peter Belkner
+Copyright &copy; 2014, 2015 by Peter Belkner
 (<a target="_blank" href="http://home.snafu.de/pbelkner/">http://home.snafu.de/pbelkner/</a>)
 
 <p>This program is free software: you can redistribute it and/or modify
@@ -83,6 +83,14 @@ loudness of audio and video files to the same level.</b>
 <a name="hist"><h3>1. History</h3>
 
 <p><div class="history"><table style="width:100%">
+<tr>
+  <td valign="top">2015-01-08</td>
+  <td valign="top">0.3.2</td>
+  <td valign="top"><ul>
+    <li>Added another extension.
+    <li>Several fixes.
+  </ul></td>
+</tr>
 <tr>
   <td valign="top">2014-12-30</td>
   <td valign="top">0.3.1</td>
@@ -627,8 +635,9 @@ Options:
    and output to folder
  -f &lt;file&gt;,--file &lt;file&gt;:  write analysis to file
  -x,--extensions:  enable extensions:
-   1) read metadata from per-folder CSV file "folder.csv"
-   2) copy file "folder.jpg" from source to destination
+   1) rename files according to TITLE tag
+   2) read metadata from per-folder CSV file "folder.csv"
+   3) copy file "folder.jpg" from source to destination
       folder
  -l,--list:  print FFmpeg format/stream information
  --ebu:  calculate replay gain according to EBU R128
@@ -642,9 +651,9 @@ Options:
    q=0.0 (album gain) ... 1.0 (track gain),
    default:  0.0 (album gain)
  --audio &lt;index&gt;:  select audio index (corresponds to
-   #0:&lt;index&gt; in FFmpeg listing, cf. -l/--list option)
+   [0:&lt;index&gt;] in FFmpeg listing, cf. -l/--list option)
  --video &lt;index&gt;:  select video index (corresponds to
-   #0:&lt;index&gt; in FFmpeg listing, cf. -l/--list option)
+   [0:&lt;index&gt;] in FFmpeg listing, cf. -l/--list option)
  --drc &lt;drc&gt;:  set AC3 dynamic range compression (DRC)
  --format &lt;format&gt;:  convert to format
  --loglevel &lt;level&gt;:  set loglevel,

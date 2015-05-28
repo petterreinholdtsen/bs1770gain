@@ -17,13 +17,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
-#include <bs1770gain.h>
-#include <ffsox_priv.h>
+#include <bs1770gain_priv.h>
 
-static void bs1770gain_tags_rg(bs1770gain_tag_t *tags,
-    const bs1770gain_stats_t *track,
-    const bs1770gain_stats_t *album,
-    const bs1770gain_options_t *options)
+static void bs1770gain_tags_rg(tag_t *tags, const stats_t *track,
+    const stats_t *album, const options_t *options)
 {
   double db,level;
 
@@ -80,9 +77,8 @@ static void bs1770gain_tags_rg(bs1770gain_tag_t *tags,
   }
 }
 
-static void bs1770gain_tags_bwf(bs1770gain_tag_t *tags,
-    const bs1770gain_stats_t *stats,
-    const bs1770gain_options_t *options)
+static void bs1770gain_tags_bwf(tag_t *tags, const stats_t *stats,
+    const options_t *options)
 {
   double db,level;
 
@@ -113,32 +109,30 @@ static void bs1770gain_tags_bwf(bs1770gain_tag_t *tags,
 }
 
 static void bs1770gain_clone_dict(AVDictionary **ometadata,
-    AVDictionary *imetadata, bs1770gain_tag_t *tags)
+    AVDictionary *imetadata, tag_t *tags)
 {
-  AVDictionaryEntry *mtag;
-  bs1770gain_tag_t *t;
-
-  mtag=NULL;
+  AVDictionaryEntry *de=NULL;
+  tag_t *t;
 
   // for each tag ...
-  while (NULL!=(mtag=av_dict_get(imetadata,"",mtag,AV_DICT_IGNORE_SUFFIX))) {
+  while (NULL!=(de=av_dict_get(imetadata,"",de,AV_DICT_IGNORE_SUFFIX))) {
     // ... filter out RG/BWF tags
     for (t=tags;NULL!=t->key;++t) {
-      if (0==strcasecmp(t->key,mtag->key))
-        goto next_mtag;
+      if (0==strcasecmp(t->key,de->key))
+        goto next_de;
     }
 
     // ... copy it into the fresh dictionary.
-    av_dict_set(ometadata,mtag->key,mtag->value,0);
-  next_mtag:
+    av_dict_set(ometadata,de->key,de->value,0);
+  next_de:
     continue;
   }
 }
 
 static void bs1770gain_write_dict(AVDictionary **ometadata,
-    AVDictionary *imetadata, bs1770gain_tag_t *tags)
+    AVDictionary *imetadata, tag_t *tags)
 {
-  bs1770gain_tag_t *t;
+  tag_t *t;
 
   // for each RG/BWF tag ...
   for (t=tags;NULL!=t->key;++t) {
@@ -149,15 +143,11 @@ static void bs1770gain_write_dict(AVDictionary **ometadata,
 }
 
 // copy all tags into the fresh dictionary except the RG/BWF ones.
-static void bs1770gain_clone_tags(bs1770gain_tag_t *tags, sink_t *so,
-    source_t *si, bs1770gain_stats_t *track, bs1770gain_stats_t *album,
-    const bs1770gain_options_t *options)
+static void bs1770gain_clone_tags(tag_t *tags, sink_t *so, source_t *si,
+    stats_t *track, stats_t *album, const options_t *options)
 {
-  //int i;
-  read_list_t *reads;
-  read_t *read;
-  write_t *write;
-  AVStream *ist,*ost;
+  stream_list_t *stream;
+  AVStream *sti,*sto;
 
   // initialize the RG/BWF tags.
   switch (options->mode) {
@@ -174,27 +164,47 @@ static void bs1770gain_clone_tags(bs1770gain_tag_t *tags, sink_t *so,
   // copy the format dictionary.
   bs1770gain_clone_dict(&so->f.fc->metadata,si->f.fc->metadata,tags);
 
-  LIST_FOREACH(&reads,si->reads.h) {
-    read=reads->read;
-
-    if (NULL!=(write=read->write)) {
-      ist=read->s.st;
-      ost=write->s.st;
-      bs1770gain_clone_dict(&ost->metadata,ist->metadata,tags);
+  LIST_FOREACH(&stream,so->streams) {
+    sti=stream->si->st;
+    sto=stream->so->st;
+    bs1770gain_clone_dict(&sto->metadata,sti->metadata,tags);
 #if 0 // {
-      if (ai==i)
-        bs1770gain_write_dict(&ost->metadata,ist->metadata,tags);
+    if (ai==i)
+      bs1770gain_write_dict(&ost->metadata,ist->metadata,tags);
 #endif // }
-    };
   }
 }
 
-int bs1770gain_transcode(bs1770gain_stats_t *track, bs1770gain_stats_t *album,
-    const char *ipath, const char *opath, const bs1770gain_options_t *options)
+static void bs1170gain_transcode_progress(const source_t *si, void *data)
+{
+  FILE *f=data;
+  const AVPacket *pkt;
+  const AVStream *st;
+  int64_t duration;
+  double percent;
+  char buf[32];
+  int i;
+
+  pkt=&si->pkt;
+  st=si->f.fc->streams[pkt->stream_index];
+  duration=av_rescale_q(si->f.fc->duration,AV_TIME_BASE_Q,st->time_base);
+  percent=0ll<pkt->dts&&0ll<duration?100.0*pkt->dts/duration:0.0;
+  sprintf(buf,"%.0f%%",percent);
+  fputs(buf,f);
+  fflush(f);
+  i=strlen(buf);
+
+  while (0<i) {
+    fputc('\b',f);
+    --i;
+  }
+}
+
+int bs1770gain_transcode(track_t *t, const options_t *options)
 {
   enum { CODEC_ID=AV_CODEC_ID_FLAC,SAMPLE_FMT=AV_SAMPLE_FMT_S32 };
 
-  bs1770gain_tag_t tags[]={
+  tag_t tags[]={
     ///////////////////////////////////////////////////////////////////////////
     { .key="REPLAYGAIN_ALGORITHM",          .val="" },
     { .key="REPLAYGAIN_REFERENCE_LOUDNESS", .val="" },
@@ -213,43 +223,57 @@ int bs1770gain_transcode(bs1770gain_stats_t *track, bs1770gain_stats_t *album,
   };
 
   int code=-1;
+  FILE *f=options->f;
+  source_cb_t progress=stdout==f?bs1170gain_transcode_progress:NULL;
   double drc=options->drc;
   int ai=options->audio;
   int vi=options->video;
-  ffsox_source_t si;
-  ffsox_sink_t so;
-  ffsox_machine_t m;
+  album_t *a=t->album;
+  source_t si;
+  sink_t so;
+  machine_t m;
   double q;
 
-  if (ffsox_source_create(&si,ipath)<0) {
-    FFSOX_MESSAGE("creating source");
+  if (ffsox_source_create(&si,t->ipath,ai,vi,progress,f)<0) {
+    MESSAGE("creating source");
     goto si;
   }
 
   if (0!=options->extensions)
     ffsox_csv2avdict(si.f.path,'\t',&si.f.fc->metadata);
 
-  if (ffsox_sink_create(&so,opath)<0) {
-    FFSOX_MESSAGE("creating sink");
+  if (bs1770gain_track_alloc_output(t,&si,options)<0) {
+    MESSAGE("allocating output path");
+    goto output;
+  }
+
+  if (0==pbu_same_file(t->ipath,t->opath)) {
+    MESSAGE("overwriting of input not supported");
+    goto output;
+  }
+
+  if (ffsox_sink_create(&so,t->opath)<0) {
+    MESSAGE("creating sink");
     goto so;
   }
 
   if (BS1770GAIN_MODE_APPLY==options->mode) {
     q=options->preamp+options->level;
-    q-=(1.0-options->apply)*bs1770gain_stats_get_loudness(album,options);
-    q-=options->apply*bs1770gain_stats_get_loudness(track,options);
+    q-=(1.0-options->apply)*bs1770gain_stats_get_loudness(a->stats,
+        options);
+    q-=options->apply*bs1770gain_stats_get_loudness(t->stats,options);
     q=LIB1770_DB2Q(q);
   }
   else
     q=-1.0;
 
-  if (ffsox_source_link_create(&si,&so,drc,CODEC_ID,SAMPLE_FMT,q,ai,vi)<0) {
-    FFSOX_MESSAGE("creating link");
+  if (ffsox_source_link(&si,&so,drc,CODEC_ID,SAMPLE_FMT,q)<0) {
+    MESSAGE("creating link");
     goto link;
   }
 
   // copy all tags except the RG/BWF ones.
-  bs1770gain_clone_tags(tags,&so,&si,track,album,options);
+  bs1770gain_clone_tags(tags,&so,&si,t->stats,a->stats,options);
 
   if (BS1770GAIN_MODE_APPLY!=options->mode) {
     // set the RG/BWF tags.
@@ -257,37 +281,39 @@ int bs1770gain_transcode(bs1770gain_stats_t *track, bs1770gain_stats_t *album,
   }
 
   if (ffsox_source_seek(&si,options->begin)<0) {
-    FFSOX_MESSAGE("seeking");
+    MESSAGE("seeking");
     goto seek;
   }
 
   if (ffsox_sink_open(&so)<0) {
-    FFSOX_MESSAGE("opening sink");
+    MESSAGE("opening sink");
     goto open;
   }
 
-  if (ffsox_machine_create(&m,&si)<0) {
-    FFSOX_MESSAGE("creating machine");
+  // print a start massage.
+  if (stdout==f) {
+    fprintf(f,"  [%d/%d] \"%s\" ",t->n,a->n,pbu_basename(t->opath));
+    fflush(f);
+  }
+
+  if (ffsox_machine_run(&m,&si.node)<0) {
+    MESSAGE("running machine");
     goto machine;
   }
 
-  if (ffsox_machine_loop(&m)<0) {
-    FFSOX_MESSAGE("running machine");
-    goto run;
-  }
+  if (stdout==f)
+    fprintf(f,"    \n");
 
   code=0;
 // cleanup:
-run:
-  ffsox_machine_cleanup(&m);
 machine:
   ffsox_sink_close(&so);
 open:
 seek:
-  ffsox_source_link_cleanup(&si);
 link:
   ffsox_sink_cleanup(&so);
 so:
+output:
   si.vmt->cleanup(&si);
 si:
   code=0;

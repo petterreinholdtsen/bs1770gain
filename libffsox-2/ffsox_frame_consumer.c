@@ -1,5 +1,5 @@
 /*
- * ffsox_write.c
+ * ffsox_frame_consumer.c
  * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
  *
  * This library is free software; you can redistribute it and/or
@@ -19,48 +19,41 @@
  */
 #include <ffsox_priv.h>
 
-static write_vmt_t vmt;
+static frame_consumer_vmt_t vmt;
 
-int ffsox_write_create(write_t *no, sink_t *so, const AVCodec *codec)
+int ffsox_frame_consumer_create(frame_consumer_t *fc)
 {
-  if (ffsox_node_create(&no->node)<0) {
+  if (ffsox_node_create(&fc->node)<0) {
     MESSAGE("creating node");
     goto base;
   }
 
-  no->vmt=ffsox_write_get_vmt();
-
-  no->s.fc=so->f.fc;
-  no->s.stream_index=no->s.fc->nb_streams;
-
-  if (NULL==(no->s.st=avformat_new_stream(no->s.fc,codec))) {
-    MESSAGE("creating output stream");
-    goto ost;
-  }
-
-  no->s.cc=no->s.st->codec;
-  no->s.codec=no->s.cc->codec;
+  fc->vmt=ffsox_frame_consumer_get_vmt();
+  fc->prev=NULL;
+  fc->fi=NULL;
 
   return 0;
-ost:
+// cleanup:
+  vmt.parent->cleanup(&fc->node);
 base:
   return -1;
 }
 
-int ffsox_write_interleaved(write_t *n, AVPacket *pkt)
+////////
+static node_t *frame_consumer_prev(frame_consumer_t *n)
 {
-  pkt->stream_index=n->s.stream_index;
-
-  if (av_interleaved_write_frame(n->s.fc,pkt)<0)
-    goto write;
-
-  return 0;
-write:
-  return -1;
+  return n->prev;
 }
 
-////////
-const write_vmt_t *ffsox_write_get_vmt(void)
+static int frame_consumer_set_frame(frame_consumer_t *n, ffsox_frame_t *fi)
+{
+  if (NULL==(n->fi=fi))
+    n->state=STATE_FLUSH;
+
+  return 0;
+}
+
+const frame_consumer_vmt_t *ffsox_frame_consumer_get_vmt(void)
 {
   const node_vmt_t *parent;
 
@@ -68,7 +61,9 @@ const write_vmt_t *ffsox_write_get_vmt(void)
     parent=ffsox_node_get_vmt();
     vmt.node=*parent;
     vmt.parent=parent;
-    vmt.name="write";
+    vmt.name="frame_consumer";
+    vmt.prev=frame_consumer_prev;
+    vmt.set_frame=frame_consumer_set_frame;
   }
 
   return &vmt;

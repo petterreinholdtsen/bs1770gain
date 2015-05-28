@@ -18,44 +18,52 @@ LDLIBS+=-lm
 LDLIBS+=-ldl
 endif # }
 
+PROGRAM+=mux1
+PROGRAM+=mux2
+
+LIBFFSOX_H+=$(INCLUDEDIR)/pbutil.h
+LIBFFSOX_H+=$(INCLUDEDIR)/pbutil_priv.h
 LIBFFSOX_H+=ffsox.h
 LIBFFSOX_H+=ffsox_priv.h
 LIBFFSOX_H+=ffsox_dynload.h
+
 LIBFFSOX_A=libffsox-2.a
-LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_filter.o)
-LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_write_encode.o)
-LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_write_copy.o)
-LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_write.o)
-LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_read_decode.o)
-LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_read_copy.o)
-LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_read.o)
+##
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_convert.o)
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_sox_reader.o)
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_frame_writer.o)
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_frame_consumer.o)
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_frame_reader.o)
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_packet_writer.o)
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_packet_consumer.o)
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_packet_consumer_list.o)
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_stream.o)
+##
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_source_link.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_source.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_node.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_sink.o)
-LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_read_list.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_machine.o)
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_frame_convert_sox.o)
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_frame_convert.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_frame.o)
 # utilities
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_audiostream.o)
-LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_list.o)
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_find_decoder.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_csv2avdict.o)
-LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_basename.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_dynload.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_path3.o)
-LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_wcstok.o)
-LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_strtok.o)
-LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_msvcrt.o)
 $(LIBFFSOX_O): $(LIBFFSOX_H)
 $(LIBFFSOX_A): $(LIBFFSOX_O)
-all: mux
-all: $(LIBFFSOX)
+all: $(PROGRAM)
+all: $(LIBFFSOX_A)
 ifeq (mingw,$(OS)) # {
-install: $(BINDIR)/mux.exe
+install: $(patsubst %,$(BINDIR)/%.exe,$(PROGRAM))
 else # } {
-install: $(BINDIR)/mux
+install: $(patsubst %,$(BINDIR)/%,$(PROGRAM))
 endif # }
-mux: $(LIBFFSOX_A)
+$(PROGRAM): $(LIBFFSOX_A)
+$(PROGRAM): $(LIBDIR)/libpbutil.a
 install: $(patsubst %.h,$(INCLUDEDIR)/%.h,$(LIBFFSOX_H))
 install: $(LIBDIR)/libffsox-2.a
 ifeq (mingw,$(OS)) # {
