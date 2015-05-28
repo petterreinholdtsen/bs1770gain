@@ -1,0 +1,182 @@
+/*
+ * lib1770_pre.c
+ * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * 
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301  USA
+ */
+#include <lib1770.h>
+
+#define LIB1770_GET(buf,offs,i) \
+    ((buf)[lib1770_get(offs,i)])
+#define LIB1770_GETX(buf,offs,i) \
+    LIB1770_GET(buf,offs,i)
+#define LIB1770_GETY(buf,offs,i) \
+    LIB1770_GET(buf,(offs)-6,i)
+#define LIB1770_GETZ(buf,offs,i) \
+    LIB1770_GET(buf,(offs)-3,i)
+
+static double lib1770_g[LIB1770_MAX_CHANNELS]={
+  1.0,
+  1.0,
+  1.0,
+  1.41,
+  1.41
+};
+
+static lib1770_biquad_t lib1770_f1_48000={
+#if defined (_MSC_VER) // {
+  48000,
+  -1.69065929318241,
+  0.73248077421585,
+  1.53512485958697,
+  -2.69169618940638,
+  1.19839281085285
+#else // } {
+  .samplerate=48000,
+  .a1=-1.69065929318241,
+  .a2=0.73248077421585,
+  .b0=1.53512485958697,
+  .b1=-2.69169618940638,
+  .b2=1.19839281085285
+#endif // }
+};
+
+static lib1770_biquad_t lib1770_f2_48000={
+#if defined (_MSC_VER) // {
+  48000,
+  -1.99004745483398,
+  0.99007225036621,
+  1.0,
+  -2.0,
+  1.0
+#else // } {
+  .samplerate=48000,
+  .a1=-1.99004745483398,
+  .a2=0.99007225036621,
+  .b0=1.0,
+  .b1=-2.0,
+  .b2=1.0
+#endif // }
+};
+
+inline int lib1770_get(int offs, int i)
+{
+  int j=offs+i;
+
+  return j<0?LIB1770_BUF_SIZE+j:j;
+}
+
+lib1770_pre_t *lib1770_pre_new(double samplerate, int channels)
+{
+  lib1770_pre_t *pre;
+  int i;
+
+  pre=LIB1770_CALLOC(1,sizeof *pre);
+  LIB1770_GOTO(NULL==pre,"allocation bs.1770 pre-filter",pre);
+
+  pre->block=NULL;
+
+  // set the sample frequency.
+  pre->samplerate=samplerate;
+  // set the number of channals.
+  pre->channels=channels;
+
+  // requantize the f1-filter according to the sample frequency.
+  pre->f1.samplerate=samplerate;
+  lib1770_biquad_requantize(&pre->f1,&lib1770_f1_48000);
+
+  // requantize the f2-filter according to the sample frequency.
+  pre->f2.samplerate=samplerate;
+  lib1770_biquad_requantize(&pre->f2,&lib1770_f2_48000);
+
+  // initialize the pre buffer.
+  for (i=0;i<LIB1770_MIN(channels,LIB1770_MAX_CHANNELS);++i)
+    LIB1770_GETX(pre->ring.buf[i],0,0)=0.0;
+
+  pre->ring.offs=1;
+  pre->ring.size=pre->ring.offs;
+
+  return pre;
+  //LIB1770_FREE(pre);
+pre:
+  return NULL;
+}
+
+void lib1770_pre_close(lib1770_pre_t *pre)
+{
+  LIB1770_FREE(pre);
+}
+
+void lib1770_pre_add_block(lib1770_pre_t *pre, lib1770_block_t *block)
+{
+  block->next=pre->block;
+  pre->block=block;
+}
+
+void lib1770_pre_add_sample(lib1770_pre_t *pre, lib1770_sample_t sample)
+{
+  lib1770_biquad_t *f1=&pre->f1;
+  lib1770_biquad_t *f2=&pre->f2;
+  double wssqs=0.0;
+  double *g=lib1770_g;
+  int channels=pre->channels;
+  int offs=pre->ring.offs;
+  int size=pre->ring.size;
+  int i;
+  lib1770_block_t *block;
+  double den_tmp;
+
+  for (i=0;i<LIB1770_MIN(channels,LIB1770_MAX_CHANNELS);++i) {
+    double *buf=pre->ring.buf[i];
+    double x=LIB1770_GETX(buf,offs,0)=LIB1770_DEN(sample[i]);
+
+    if (1<size) {
+      double y=LIB1770_GETY(buf,offs,0)=LIB1770_DEN(f1->b0*x
+        +f1->b1*LIB1770_GETX(buf,offs,-1)+f1->b2*LIB1770_GETX(buf,offs,-2)
+        -f1->a1*LIB1770_GETY(buf,offs,-1)-f1->a2*LIB1770_GETY(buf,offs,-2))
+        ;
+      double z=LIB1770_GETZ(buf,offs,0)=LIB1770_DEN(f2->b0*y
+        +f2->b1*LIB1770_GETY(buf,offs,-1)+f2->b2*LIB1770_GETY(buf,offs,-2)
+        -f2->a1*LIB1770_GETZ(buf,offs,-1)-f2->a2*LIB1770_GETZ(buf,offs,-2))
+        ;
+      wssqs+=(*g++)*z*z;
+      ++buf;
+    }
+  }
+
+  for (block=pre->block;NULL!=block;block=block->next)
+    lib1770_block_add_sqs(block,wssqs);
+
+  if (size<2)
+    ++pre->ring.size;
+
+  if (++pre->ring.offs==LIB1770_BUF_SIZE)
+    pre->ring.offs=0;
+}
+
+void lib1770_pre_flush(lib1770_pre_t *pre)
+{
+  int channels=pre->channels;
+  lib1770_sample_t sample;
+  int i;
+
+  if (1<pre->ring.size) {
+    for (i=0;i<channels;++i)
+      sample[i]=0.0;
+
+    lib1770_pre_add_sample(pre,sample);
+  }
+}
