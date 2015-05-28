@@ -19,34 +19,30 @@
  */
 #include <ffsox_priv.h>
 
-int ffsox_machine_create(machine_t *m, source_t *s)
+int ffsox_machine_run(machine_t *m, node_t *node)
 {
-  m->source=s;
-  m->node=&s->node;
+  int op;
 
-  return 0;
-}
+  m->node=node;
 
-void ffsox_machine_cleanup(machine_t *m)
-{
-}
+  while (NULL!=(node=m->node)) {
+//fprintf(stderr,"%s: RUN\n",node->vmt->name);
+    if ((op=node->vmt->run(node))<0) {
+      MESSAGE("running machine");
+      return op;
+    }
 
-int ffsox_machine_loop(machine_t *m)
-{
-  m->node=&m->source->node;
-
-  while (NULL!=m->node) {
-    switch (m->node->vmt->run(m->node)) {
-    case MACHINE_STAY:
-      break;
+    switch (op) {
     case MACHINE_PUSH:
-      m->node=m->node->vmt->next(m->node);
+//fprintf(stderr,"%s: PUSH\n",node->vmt->name);
+      m->node=node->vmt->next(node);
       break;
     case MACHINE_POP:
-      m->node=m->node->vmt->prev(m->node);
+//fprintf(stderr,"%s: POP\n",node->vmt->name);
+      m->node=node->vmt->prev(node);
       break;
     default:
-      MESSAGE("running node");
+      MESSAGE("illegal instruction");
       return -1;
     }
   }

@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
-#include <bs1770gain.h>
+#include <bs1770gain_priv.h>
 //#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -59,8 +59,8 @@ ifc:
   return;
 }
 
-int bs1770gain_tree_analyze(bs1770gain_tree_t *tree, const char *odirname,
-    bs1770gain_options_t *options)
+int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
+    const options_t *options)
 {
   int code=-1;
   const bs1770gain_tree_t *parent=tree->parent;
@@ -76,7 +76,7 @@ int bs1770gain_tree_analyze(bs1770gain_tree_t *tree, const char *odirname,
   while (0<tree->vmt->next(tree,options)) {
     switch (tree->state) {
     case BS1770GAIN_TREE_STATE_REG:
-      BS1770GAIN_GOTO(bs1770gain_tree_track(tree,odirname,options,album)<0,
+      BS1770GAIN_GOTO(bs1770gain_tree_track(tree,odirname,album,options)<0,
           "initializing track",track);
       break;
     case BS1770GAIN_TREE_STATE_DIR:
@@ -100,7 +100,7 @@ int bs1770gain_tree_analyze(bs1770gain_tree_t *tree, const char *odirname,
 
     for (track=album->head;NULL!=track;track=track->next) {
       fprintf(f,"  [%d/%d] \"%s\"",track->n,album->n,
-          bs1770gain_basename(track->ipath));
+          pbu_basename(track->ipath));
       fprintf(f,": ");
       fflush(f);
 
@@ -116,49 +116,23 @@ int bs1770gain_tree_analyze(bs1770gain_tree_t *tree, const char *odirname,
     fprintf(f,"  [ALBUM]:\n");
     bs1770gain_stats_print(album->stats,options);
 
-    if (NULL!=album->opath) {
+    if (NULL!=odirname) {
       label=BS1770GAIN_MODE_APPLY==options->mode?"transcoding":"remuxing";
 
       // print a massage.
-      if (NULL==ibasename||0==*ibasename)
-        fprintf(f,"%s ...\n",label);
-      else
-        fprintf(f,"%s \"%s\" ...\n",label,ibasename);
+      if (stdout==f) {
+        if (NULL==ibasename||0==*ibasename)
+          fprintf(f,"%s ...\n",label);
+        else
+          fprintf(f,"%s \"%s\" ...\n",label,ibasename);
+      }
 
       // mkdir.
-      bs1770gain_mkdir_dirname(album->opath);
+      pbu_mkdir(album->opath);
 
       // copy the tracks.
-      for (track=album->head;NULL!=track;track=track->next) {
-        // print a start massage.
-        if (stdout==f) {
-          fprintf(f,"  [%d/%d] \"%s\" ",track->n,album->n,
-              bs1770gain_basename(track->opath));
-          fflush(f);
-        }
-
-        if (0!=bs1770gain_same_file(track->ipath,track->opath)) {
-          if (stdout==f) {
-            fprintf(f,"... ");
-            fflush(f);
-          }
-
-          // copy the track.
-          if (bs1770gain_transcode(track->stats,album->stats,track->ipath,
-              track->opath,options)<0) {
-
-            if (stdout==f)
-              fprintf(f,"Error %s track.",label);
-          }
-          else {
-            // print a done massage.
-            if (stdout==f)
-              fprintf(f,"done.\n");
-          }
-        }
-        else if (stdout==f)
-          fprintf(f,"not written.\n");
-      }
+      for (track=album->head;NULL!=track;track=track->next)
+        bs1770gain_transcode(track,options);
 
       // copy "folder.jpg" if requested.
       if (0!=options->extensions&&NULL!=album->ipath)
@@ -180,43 +154,20 @@ album:
 }
 
 int bs1770gain_tree_track(bs1770gain_tree_t *tree, const char *odirname,
-    bs1770gain_options_t *options, bs1770gain_album_t *album)
+    bs1770gain_album_t *album, const bs1770gain_options_t *options)
 {
-  int code;
-  const char *ext;
-  char *path;
+  int code =-1;
 
-  code =-1;
-
-  if (NULL!=odirname) {
-    if (NULL!=options->format)
-      ext=options->format;
-    else if (0<=tree->vi)
-      ext=options->video_ext;
-    else if (BS1770GAIN_MODE_APPLY==options->mode)
-      ext=options->audio_ext;
-    else
-      ext=bs1770gain_ext(tree->path);
-
-    path=bs1770gain_opath(tree->basename,odirname,ext);
-    BS1770GAIN_GOTO(NULL==path,"extending output path",path);
-  }
-  else
-    path=NULL;
-
-  BS1770GAIN_GOTO(NULL==bs1770gain_track_new(tree->path,path,options,album),
+  BS1770GAIN_GOTO(NULL==bs1770gain_track_new(tree->path,album,options),
       "allocation album",track);
   code=0;
 // cleanup:
 track:
-  if (NULL!=path)
-    free(path);
-path:
   return code;
 }
 
 int bs1770gain_tree_album(const bs1770gain_tree_t *root, const char *odirname,
-    bs1770gain_options_t *options)
+    const bs1770gain_options_t *options)
 {
   int code;
   char *path;
@@ -225,7 +176,7 @@ int bs1770gain_tree_album(const bs1770gain_tree_t *root, const char *odirname,
   code =-1;
 
   if (NULL!=odirname) {
-    path=bs1770gain_extend_path(odirname,root->basename);
+    path=pbu_extend_path(odirname,root->basename);
     BS1770GAIN_GOTO(NULL==path,"extending output path",path);
   }
   else
@@ -259,7 +210,7 @@ static int bs1770gain_invalid_ext(const char *path)
 
   const char *ext,**ep;
 
-  ext=bs1770gain_ext(path);
+  ext=pbu_ext(path);
 
   for (ep=exts;NULL!=*ep;++ep) {
     if (0==strcasecmp(*ep,ext))
@@ -317,9 +268,9 @@ int bs1770gain_tree_stat(bs1770gain_tree_t *tree, char *path,
   }
 
   tree->path=path;
-  tree->basename=bs1770gain_basename(path);
+  tree->basename=pbu_basename(path);
 #if defined (WIN32) // {
-  wpath=bs1770gain_s2w(path);
+  wpath=pbu_s2w(path);
 
   if (NULL==wpath)
     tree->state=BS1770GAIN_TREE_STATE_INV;
@@ -332,7 +283,7 @@ int bs1770gain_tree_stat(bs1770gain_tree_t *tree, char *path,
     tree->state=BS1770GAIN_TREE_STATE_INV;
 #endif // }
   else if (S_ISREG(buf.st_mode)) {
-    if (bs1770gain_invalid_ext(bs1770gain_ext(tree->path)))
+    if (bs1770gain_invalid_ext(pbu_ext(tree->path)))
       tree->state=BS1770GAIN_TREE_STATE_INV;
     else if (bs1770gain_tree_multimedia(tree,options))
       tree->state=BS1770GAIN_TREE_STATE_REG;
@@ -430,7 +381,7 @@ int bs1770gain_tree_dir_next(bs1770gain_tree_t *tree,
   while (NULL!=(e=readdir(tree->dir.d))) {
     if (0==strcmp(".",e->d_name)||0==strcmp("..",e->d_name))
       continue;
-    else if (NULL==(tree->dir.path=bs1770gain_extend_path(tree->dir.root,
+    else if (NULL==(tree->dir.path=pbu_extend_path(tree->dir.root,
           e->d_name)))
       continue;
     else if (0<bs1770gain_tree_stat(tree,tree->dir.path,options))

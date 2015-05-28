@@ -1,6 +1,6 @@
 /*
- * ffsox_strtok.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * ffsox_read.c
+ * Copyright (C) 2014, 2015 Peter Belkner <pbelkner@snafu.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -17,33 +17,26 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
-#if defined (WIN32) // {
 #include <ffsox.h>
 
-static char *ffsox_strtok(char *str, const char *delim, char **saveptr)
+AVCodec *ffsox_find_decoder(enum AVCodecID id)
 {
-  return strtok(str,delim);
-}
+  AVCodec *p;
 
-char *ffsox_strtok_r(char *str, const char *delim, char **saveptr)
-{
-  typedef typeof (strtok_s) *strtok_s_t;
-  static strtok_s_t strtok_s=NULL;
-  HANDLE hLib;
-
-  if (NULL==strtok_s) {
-    if (NULL==(hLib=ffsox_msvcrt()))
-      goto strtok;
-
-    if (NULL==(strtok_s=(strtok_s_t)GetProcAddress(hLib,"strtok_s")))
-      goto strtok;
-
-    goto strtok_s;
-  strtok:
-    strtok_s=ffsox_strtok;
-    goto strtok_s;
+  switch (id) {
+    case AV_CODEC_ID_MP1:
+      p=avcodec_find_decoder_by_name("mp1float");
+      break;
+    case AV_CODEC_ID_MP2:
+      p=avcodec_find_decoder_by_name("mp2float");
+      break;
+    case AV_CODEC_ID_MP3:
+      p=avcodec_find_decoder_by_name("mp3float");
+      break;
+    default:
+      p=NULL;
+      break;
   }
-strtok_s:
-  return strtok_s(str,delim,saveptr);
+
+  return NULL==p?avcodec_find_decoder(id):p;
 }
-#endif // }

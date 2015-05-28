@@ -19,22 +19,46 @@
  */
 #include <ffsox.h>
 
+static int ffsox_codec_blacklist(int codec_id)
+{
+  switch (codec_id) {
+#if 0 // {
+  case AV_CODEC_ID_MJPEG:
+  case AV_CODEC_ID_MJPEGB:
+  case AV_CODEC_ID_LJPEG:
+  case AV_CODEC_ID_JPEGLS:
+  case AV_CODEC_ID_JPEG2000:
+  case AV_CODEC_ID_SMVJPEG:
+  case AV_CODEC_ID_PNG:
+  case AV_CODEC_ID_GIF:
+    return 1;
+#endif // }
+  default:
+    return 0;
+  }
+}
+
 int ffsox_audiostream(AVFormatContext *ic, int *aip, int *vip)
 {
-  AVStream *is;
+  AVCodecContext *cc;
   int i,ai,vi;
 
   ai=-1;
   vi=-1;
 
   for (i=0;i<ic->nb_streams;++i) {
-    switch ((is=ic->streams[i])->codec->codec_type) {
+    cc=ic->streams[i]->codec;
+
+    if (ffsox_codec_blacklist(cc->codec_id))
+      continue;
+
+    switch (cc->codec_type) {
       case AVMEDIA_TYPE_AUDIO:
         if (NULL!=aip&&0<=*aip) {
           if (*aip==i)
             ai=i;
         }
-        else if (ai<0||2==is->codec->channels)
+        else if (ai<0||2==cc->channels)
           ai=i;
 
         break;

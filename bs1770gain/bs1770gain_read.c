@@ -69,7 +69,7 @@ bs1770gain_read_t *bs1770gain_read_new(const bs1770gain_options_t *options,
   adc->request_channel_layout=AV_CH_LAYOUT_STEREO;
   adc->request_sample_fmt=AV_SAMPLE_FMT_FLT;
 
-  BS1770GAIN_GOTO(NULL==(ad=bs1770gain_find_decoder(adc->codec_id)),
+  BS1770GAIN_GOTO(NULL==(ad=ffsox_find_decoder(adc->codec_id)),
       "finding audio decoder",find);
 
   if (AV_CODEC_ID_AC3==adc->codec_id) {

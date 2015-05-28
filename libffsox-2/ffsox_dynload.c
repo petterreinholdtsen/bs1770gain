@@ -123,7 +123,7 @@ HMODULE ffsox_loadlib(const wchar_t *root, const char *dirname,
     if (NULL==(path=_wcsdup(path)))
       goto path;
 
-    cur=ffsox_wcstok_r(path,L";",&next);
+    cur=wcstok_r(path,L";",&next);
 
     while (NULL!=cur) {
       if (NULL!=(hLib=ffsox_loadlib_try(cur,NULL,basename))) {
@@ -131,7 +131,7 @@ HMODULE ffsox_loadlib(const wchar_t *root, const char *dirname,
         goto found; 
       }
 
-      cur=ffsox_wcstok_r(NULL,L";",&next);
+      cur=wcstok_r(NULL,L";",&next);
     }
 
     free(path);
@@ -367,6 +367,12 @@ static int ffsox_dynload_libsox(void *lib)
   FFSOX_BIND(lib,&ffsox_libsox.sox_effect_options,"sox_effect_options");
   FFSOX_BIND(lib,&ffsox_libsox.sox_add_effect,"sox_add_effect");
   FFSOX_BIND(lib,&ffsox_libsox.sox_flow_effects,"sox_flow_effects");
+  FFSOX_BIND(lib,&ffsox_libsox.sox_open_read,"sox_open_read");
+  FFSOX_BIND(lib,&ffsox_libsox.sox_read,"sox_read");
+  FFSOX_BIND(lib,&ffsox_libsox.sox_open_write,"sox_open_write");
+  FFSOX_BIND(lib,&ffsox_libsox.sox_write,"sox_write");
+  FFSOX_BIND(lib,&ffsox_libsox.sox_close,"sox_close");
+  FFSOX_BIND(lib,&ffsox_libsox.sox_init_encodinginfo,"sox_init_encodinginfo");
 
   code=0;
 loadlib:

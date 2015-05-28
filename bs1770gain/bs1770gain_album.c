@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
-#include <bs1770gain.h>
+#include <bs1770gain_priv.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -129,7 +129,7 @@ void bs1770gain_album_copy_file(const bs1770gain_album_t *album,
     goto dst;
 
   // copy the file.
-  bs1770gain_copy_file(src,dst);
+  pbu_copy_file(src,dst);
   free(dst);
 dst:
 stat:
@@ -139,8 +139,8 @@ src:
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-bs1770gain_track_t *bs1770gain_track_new(const char *ipath, const char *opath,
-    const bs1770gain_options_t *options, bs1770gain_album_t *album)
+bs1770gain_track_t *bs1770gain_track_new(const char *ipath,
+    bs1770gain_album_t *album, const bs1770gain_options_t *options)
 {
   bs1770gain_track_t *track;
   bs1770gain_track_t *prev,*cur;
@@ -149,17 +149,11 @@ bs1770gain_track_t *bs1770gain_track_new(const char *ipath, const char *opath,
       "allocation track",track);
   BS1770GAIN_GOTO(NULL==(track->ipath=strdup(ipath)),
       "copying input path ",ipath);
-
-  if (NULL!=opath) {
-    BS1770GAIN_GOTO(NULL==(track->opath=strdup(opath)),
-        "copying output path ",opath);
-  }
-  else
-    track->opath=NULL;
-
   BS1770GAIN_GOTO(NULL==(track->stats=bs1770gain_stats_new(options)),
       "allocation album",stats);
   
+  track->opath=NULL;
+  track->album=album;
   track->n=++album->n;
 
   prev=NULL;
@@ -186,9 +180,6 @@ bs1770gain_track_t *bs1770gain_track_new(const char *ipath, const char *opath,
 // cleanup:
   bs1770gain_stats_close(track->stats);
 stats:
-  if (NULL!=track->opath)
-    free(track->opath);
-opath:
   free(track->ipath);
 ipath:
   free(track);
@@ -205,4 +196,33 @@ void bs1770gain_track_close(bs1770gain_track_t *track)
 
   free(track->ipath);
   free(track);
+}
+
+int bs1770gain_track_alloc_output(track_t *track, const source_t *si,
+    const options_t *options)
+{
+  int code=-1;
+  const char *odirname=track->album->opath;
+  AVDictionaryEntry *de=av_dict_get(si->f.fc->metadata,"TITLE",NULL,0);
+  const char *ext;
+
+  if (NULL!=options->format)
+    ext=options->format;
+  else if (0<=si->vi)
+    ext=options->video_ext;
+  else if (BS1770GAIN_MODE_APPLY==options->mode)
+    ext=options->audio_ext;
+  else
+    ext=pbu_ext(track->ipath);
+
+  if (0==options->extensions||NULL==de)
+    track->opath=bs1770gain_opath(track->ipath,odirname,ext,options);
+  else
+    track->opath=bs1770gain_opathx(track->n,de->value,odirname,ext,options);
+
+  BS1770GAIN_GOTO(NULL==track->opath,"allocating output path",path);
+  code=0;
+// cleanup:
+path:
+  return code;
 }

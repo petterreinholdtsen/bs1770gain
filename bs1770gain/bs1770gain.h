@@ -27,10 +27,7 @@ extern "C" {
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-#define BS1770GAIN_MIN(x,y) \
-  ((x)<(y)?(x):(y))
-#define BS1770GAIN_MESSAGE(m) \
-  FFSOX_MESSAGE(m)
+#define BS1770GAIN_MESSAGE(m)   PBU_MESSAGE(m)
 
 #define BS1770GAIN_GOTO(condition,message,label) do { \
   if (condition) { \
@@ -50,36 +47,23 @@ typedef struct bs1770gain_stats bs1770gain_stats_t;
 typedef struct bs1770gain_album bs1770gain_album_t;
 typedef struct bs1770gain_track bs1770gain_track_t;
 typedef struct bs1770gain_read bs1770gain_read_t;
-typedef struct bs1770gain_convert bs1770gain_convert_t;
 
 ///////////////////////////////////////////////////////////////////////////////
-const char *bs1770gain_basename(const char *path);
-const char *bs1770gain_ext(const char *path);
-void bs1770gain_mkdir_dirname(char *path);
-char *bs1770gain_extend_path(const char *dirname, const char *basename);
 char *bs1770gain_opath(const char *ipath, const char *odirname,
-    const char *oext);
+    const char *oext, const bs1770gain_options_t *options);
+char *bs1770gain_opathx(int n, const char *title, const char *odirname,
+    const char *oext, const bs1770gain_options_t *options);
 
 int64_t bs1770gain_seek(AVFormatContext *ifc, const bs1770gain_options_t *o);
 int bs1770gain_sox(const bs1770gain_options_t *options, const char *path,
     bs1770gain_stats_t *stats);
 
-AVCodec *bs1770gain_find_decoder(enum AVCodecID id);
-
-// parse time in microseconds.
-int64_t bs1770gain_parse_time(const char *s);
 int bs1770gain_oor(AVPacket *p, const AVFormatContext *ifc,
     const bs1770gain_options_t *options);
-#if defined (WIN32) // {
-wchar_t *bs1770gain_s2w(const char *s);
-int bs1770gain_copy_file(const wchar_t *src, const wchar_t *dst);
-#else // } {
-int bs1770gain_copy_file(const char *src, const char *dst);
-#endif // }
-int bs1770gain_same_file(const char *path1, const char *path2);
-
-int bs1770gain_transcode(bs1770gain_stats_t *track, bs1770gain_stats_t *album,
-    const char *ipath, const char *opath, const bs1770gain_options_t *options);
+int bs1770gain_transcode(bs1770gain_track_t *track,
+    const bs1770gain_options_t *options);
+// parse time in microseconds.
+int64_t bs1770gain_parse_time(const char *s);
 
 ///////////////////////////////////////////////////////////////////////////////
 // *must* begin with 0 (defines default)
@@ -185,11 +169,11 @@ bs1770gain_tree_t *bs1770gain_tree_init(bs1770gain_tree_t *tree,
     const bs1770gain_tree_t *parent);
 
 int bs1770gain_tree_analyze(bs1770gain_tree_t *tree, const char *odirname,
-    bs1770gain_options_t *options);
-int bs1770gain_tree_track(bs1770gain_tree_t *fs, const char *odirname,
-    bs1770gain_options_t *options, bs1770gain_album_t *album);
+    const bs1770gain_options_t *options);
+int bs1770gain_tree_track(bs1770gain_tree_t *tree, const char *odirname,
+    bs1770gain_album_t *album, const bs1770gain_options_t *options);
 int bs1770gain_tree_album(const bs1770gain_tree_t *root, const char *odirname,
-    bs1770gain_options_t *options);
+    const bs1770gain_options_t *options);
 
 int bs1770gain_tree_stat(bs1770gain_tree_t *tree, char *path,
     const bs1770gain_options_t *options);
@@ -223,7 +207,7 @@ double bs1770gain_stats_get_loudness(const bs1770gain_stats_t *stats,
     const bs1770gain_options_t *options);
 void bs1770gain_stats_merge(bs1770gain_stats_t *lhs, bs1770gain_stats_t *rhs);
 void bs1770gain_stats_print(bs1770gain_stats_t *stats,
-    bs1770gain_options_t *options);
+    const bs1770gain_options_t *options);
 
 ///////////////////////////////////////////////////////////////////////////////
 struct bs1770gain_head {
@@ -269,9 +253,12 @@ struct bs1770gain_track {
   bs1770gain_track_t *next;
 };
 
-bs1770gain_track_t *bs1770gain_track_new(const char *ipath, const char *opath,
-    const bs1770gain_options_t *options, bs1770gain_album_t *album);
+bs1770gain_track_t *bs1770gain_track_new(const char *ipath,
+    bs1770gain_album_t *album, const bs1770gain_options_t *options);
 void bs1770gain_track_close(bs1770gain_track_t *track);
+
+int bs1770gain_track_alloc_output(bs1770gain_track_t *track,
+    const ffsox_source_t *si, const bs1770gain_options_t *options);
 
 ///////////////////////////////////////////////////////////////////////////////
 typedef int8_t bs1770gain_s8_t;
@@ -352,31 +339,6 @@ void bs1770gain_read_reset(bs1770gain_read_t *read);
 
 size_t bs1770gain_read_convert_frame(bs1770gain_read_t *read,
     sox_sample_t *obuf, size_t size);
-
-///////////////////////////////////////////////////////////////////////////////
-struct bs1770gain_convert {
-  double q;
-
-  struct {
-    AVFormatContext *fc;
-    int ai;
-    AVFrame *frame;
-  } i;
-
-  struct {
-    AVFormatContext *fc;
-    int ai;
-    AVFrame *frame;
-  } o;
-};
-
-bs1770gain_convert_t *bs1770gain_convert_new(AVFormatContext *ifc, int iai,
-    AVFormatContext *ofc, int oai, const bs1770gain_options_t *options,
-    const bs1770gain_stats_t *track, const bs1770gain_stats_t *album);
-void bs1770gain_convert_close(bs1770gain_convert_t *convert);
-
-int bs1770gain_convert_packet(bs1770gain_convert_t *convert, int *got_frame,
-    AVPacket *p);
 
 ///////////////////////////////////////////////////////////////////////////////
 sox_effect_handler_t const *bs1770gain_read_handler(void);

@@ -114,6 +114,12 @@ struct ffsox_libsox {
   typeof (sox_effect_options) *sox_effect_options;
   typeof (sox_add_effect) *sox_add_effect;
   typeof (sox_flow_effects) *sox_flow_effects;
+  typeof (sox_open_read) *sox_open_read;
+  typeof (sox_read) *sox_read;
+  typeof (sox_open_write) *sox_open_write;
+  typeof (sox_write) *sox_write;
+  typeof (sox_close) *sox_close;
+  typeof (sox_init_encodinginfo) *sox_init_encodinginfo;
 };
 
 extern ffsox_libsox_t ffsox_libsox;
@@ -172,7 +178,7 @@ int ffsox_dynload(const char *dirname);
 #define av_read_frame (*ffsox_avformat.av_read_frame)
 #define avformat_close_input (*ffsox_avformat.avformat_close_input)
 #define avformat_alloc_output_context2 \
-  (*ffsox_avformat.avformat_alloc_output_context2)
+    (*ffsox_avformat.avformat_alloc_output_context2)
 #define avformat_free_context (*ffsox_avformat.avformat_free_context)
 #define avformat_new_stream (*ffsox_avformat.avformat_new_stream)
 #define avio_open (*ffsox_avformat.avio_open)
@@ -196,6 +202,12 @@ int ffsox_dynload(const char *dirname);
 #define sox_effect_options (*ffsox_libsox.sox_effect_options)
 #define sox_add_effect (*ffsox_libsox.sox_add_effect)
 #define sox_flow_effects (*ffsox_libsox.sox_flow_effects)
+#define sox_open_read (*ffsox_libsox.sox_open_read)
+#define sox_read (*ffsox_libsox.sox_read)
+#define sox_open_write (*ffsox_libsox.sox_open_write)
+#define sox_write (*ffsox_libsox.sox_write)
+#define sox_close (*ffsox_libsox.sox_close)
+#define sox_init_encodinginfo (*ffsox_libsox.sox_init_encodinginfo)
 #endif // }
 #endif // }
 

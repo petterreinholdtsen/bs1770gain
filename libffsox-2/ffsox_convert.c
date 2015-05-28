@@ -1,5 +1,5 @@
 /*
- * ffsox_wstrtok.c
+ * ffsox_convert.c
  * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
  *
  * This library is free software; you can redistribute it and/or
@@ -17,36 +17,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
-#if defined (WIN32) // {
-#include <ffsox.h>
+#include <ffsox_priv.h>
 
-static wchar_t *ffsox_wcstok(wchar_t *str, const wchar_t *delim,
-    wchar_t **saveptr)
+void ffsox_convert_setup(convert_t *convert, frame_t *fr, frame_t *fw)
 {
-  return wcstok(str,delim);
+  int nb_samples1,nb_samples2;
+
+  convert->fr=fr;
+  convert->fw=fw;
+  convert->channels=av_frame_get_channels(fr->frame);
+
+  nb_samples1=fr->frame->nb_samples-fr->nb_samples.frame;
+  nb_samples2=fw->frame->nb_samples-fw->nb_samples.frame;
+  convert->nb_samples=PBU_MIN(nb_samples1,nb_samples2);
 }
-
-wchar_t *ffsox_wcstok_r(wchar_t *str, const wchar_t *delim,
-    wchar_t **saveptr)
-{
-  typedef typeof (wcstok_s) *wcstok_s_t;
-  static wcstok_s_t wcstok_s=NULL;
-  HANDLE hLib;
-
-  if (NULL==wcstok_s) {
-    if (NULL==(hLib=ffsox_msvcrt()))
-      goto wcstok;
-
-    if (NULL==(wcstok_s=(wcstok_s_t)GetProcAddress(hLib,"wcstok_s")))
-      goto wcstok;
-
-    goto wcstok_s;
-  wcstok:
-    wcstok_s=ffsox_wcstok;
-    goto wcstok_s;
-  }
-wcstok_s:
-  return wcstok_s(str,delim,saveptr);
-}
-
-#endif // }

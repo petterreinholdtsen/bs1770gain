@@ -1,5 +1,5 @@
 /*
- * ffsox_basename.c
+ * ffsox_packet_consumer_list.c
  * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
  *
  * This library is free software; you can redistribute it and/or
@@ -19,45 +19,8 @@
  */
 #include <ffsox_priv.h>
 
-static read_vmt_t vmt;
-
-int ffsox_read_create(read_t *ni, ffsox_source_t *si, int stream_index)
+void ffsox_packet_consumer_list_free(packet_consumer_list_t *n)
 {
-  if (ffsox_node_create(&ni->node)<0) {
-    MESSAGE("creating node");
-    goto base;
-  }
-
-  ni->vmt=ffsox_read_get_vmt();
-  ni->s.fc=si->f.fc;
-  ni->s.stream_index=stream_index;
-  ni->s.st=ni->s.fc->streams[stream_index];
-  ni->s.cc=ni->s.st->codec;
-  ni->s.codec=ni->s.cc->codec;
-  ni->write=NULL;
-  ni->prev=NULL;
-
-  return 0;
-base:
-  return -1;
-}
-
-////////
-static void read_set_packet(read_t *n, AVPacket *pkt)
-{
-}
-
-const read_vmt_t *ffsox_read_get_vmt(void)
-{
-  const node_vmt_t *parent;
-
-  if (NULL==vmt.parent) {
-    parent=ffsox_node_get_vmt();
-    vmt.node=*parent;
-    vmt.parent=parent;
-    vmt.name="read";
-    vmt.set_packet=read_set_packet;
-  }
-
-  return &vmt;
+  ffsox_node_destroy(&n->consumer->node);
+  free(n);
 }

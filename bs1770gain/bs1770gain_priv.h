@@ -1,5 +1,5 @@
 /*
- * bs1770gain_copy_file.c
+ * bs1770gain.h
  * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
  *
  * This library is free software; you can redistribute it and/or
@@ -17,58 +17,27 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
+#ifndef __BS1770GAIN_PRIV_H__
+#define __BS1770GAIN_PRIV_H__ // {
+#include <ffsox_priv.h>
 #include <bs1770gain.h>
+#ifdef __cpluplus
+extern "C" {
+#endif
 
-#if defined (WIN32) // {
-#include <windows.h>
+///////////////////////////////////////////////////////////////////////////////
+typedef bs1770gain_block_options_t block_options_t;
+typedef bs1770gain_options_t options_t;
+typedef bs1770gain_tag_t tag_t;
+typedef bs1770gain_tree_vmt_t tree_vmt_t;
+typedef bs1770gain_tree_t tree_t;
+typedef bs1770gain_head_t head_t;
+typedef bs1770gain_stats_t stats_t;
+typedef bs1770gain_album_t album_t;
+typedef bs1770gain_track_t track_t;
+//typedef bs1770gain_read_t read_t;
 
-int bs1770gain_copy_file(const wchar_t *src, const wchar_t *dst)
-{
-  BOOL b;
-  
-  b=CopyFileW(
-    src,  // _In_  LPCTSTR lpExistingFileName,
-    dst,  // _In_  LPCTSTR lpNewFileName,
-    1     // _In_  BOOL bFailIfExists
-  );
-
-  return b?0:-1;
+#ifdef __cpluplus
 }
-#else // } {
-int bs1770gain_copy_file(const char *src, const char *dst)
-{
-  enum { SIZE=4096 };
-  int code=-1;
-  FILE *f1,*f2;
-  void *buf;
-  size_t size;
-
-  if (NULL==(f1=fopen(src,"rb")))
-    goto f1;
-
-  if (NULL==(f2=fopen(src,"wb")))
-    goto f2;
-
-  if (NULL==(buf=malloc(SIZE)))
-    goto buf;
-
-  for (;;) {
-    if ((size=fread(buf,SIZE,1,f1))<SIZE) {
-      if (feof(f1))
-        break;
-      else
-        goto read;
-    }
-  }
-
-  code=0;
-read:
-  free(buf);
-buf:
-  fclose(f2);
-f2:
-  fclose(f1);
-f1:
-  return code;
-}
+#endif
 #endif // }
