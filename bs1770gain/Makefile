@@ -72,8 +72,8 @@ endif
 $(LIBBS1770GAIN_O): $(BS1770GAIN_H)
 $(LIBBS1770GAIN): $(LIBBS1770GAIN_O)
 bs1770gain: $(LIBBS1770GAIN)
-bs1770gain: $(LIBDIR)/libffsox-2.a
-bs1770gain: $(LIBDIR)/lib1770-2.a
+$(LIBBS1770GAIN_O) bs1770gain: $(LIBDIR)/libffsox-2.a
+$(LIBBS1770GAIN_O) bs1770gain: $(LIBDIR)/lib1770-2.a
 install: all
 ifeq (mingw,$(OS))
 install: $(patsubst %,$(BINDIR)/%.exe,$(ALL))
