@@ -84,6 +84,14 @@ loudness of audio and video files to the same level.</b>
 
 <p><div class="history"><table style="width:100%">
 <tr>
+  <td valign="top">2014-12-11</td>
+  <td valign="top">0.2.1</td>
+  <td valign="top"><ul>
+    <li>Fixed a critical bug breaking the whole program (thanks to Michal &Scaron;mucr).
+    <li>Improved diagnostic of erroneous command line.
+  </ul></td>
+</tr>
+<tr>
   <td valign="top">2014-12-07</td>
   <td valign="top">0.2.0</td>
   <td valign="top">Added <a href="#experimental">experimental options</a>.</td>
@@ -624,9 +632,9 @@ Options:
    q=0.0 (album gain) ... 1.0 (track gain),
    default:  0.0 (album gain)
  --audio &lt;index&gt;:  select audio index (corresponds to
-   [0:&lt;index&gt;] in FFmpeg listing, cf. -l/--list option)
+   #0:&lt;index&gt; in FFmpeg listing, cf. -l/--list option)
  --video &lt;index&gt;:  select video index (corresponds to
-   [0:&lt;index&gt;] in FFmpeg listing, cf. -l/--list option)
+   #0:&lt;index&gt; in FFmpeg listing, cf. -l/--list option)
  --drc &lt;drc&gt;:  set AC3 dynamic range compression (DRC)
  --format &lt;format&gt;:  convert to format
  --loglevel &lt;level&gt;:  set loglevel,
@@ -715,9 +723,9 @@ done.</pre></blockquote>
 <blockquote><pre>$ <b>bs1770gain ~/ebu-loudness-test-setv03/*3342*.wav -r</b>
 analyzing ...
   [1/6] "seq-3341-2011-8_seq-3342-6-24bit-v02.wav":
-      range:  18.3 LUFS
+      range:  15.2 LUFS
   [2/6] "seq-3341-7_seq-3342-5-24bit.wav":
-      range:  6.2 LUFS
+      range:  4.8 LUFS
   [3/6] "seq-3342-1-16bit.wav":
       range:  10.0 LUFS
   [4/6] "seq-3342-2-16bit.wav":
@@ -727,8 +735,9 @@ analyzing ...
   [6/6] "seq-3342-4-16bit.wav":
       range:  15.0 LUFS
   [ALBUM]:
-      range:  19.9 LUFS
-done.</pre></blockquote>
+      range:  16.5 LUFS
+done.
+</pre></blockquote>
 </ul>
 
 </body>

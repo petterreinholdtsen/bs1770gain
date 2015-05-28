@@ -143,7 +143,7 @@ enum {
   ////////////////
   APPLY,
   DRC,
-  EXTENSION,
+  FORMAT,
   LOGLEVEL,
   LEVEL,
   PREAMP,
@@ -197,7 +197,7 @@ static struct option bs1770gain_opts[]={
   { name:"apply",has_arg:required_argument,flag:NULL,val:APPLY },
   { name:"audio",has_arg:required_argument,flag:NULL,val:AUDIO },
   { name:"drc",has_arg:required_argument,flag:NULL,val:DRC },
-  { name:"format",has_arg:required_argument,flag:NULL,val:EXTENSION },
+  { name:"format",has_arg:required_argument,flag:NULL,val:FORMAT },
   { name:"loglevel",has_arg:required_argument,flag:NULL,val:LOGLEVEL },
   { name:"level",has_arg:required_argument,flag:NULL,val:LEVEL },
   { name:"preamp",has_arg:required_argument,flag:NULL,val:PREAMP },
@@ -289,6 +289,8 @@ int main(int argc, char **argv)
     switch (c) {
     ///////////////////////////////////////////////////////////////////////////
     case '?':
+      fprintf(stderr,"Error: Option \"%s\" not recognizsed.\n",argv[optind-1]);
+      fprintf(stderr,"\n");
       bs1770gain_usage(argv,-1);
       break;
     /// with argument /////////////////////////////////////////////////////////
@@ -324,8 +326,12 @@ int main(int argc, char **argv)
         options.shortterm.maximum=1;
         options.method=BS1770GAIN_METHOD_SHORTTERM_MAXIMUM;
       }
-      else
+      else {
+        fprintf(stderr,"Error: Method \"%s\" not recognized.\n",optarg);
+        fprintf(stderr,"\n");
         bs1770gain_usage(argv,-1);
+      }
+
       break;
     /// without argument //////////////////////////////////////////////////////
     case 'a':
@@ -338,6 +344,27 @@ int main(int argc, char **argv)
     case 'l':
       options.dump=1;
       break;
+#if defined (BS1770GAIN_PROPERTY) // {
+    case 'i':
+      //options.momentary.mean=1;
+      options.momentary.property|=
+      break;
+    case 's':
+      options.shortterm.maximum=1;
+      break;
+    case 'm':
+      options.momentary.maximum=1;
+      break;
+    case 'r':
+      options.shortterm.range=1;
+      break;
+    case 'p':
+      options.samplepeak=1;
+      break;
+    case 't':
+      options.truepeak=1;
+      break;
+#else // } {
     case 'i':
       options.momentary.mean=1;
       break;
@@ -356,6 +383,7 @@ int main(int argc, char **argv)
     case 't':
       options.truepeak=1;
       break;
+#endif // }
     case 'x':
       options.extensions=1;
       break;
@@ -373,7 +401,7 @@ int main(int argc, char **argv)
     case DRC:
       options.drc=atof(optarg);
       break;
-    case EXTENSION:
+    case FORMAT:
       options.format=optarg;
       break;
     case LOGLEVEL:
@@ -437,8 +465,11 @@ int main(int argc, char **argv)
 
       if (0.0<=overlap&&overlap<100.0)
         options.momentary.partition=floor(100.0/(100.0-overlap)+0.5);
-      else
+      else {
+        fprintf(stderr,"Error: Overlap out of range [0..100).\n");
+        fprintf(stderr,"\n");
         bs1770gain_usage(argv,-1);
+      }
 
       break;
     case MOMENTARY_MEAN_GATE:
@@ -466,8 +497,11 @@ int main(int argc, char **argv)
 
       if (0.0<=overlap&&overlap<100.0)
         options.shortterm.partition=floor(100.0/(100.0-overlap)+0.5);
-      else
+      else {
+        fprintf(stderr,"Error: Overlap out of range [0..100).\n");
+        fprintf(stderr,"\n");
         bs1770gain_usage(argv,-1);
+      }
 
       break;
     case SHORTTERM_MEAN_GATE:
@@ -488,11 +522,17 @@ int main(int argc, char **argv)
     }
   }
 
-  if (argc==optind)
+  if (0!=options.method&&NULL==odirname) {
+    fprintf(stderr,"Error: \"-u/--use\" requieres \"-o/--output\".\n");
+    fprintf(stderr,"\n");
     bs1770gain_usage(argv,-1);
+  }
 
-  if (0!=options.method&&NULL==odirname)
-    bs1770gain_usage(argv,-1);
+  if (BS1770GAIN_MODE_APPLY==options.mode&&NULL!=options.format) {
+    fprintf(stderr,"Warning: Format \"%s\" potentially not available when\n"
+        "  applying the gain.\n",options.format);
+    options.format=NULL;
+  }
 
   if (options.momentary.partition<1||options.shortterm.partition<1)
     bs1770gain_usage(argv,-1);
@@ -506,6 +546,9 @@ int main(int argc, char **argv)
           <=options.shortterm.range_lower_bound
       ||1.0<=options.shortterm.range_upper_bound) {
 
+    fprintf(stderr,"Error: Range bounds out of range "
+        " 0.0 < lower < upper < 1.0.\n");
+    fprintf(stderr,"\n");
     bs1770gain_usage(argv,-1);
   }
 
@@ -546,6 +589,10 @@ int main(int argc, char **argv)
   t1=clock();
   bs1770gain_tree_analyze(&root,odirname,&options);
   t2=clock();
+
+  if (0==root.cli.count)
+    fprintf(stderr,"Warning: No valid input files/folders given.\n");
+
   root.vmt->cleanup(&root);
 
   if (options.time)
