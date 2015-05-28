@@ -13,7 +13,10 @@ CFLAGS+=-Werror
 #LDLIBS+=-lavformat
 #LDLIBS+=-lavcodec
 #LDLIBS+=-lavutil
-ifeq (linux,$(OS)) # {
+ifeq (mingw,$(OS)) # {
+LDLIBS+=-lole32
+LDLIBS+=-lksguid
+else
 LDLIBS+=-lm
 LDLIBS+=-ldl
 endif # }
@@ -22,7 +25,8 @@ PROGRAM+=mux1
 PROGRAM+=mux2
 PROGRAM+=mux3
 ifeq (mingw,$(OS))
-PROGRAM+=ffsox
+PROGRAM+=wasapi
+PROGRAM+=player
 endif
 
 LIBFFSOX_H+=$(INCLUDEDIR)/pbutil.h
@@ -33,6 +37,7 @@ LIBFFSOX_H+=ffsox_dynload.h
 
 LIBFFSOX_A=libffsox-2.a
 ##
+LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_audio_player.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_analyze.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_collect.o)
 LIBFFSOX_O+=$(LIBFFSOX_A)(ffsox_aggregate.o)
@@ -75,7 +80,6 @@ install: $(patsubst %,$(BINDIR)/%,$(PROGRAM))
 endif # }
 $(PROGRAM): $(LIBFFSOX_A)
 mux3: $(LIBDIR)/lib1770-2.a
-ffsox: LDLIBS+=-lole32 -lksguid
 $(PROGRAM): $(LIBDIR)/libpbutil.a
 install: $(patsubst %.h,$(INCLUDEDIR)/%.h,$(LIBFFSOX_H))
 install: $(LIBDIR)/libffsox-2.a

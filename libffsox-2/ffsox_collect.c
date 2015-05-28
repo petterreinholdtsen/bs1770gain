@@ -133,6 +133,9 @@ void ffsox_collect_truepeak(void *data, double x)
   aggregate_t *aggregate=collect->aggregate;
 
   if (0!=(AGGREGATE_TRUEPEAK&aggregate->flags)) {
+    if (x<0)
+      x=-x;
+
     x*=collect->invscale;
 
     if (aggregate->truepeak<x)
