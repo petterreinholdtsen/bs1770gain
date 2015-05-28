@@ -49,8 +49,8 @@ along with this program. If not, see
     target="_blank">http://www.gnu.org/licenses/</a>&gt;.
 </div>
 
-<p><b>BS1770GAIN is a loudness scanner compliant to ITU BS.1770 and its
-flavours EBU R128, ATCS A/85, and ReplayGain 2.0. It helps normalizing the
+<p><b>BS1770GAIN is a loudness scanner compliant with ITU-R BS.1770 and its
+flavors EBU R128, ATSC A/85, and ReplayGain 2.0. It helps normalizing the
 loudness of audio and video files to the same level.</b>
 
 <p><table border="0" cellpadding="0" cellspacing="0">
@@ -84,11 +84,16 @@ loudness of audio and video files to the same level.</b>
 
 <p><div class="history"><table style="width:100%">
 <tr>
+  <td valign="top">2014-12-07</td>
+  <td valign="top">0.2.0</td>
+  <td valign="top">Added <a href="#experimental">experimental options</a>.</td>
+</tr>
+<tr>
   <td valign="top">2014-12-04</td>
   <td valign="top">0.1.1</td>
   <td valign="top"><ul>
   <li>Compiled with <tt>-O2</tt>.
-  <li>Slighly different error handling with <tt>getopt_long()</tt>.
+  <li>Slightly different error handling with <tt>getopt_long()</tt>.
   <li>Added the FFmpeg and SoX shared objects / dynamic link libraries to the release.
   </ul></td>
 </tr>
@@ -104,9 +109,9 @@ loudness of audio and video files to the same level.</b>
 <p>Audio from different sources can be expected to be different loud and
 it would be nice to automatically adapt all these audio sources to the same
 loudness. Fortunately the
-<a target="_blank" href="http://www.itu.int/rec/R-REC-BS.1770/en">ITU in their BS.1770 standard</a>
+<a target="_blank" href="http://www.itu.int/rec/R-REC-BS.1770/en">ITU-R in their BS.1770 standard</a>
 defines an algorithm which makes it possible to measure the loudness of
-a certain audio source. Based on the ITU BS.1770 measure several standards
+a certain audio source. Based on the ITU-R BS.1770 measure several standards
 bodys defined what they think is the preferred loudness audio should normalize
 to, notably
 <ul>
@@ -115,7 +120,7 @@ to, notably
 <li><a target="_blank" href="http://wiki.hydrogenaud.io/index.php?title=ReplayGain_2.0_specification">ReplayGain 2.0</a> says -18.0.
 </ul>
 
-<tt>BS1770GAIN</tt> implements the ITU BS.1770 loudness measurement
+<tt>BS1770GAIN</tt> implements the ITU-R BS.1770 loudness measurement
 algorithm and makes it accessable to a user in several ways as known
 from the EBU R128 standard, i.e.
 <ul>
@@ -126,7 +131,7 @@ from the EBU R128 standard, i.e.
 </ul>
 
 <p>The integrated loudness is the two phase gated measurement of
-the mean loudness as described by ITU BS.1770. All measures are
+the mean loudness as described by ITU-R BS.1770. All measures are
 described in detail by EBU R128.
 
 <p>On top of that <tt>BS1770GAIN</tt> provides to additional
@@ -152,7 +157,7 @@ customized.
 
 <a name="usage"><h3>3. Usage</h3>
 
-<a name="usage"><h4>3.1. Loudness Measurement</h4>
+<a name="measure"><h4>3.1. Loudness Measurement</h4>
 
 <p>In the simplest case we want to analyze the <i>(integrated) loudness</i> of
 a track or, a bit more general, an album.
@@ -265,7 +270,7 @@ analyzing "2012_live_at_the_georgia_theatre" ...
 done.
 </pre></blockquote>
 
-<a name="usage"><h4>3.2. Applying the Gain</h4>
+<a name="apply"><h4>3.2. Applying the Gain</h4>
 
 <p>With the help of <tt>BS1770GAIN</tt> we can adjust the loudness on the fly.
 There are two ways to achieve this:
@@ -325,7 +330,7 @@ Input #0, matroska,webm, from './test/2012_live_at_the_georgia_theatre/01_intro_
     track           : 1
     GENRE           : Rock
     REPLAYGAIN_ALBUM_GAIN: -7.05 LU
-    REPLAYGAIN_ALGORITHM: ITU BS.1770
+    REPLAYGAIN_ALGORITHM: ITU-R BS.1770
     REPLAYGAIN_REFERENCE_LOUDNESS: -23.00
     ENCODER         : Lavf56.15.101
   Duration: 00:05:15.36, start: 0.033000, bitrate: 7516 kb/s
@@ -343,7 +348,7 @@ Input #0, matroska,webm, from './test/2012_live_at_the_georgia_theatre/02_good_o
     track           : 2
     GENRE           : Rock
     REPLAYGAIN_ALBUM_GAIN: -7.05 LU
-    REPLAYGAIN_ALGORITHM: ITU BS.1770
+    REPLAYGAIN_ALGORITHM: ITU-R BS.1770
     REPLAYGAIN_REFERENCE_LOUDNESS: -23.00
     ENCODER         : Lavf56.15.101
   Duration: 00:03:37.27, start: 0.033000, bitrate: 7741 kb/s
@@ -361,7 +366,7 @@ Input #0, matroska,webm, from './test/2012_live_at_the_georgia_theatre/03_up_in_
     track           : 3
     GENRE           : Rock
     REPLAYGAIN_ALBUM_GAIN: -7.05 LU
-    REPLAYGAIN_ALGORITHM: ITU BS.1770
+    REPLAYGAIN_ALGORITHM: ITU-R BS.1770
     REPLAYGAIN_REFERENCE_LOUDNESS: -23.00
     ENCODER         : Lavf56.15.101
   Duration: 00:03:33.77, start: 0.033000, bitrate: 8151 kb/s
@@ -474,10 +479,98 @@ remuxing "2012_live_at_the_georgia_theatre" ...
 done.
 </pre></blockquote>
 
-<!--
+<a name="experimental"><h4>3.3. Experimental Options</h4>
+
+<p>We can imagine the ITU-R BS.1770 measurement device as a blackbox 
+where time after time portions of the audio with the same length
+<ul>
+ <li>are floating in,
+ <li>staying for some time inside, and
+ <li>finally are floating out.
+</ul>
+
+Such portions of audio are called a <i>block</i>. We assume that at
+a given time at least one audio block is inside the measurement device,
+but in general there are more than one are there.
+
+<p>The measurement device does some sophisticated calculation on the
+audio blocks currently inside with the loudness as the result.
+We don't want to go into all the details here but it should be clear
+that the result depends at least on the following:
+
+<ul>
+<li>on the <i>length</i> of the audio blocks,
+<li>on their <i>overlap</i>, and
+<li>on what is considered to be a silence <i>gate</i>.
+</ul>
+
+EBU R128 defines two such measurement devices,
+<ul>
+<li>one we would like to call the <i>momentary</i> device, and
+<li>the other one we would like to call the <i>shortterm</i> device.
+</ul>
+
+<p>The momentary device has the following properties:
+<ul>
+<li><b>length:</b> <i>0.4 s</i>,
+<li><b>overlap:</b> <i>75 %</i>, and
+<li><b>gate:</b> <i>-10.0</i> (defined just for integrated loudness),
+</ul>
+
+wheras the shorttime device has the following:
+
+<ul>
+<li><b>length:</b> <i>3.0 s</i>,
+<li><b>overlap:</b> <i>67 %</i>, and
+<li><b>gate:</b> <i>-20.0</i> (defined just for loudness range).
+</ul>
+
+After all we can calculate 6 measures from the two blocks,
+two of them are non-standard:
+
+<ul>
+<li>the <i>mean loudness</i> of the momentary block (corresponds
+  to the integrated loudness),
+<li>the <i>maximum loudness</i> of the momentary block
+  (corresponds to the maximum momentary loudness),
+<li>the <i>loudness range</i> of the momentary block (has no
+  correspondence to a standard term),
+<li>the <i>mean loudness</i> of the shortterm block (has no
+  correspondence to a standard term),
+<li>the <i>maximum loudness</i> of the shortterm block
+  (corresponds to the maximum shortterm loudness), and
+<li>the <i>loudness range</i> of the shortterm block
+  (corresponds to the loudness range).
+</ul>
+
+<p>This gives rise to a variety of possible parameters if one
+takes into account that it is possible to customize measurement
+devices themselfs (cf.  "experimental options" under "command line
+syntax" below).
+
+<p>Finally we give an example on how to RG tag with the non-standard
+measure <i>shortterm mean loudness</i>:
+
 <blockquote><pre>
+$ <b>./bs1770gain ~/2012_live_at_the_georgia_theatre -o ./test -u shortterm-mean</b>
+/home/home/2012_live_at_the_georgia_theatre
+analyzing "2012_live_at_the_georgia_theatre" ...
+  [1/3] "01_intro_like_i_am.mkv":         
+      shortterm mean:  -16.2 LUFS / -6.8 LU
+  [2/3] "02_good_one_coming_on.mkv":         
+      shortterm mean:  -16.0 LUFS / -7.0 LU
+  [3/3] "03_up_in_smoke.mkv":         
+      shortterm mean:  -15.6 LUFS / -7.4 LU
+  [ALBUM]:
+      shortterm mean:  -16.0 LUFS / -7.0 LU
+remuxing "2012_live_at_the_georgia_theatre" ...
+  [1/3] "01_intro_like_i_am.mkv" ... done.
+  [2/3] "02_good_one_coming_on.mkv" ... done.
+  [3/3] "03_up_in_smoke.mkv" ... done.
+done.
 </pre></blockquote>
 
+<!--
 <blockquote><pre>
 </pre></blockquote>
 -->
@@ -486,7 +579,7 @@ done.
 
 <blockquote><pre>
 $ <b>bs1770gain ~/2012_live_at_the_georgia_theatre -h</b>
-Usage:  bs1770gain [options] &lt;file/dir&gt; [&lt;file/dir&gt; ...]
+Usage:  bs1770gain.exe [options] &lt;file/dir&gt; [&lt;file/dir&gt; ...]
 
 Options:
  -h,--help:  print this message and exit
@@ -503,7 +596,12 @@ Options:
  -u &lt;method&gt;,--use &lt;method&gt;:  base replay gain calculation
    on method (with respect to the -a/--apply and -o/--output
    options),
-   method:  integrated (default), shortterm, or momentary
+   methods:  "integrated" (default), "shortterm", or
+   "momentary"
+   experimental methods:  "momentary-mean" (same as
+   "integrated"), "momentary-maximum" (same as "momentary"),
+   "shortterm-mean", or "shortterm-maximum" (same as
+   "shortterm")
  -a:  apply the EBU/ATSC/RG album gain to the output
    (in conjunction with the -o/--output option)
  -o &lt;folder&gt;,--output &lt;folder&gt;:  write RG tags
@@ -532,9 +630,49 @@ Options:
  --drc &lt;drc&gt;:  set AC3 dynamic range compression (DRC)
  --format &lt;format&gt;:  convert to format
  --loglevel &lt;level&gt;:  set loglevel,
-   level:  quiet, panic, fatal, error, warning, info,
-   verbose, debug
+   level:  "quiet", "panic", "fatal", "error", "warning",
+   "info", "verbose", "debug"
  --time:  print out duration of program invocation
+
+Experimental options:
+1) momentary block
+ --momentary-mean:  calculate mean loudness based on
+   momentary block (same as --integrated)
+ --momentary-maximum:  calculate maximum loudness based
+   on momentary block (same as --momentary)
+ --momentary-range:  calculate loudness range based on
+   momentary block
+ --momentary-length &lt;ms&gt;:  length of momentary block
+   in milliseconds (default: 400)
+ --momentary-overlap &lt;percent&gt;:  overlap of momentary
+   block in percent (default: 75)
+ --momentary-mean-gate &lt;gate&gt;:  silence gate for mean
+   measurement of momentary block (default: -10.0)
+ --momentary-range-gate &lt;gate&gt;:  silence gate for range
+   measurement of momentary block (default: -20.0)
+ --momentary-range-lower-bound &lt;float&gt;:  lower bound for
+   range measurement of momentary block (default: 0.1)
+ --momentary-range-upper-bound &lt;float&gt;:  upper bound for
+   range measurement of momentary block (default: 0.95)
+2) shortterm block
+ --shortterm-mean:  calculate mean loudness based on
+   shortterm block
+ --shortterm-maximum:  calculate maximum loudness based
+   on shortterm block (same as --shortterm)
+ --shortterm-range:  calculate loudness range based on
+   shortterm block (same as --range)
+ --shortterm-length &lt;ms&gt;:  length of shortterm block
+   in milliseconds (default: 3000)
+ --shortterm-overlap &lt;percent&gt;:  overlap of shortterm
+   block in percent (default: 67)
+ --shortterm-mean-gate &lt;gate&gt;:  silence gate for mean
+   measurement of shortterm block (default: -10.0)
+ --shortterm-range-gate &lt;gate&gt;:  silence gate for range
+   measurement of shortterm block (default: -20.0)
+ --shortterm-range-lower-bound &lt;float&gt;:  lower bound for
+   range measurement of shortterm block (default: 0.1)
+ --shortterm-range-upper-bound &lt;float&gt;:  upper bound for
+   range measurement of shortterm block (default: 0.95)
 
 Command line arguments can appear in any order.
 </pre></blockquote>

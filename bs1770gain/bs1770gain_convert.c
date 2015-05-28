@@ -32,13 +32,8 @@ bs1770gain_convert_t *bs1770gain_convert_new(AVFormatContext *ifc, int iai,
 
   // compute the amplification/attenuation factor.
   q=options->preamp+options->level;
-#if 0 // {
-  q-=(1.0-options->apply)*lib1770_stats_get_mean(album->stats_im,-10.0);
-  q-=options->apply*lib1770_stats_get_mean(track->stats_im,-10.0);
-#else // } {
   q-=(1.0-options->apply)*bs1770gain_stats_get_loudness(album,options);
   q-=options->apply*bs1770gain_stats_get_loudness(track,options);
-#endif // }
   q=LIB1770_DB2Q(q);
   convert->q=q;
 

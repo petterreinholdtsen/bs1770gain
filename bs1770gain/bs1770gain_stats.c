@@ -28,20 +28,20 @@ bs1770gain_stats_t *bs1770gain_stats_new(const bs1770gain_options_t *options)
   BS1770GAIN_GOTO(NULL==(stats=malloc(sizeof *stats)),
       "allocating stats",stats);
 
-  if (0==options->integrated&&0==options->momentary)
-    stats->stats_im=NULL;
+  if (BS1770GAIN_BLOCK_OPTIONS_EMPTY(&options->momentary))
+    stats->momentary=NULL;
   else {
     // open a history statistics for integrated loudness.
-    BS1770GAIN_GOTO(NULL==(stats->stats_im=lib1770_stats_new()),
-        "allocating bs.1770 intergrated loudness statistics",stats_im);
+    BS1770GAIN_GOTO(NULL==(stats->momentary=lib1770_stats_new()),
+        "allocating bs.1770 intergrated loudness statistics",momentary);
   }
 
-  if (0==options->range&&0==options->shortterm)
-    stats->stats_rs=NULL;
+  if (BS1770GAIN_BLOCK_OPTIONS_EMPTY(&options->shortterm))
+    stats->shortterm=NULL;
   else {
     // open a history statistics for integrated loudness.
-    BS1770GAIN_GOTO(NULL==(stats->stats_rs=lib1770_stats_new()),
-        "allocating bs.1770 intergrated loudness statistics",stats_rs);
+    BS1770GAIN_GOTO(NULL==(stats->shortterm=lib1770_stats_new()),
+        "allocating bs.1770 intergrated loudness statistics",shortterm);
   }
 
   stats->peak_s=0==options->samplepeak?-1.0:0.0;
@@ -49,12 +49,12 @@ bs1770gain_stats_t *bs1770gain_stats_new(const bs1770gain_options_t *options)
 
   return stats;
 // cleanup:
-  if (NULL!=stats->stats_rs)
-    lib1770_stats_close(stats->stats_rs);
-stats_rs:
-  if (NULL!=stats->stats_im)
-    lib1770_stats_close(stats->stats_im);
-stats_im:
+  if (NULL!=stats->shortterm)
+    lib1770_stats_close(stats->shortterm);
+shortterm:
+  if (NULL!=stats->momentary)
+    lib1770_stats_close(stats->momentary);
+momentary:
   free(stats);
 stats:
   return NULL;
@@ -62,11 +62,11 @@ stats:
 
 void bs1770gain_stats_close(bs1770gain_stats_t *stats)
 {
-  if (NULL!=stats->stats_rs)
-    lib1770_stats_close(stats->stats_rs);
+  if (NULL!=stats->shortterm)
+    lib1770_stats_close(stats->shortterm);
 
-  if (NULL!=stats->stats_im)
-    lib1770_stats_close(stats->stats_im);
+  if (NULL!=stats->momentary)
+    lib1770_stats_close(stats->momentary);
 
   free(stats);
 }
@@ -75,18 +75,22 @@ double bs1770gain_stats_get_loudness(const bs1770gain_stats_t *stats,
     const bs1770gain_options_t *options)
 {
   switch (options->method) {
-  case BS1770GAIN_METHOD_INTEGRATED:
-    return stats->stats_im==NULL
+  case BS1770GAIN_METHOD_MOMENTARY_MEAN:
+    return stats->momentary==NULL
         ?LIB1770_SILENCE
-        :lib1770_stats_get_mean(stats->stats_im,-10.0);
-  case BS1770GAIN_METHOD_SHORTTERM:
-    return stats->stats_rs==NULL
+        :lib1770_stats_get_mean(stats->momentary,options->momentary.mean_gate);
+  case BS1770GAIN_METHOD_MOMENTARY_MAXIMUM:
+    return stats->momentary==NULL
         ?LIB1770_SILENCE
-        :lib1770_stats_get_max(stats->stats_rs);
-  case BS1770GAIN_METHOD_MOMENTARY:
-    return stats->stats_im==NULL
+        :lib1770_stats_get_max(stats->momentary);
+  case BS1770GAIN_METHOD_SHORTTERM_MEAN:
+    return stats->shortterm==NULL
         ?LIB1770_SILENCE
-        :lib1770_stats_get_max(stats->stats_im);
+        :lib1770_stats_get_mean(stats->shortterm,options->shortterm.mean_gate);
+  case BS1770GAIN_METHOD_SHORTTERM_MAXIMUM:
+    return stats->shortterm==NULL
+        ?LIB1770_SILENCE
+        :lib1770_stats_get_max(stats->shortterm);
   default:
     return LIB1770_SILENCE;
   }
@@ -94,11 +98,11 @@ double bs1770gain_stats_get_loudness(const bs1770gain_stats_t *stats,
 
 void bs1770gain_stats_merge(bs1770gain_stats_t *lhs, bs1770gain_stats_t *rhs)
 {
-  if (NULL!=lhs->stats_im&&NULL!=rhs->stats_im)
-    lib1770_stats_merge(lhs->stats_im,rhs->stats_im);
+  if (NULL!=lhs->momentary&&NULL!=rhs->momentary)
+    lib1770_stats_merge(lhs->momentary,rhs->momentary);
 
-  if (NULL!=lhs->stats_rs&&NULL!=rhs->stats_rs)
-    lib1770_stats_merge(lhs->stats_rs,rhs->stats_rs);
+  if (NULL!=lhs->shortterm&&NULL!=rhs->shortterm)
+    lib1770_stats_merge(lhs->shortterm,rhs->shortterm);
 
   if (0.0<=lhs->peak_s&&0.0<=rhs->peak_s&&lhs->peak_s<rhs->peak_s)
     lhs->peak_s=rhs->peak_s;
@@ -107,73 +111,45 @@ void bs1770gain_stats_merge(bs1770gain_stats_t *lhs, bs1770gain_stats_t *rhs)
     lhs->peak_t=rhs->peak_t;
 }
 
-#if 0 // {
-void bs1770gain_stats_print(bs1770gain_stats_t *stats,
-    bs1770gain_options_t *options)
-{
-  FILE *f=options->f;
-  double level=options->preamp+options->level;
-  double q,db;
-
-  if (0!=options->integrated) {
-    db=lib1770_stats_get_mean(stats->stats_im,-10.0);
-    fprintf(f,"       integrated:  %.1f LUFS / %.1f LU\n",db,level-db);
-  }
-
-  if (0!=options->momentary) {
-    db=lib1770_stats_get_max(stats->stats_im);
-    fprintf(f,"        momentary:  %.1f LUFS / %.1f LU\n",db,level-db);
-  }
-
-  if (0!=options->shortterm) {
-    db=lib1770_stats_get_max(stats->stats_rs);
-    fprintf(f,"       shortterm:  %.1f LUFS / %.1f LU\n",db,level-db);
-  }
-
-  if (0!=options->range) {
-    db=lib1770_stats_get_range(stats->stats_rs,-20.0,0.1,0.95);
-    fprintf(f,"            range:  %.1f LUFS\n",db);
-  }
-
-  if (0<=stats->peak_s) {
-    q=stats->peak_s;
-    db=LIB1770_Q2DB(q);
-    fprintf(f,"      sample peak:  %.1f SPFS / %f\n",db,q);
-  }
-
-  if (0<=stats->peak_t) {
-    q=stats->peak_t;
-    db=LIB1770_Q2DB(q);
-    fprintf(f,"        true peak:  %.1f TPFS / %f\n",db,q);
-  }
-}
-#else // } {
 static int bs1770gain_stats_width(bs1770gain_stats_t *stats,
     bs1770gain_options_t *options)
 {
   int width=0;
   int len;
 
-  if (0!=options->integrated) {
+  ////////
+  if (0!=options->momentary.mean) {
     if ((len=strlen("integrated")))
       width=len;
   }
 
-  if (0!=options->momentary) {
-    if (width<(len=strlen("momentary")))
+  if (0!=options->momentary.maximum) {
+    if (width<(len=strlen("momentary maximum")))
       width=len;
   }
 
-  if (0!=options->shortterm) {
-    if (width<(len=strlen("shortterm")))
+  if (0!=options->momentary.range) {
+    if (width<(len=strlen("momentary range")))
       width=len;
   }
 
-  if (0!=options->range) {
+  ////////
+  if (0!=options->shortterm.mean) {
+    if (width<(len=strlen("shortterm mean")))
+      width=len;
+  }
+
+  if (0!=options->shortterm.maximum) {
+    if (width<(len=strlen("shortterm maximum")))
+      width=len;
+  }
+
+  if (0!=options->shortterm.range) {
     if (width<(len=strlen("range")))
       width=len;
   }
 
+  ////////
   if (0<=stats->peak_s) {
     if (width<(len=strlen("sample peak")))
       width=len;
@@ -205,34 +181,57 @@ void bs1770gain_stats_print(bs1770gain_stats_t *stats,
   int width=bs1770gain_stats_width(stats,options);
   double q,db;
 
-  if (0!=options->integrated) {
-    db=lib1770_stats_get_mean(stats->stats_im,-10.0);
+  ////////
+  if (0!=options->momentary.mean) {
+    db=lib1770_stats_get_mean(stats->momentary,options->momentary.mean_gate);
     //fprintf(f,"       integrated:  %.1f LUFS / %.1f LU\n",db,level-db);
     bs1770gain_stats_label("integrated",width,f);
     fprintf(f,"%.1f LUFS / %.1f LU\n",db,level-db);
   }
 
-  if (0!=options->shortterm) {
-    db=lib1770_stats_get_max(stats->stats_rs);
-    //fprintf(f,"       shortterm:  %.1f LUFS / %.1f LU\n",db,level-db);
-    bs1770gain_stats_label("shortterm",width,f);
-    fprintf(f,"%.1f LUFS / %.1f LU\n",db,level-db);
-  }
-
-  if (0!=options->momentary) {
-    db=lib1770_stats_get_max(stats->stats_im);
+  if (0!=options->momentary.maximum) {
+    db=lib1770_stats_get_max(stats->momentary);
     //fprintf(f,"        momentary:  %.1f LUFS / %.1f LU\n",db,level-db);
-    bs1770gain_stats_label("momentary",width,f);
+    bs1770gain_stats_label("momentary maximum",width,f);
     fprintf(f,"%.1f LUFS / %.1f LU\n",db,level-db);
   }
 
-  if (0!=options->range) {
-    db=lib1770_stats_get_range(stats->stats_rs,-20.0,0.1,0.95);
+  if (0!=options->momentary.range) {
+    db=lib1770_stats_get_range(stats->momentary,
+        options->momentary.range_gate,
+        options->momentary.range_lower_bound,
+        options->momentary.range_upper_bound);
+    //fprintf(f,"            range:  %.1f LUFS\n",db);
+    bs1770gain_stats_label("momentary range",width,f);
+    fprintf(f,"%.1f LUFS\n",db);
+  }
+
+  ////////
+  if (0!=options->shortterm.mean) {
+    db=lib1770_stats_get_mean(stats->shortterm,options->shortterm.mean_gate);
+    //fprintf(f,"       integrated:  %.1f LUFS / %.1f LU\n",db,level-db);
+    bs1770gain_stats_label("shortterm mean",width,f);
+    fprintf(f,"%.1f LUFS / %.1f LU\n",db,level-db);
+  }
+
+  if (0!=options->shortterm.maximum) {
+    db=lib1770_stats_get_max(stats->shortterm);
+    //fprintf(f,"       shortterm:  %.1f LUFS / %.1f LU\n",db,level-db);
+    bs1770gain_stats_label("shortterm maximum",width,f);
+    fprintf(f,"%.1f LUFS / %.1f LU\n",db,level-db);
+  }
+
+  if (0!=options->shortterm.range) {
+    db=lib1770_stats_get_range(stats->shortterm,
+        options->shortterm.range_gate,
+        options->shortterm.range_lower_bound,
+        options->shortterm.range_upper_bound);
     //fprintf(f,"            range:  %.1f LUFS\n",db);
     bs1770gain_stats_label("range",width,f);
     fprintf(f,"%.1f LUFS\n",db);
   }
 
+  ////////
   if (0<=stats->peak_s) {
     q=stats->peak_s;
     db=LIB1770_Q2DB(q);
@@ -249,7 +248,6 @@ void bs1770gain_stats_print(bs1770gain_stats_t *stats,
     fprintf(f,"%.1f TPFS / %f\n",db,q);
   }
 }
-#endif // }
 
 ///////////////////////////////////////////////////////////////////////////////
 bs1770gain_head_t *bs1770gain_head_new(bs1770gain_stats_t *stats,
@@ -263,32 +261,34 @@ bs1770gain_head_t *bs1770gain_head_new(bs1770gain_stats_t *stats,
 
   head->stats=stats;
 
-  if (NULL==stats->stats_im)
-    head->block_04=NULL;
+  if (NULL==stats->momentary)
+    head->momentary=NULL;
   else {
     // open a 0.4 s / 0.75 overlap block for integrated and momentary
     // loudness.
-    BS1770GAIN_GOTO(NULL==(head->block_04=lib1770_block_new(sample_rate,
-        400.0,4)),"allocation bs.1770 block",block_04);
+    BS1770GAIN_GOTO(NULL==(head->momentary=lib1770_block_new(sample_rate,
+        options->momentary.length,options->momentary.partition)),
+        "allocation bs.1770 block",momentary);
     // add the integrated and the momentary statistics to the respective
     // block.
-    lib1770_block_add_stats(head->block_04,stats->stats_im);
+    lib1770_block_add_stats(head->momentary,stats->momentary);
   }
 
-  if (NULL==stats->stats_rs)
-    head->block_30=NULL;
+  if (NULL==stats->shortterm)
+    head->shortterm=NULL;
   else {
     // open a 3 ms / 0.66 overlap block for loudness range and shortterm
     // loudness.
-    BS1770GAIN_GOTO(NULL==(head->block_30=lib1770_block_new(sample_rate,
-        400.0,4)),"allocation bs.1770 block",block_30);
+    BS1770GAIN_GOTO(NULL==(head->shortterm=lib1770_block_new(sample_rate,
+        options->shortterm.length,options->shortterm.partition)),
+        "allocation bs.1770 block",shortterm);
     // add the loudness range and the sort term statistics to the respective
     // block.
-    lib1770_block_add_stats(head->block_30,stats->stats_rs);
+    lib1770_block_add_stats(head->shortterm,stats->shortterm);
   }
 
   /////////////////////////////////////////////////////////////////////////////
-  if (NULL==head->block_04&&NULL==head->block_30)
+  if (NULL==head->momentary&&NULL==head->shortterm)
     head->pre=NULL;
   else {
     // open a pre-filter.
@@ -300,11 +300,11 @@ bs1770gain_head_t *bs1770gain_head_new(bs1770gain_stats_t *stats,
 
     // add the 0.4 s / 0.75 overlap and the 3 ms / 0.66 overlap block to the
     // pre-filter.
-    if (NULL!=head->block_04)
-      lib1770_pre_add_block(head->pre,head->block_04);
+    if (NULL!=head->momentary)
+      lib1770_pre_add_block(head->pre,head->momentary);
 
-    if (NULL!=head->block_30)
-      lib1770_pre_add_block(head->pre,head->block_30);
+    if (NULL!=head->shortterm)
+      lib1770_pre_add_block(head->pre,head->shortterm);
   }
 
   return head;
@@ -312,12 +312,12 @@ bs1770gain_head_t *bs1770gain_head_new(bs1770gain_stats_t *stats,
   if (NULL!=head->pre)
     lib1770_pre_close(head->pre);
 pre:
-  if (NULL!=head->block_04)
-    lib1770_block_close(head->block_04);
-block_04:
-  if (NULL!=head->block_30)
-    lib1770_block_close(head->block_30);
-block_30:
+  if (NULL!=head->momentary)
+    lib1770_block_close(head->momentary);
+momentary:
+  if (NULL!=head->shortterm)
+    lib1770_block_close(head->shortterm);
+shortterm:
   free(head);
 head:
   return NULL;
@@ -330,11 +330,11 @@ void bs1770gain_head_close(bs1770gain_head_t *head)
     lib1770_pre_close(head->pre);
   }
 
-  if (NULL!=head->block_04)
-    lib1770_block_close(head->block_04);
+  if (NULL!=head->momentary)
+    lib1770_block_close(head->momentary);
 
-  if (NULL!=head->block_30)
-    lib1770_block_close(head->block_30);
+  if (NULL!=head->shortterm)
+    lib1770_block_close(head->shortterm);
 
   free(head);
 }

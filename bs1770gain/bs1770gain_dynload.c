@@ -173,13 +173,13 @@ static char *bs1770gain_root(void)
   size=PATH_MAX;
 
   if (NULL==(buf=malloc(size*sizeof *buf)))
-    goto error;
+    goto malloc;
 
   while ((len=readlink(path,buf,size-1))<0) {
     if (ENAMETOOLONG!=errno)
-	    goto error;
+	    goto realloc;
 	  else if (NULL==(bp=realloc(buf,(size*=2)*sizeof *buf)))
-	    goto error;
+	    goto realloc;
 	  else
 	    buf=bp;
   }
@@ -196,10 +196,9 @@ static char *bs1770gain_root(void)
   }
 
   return buf;
-error:
-  if (NULL!=path)
-    free(path);
-
+realloc:
+  free(buf);
+malloc:
   return NULL;
 }
 

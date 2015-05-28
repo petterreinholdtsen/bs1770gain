@@ -142,25 +142,14 @@ static void bs1770gain_tags_rg(bs1770gain_tag_t *tags,
 
   while (NULL!=tags->key) {
     ///////////////////////////////////////////////////////////////////////////
-    if (0==strcasecmp("REPLAYGAIN_ALGORITHM",tags->key)) {
-      if (0!=options->integrated)
-        strcpy(tags->val,"ITU BS.1770");
-    }
-    else if (0==strcasecmp("REPLAYGAIN_REFERENCE_LOUDNESS",tags->key)) {
-      if (0!=options->integrated)
-        sprintf(tags->val,"%.2f",level);
-    }
+    if (0==strcasecmp("REPLAYGAIN_ALGORITHM",tags->key))
+      strcpy(tags->val,"ITU-R BS.1770");
+    else if (0==strcasecmp("REPLAYGAIN_REFERENCE_LOUDNESS",tags->key))
+      sprintf(tags->val,"%.2f",level);
     ///////////////////////////////////////////////////////////////////////////
     else if (0==strcasecmp("REPLAYGAIN_TRACK_GAIN",tags->key)) {
-#if 0 // {
-      if (0!=options->integrated) {
-        lib1770_stats_get_mean(track->stats_im,-10.0);
-        sprintf(tags->val,"%.2f LU",level-db);
-      }
-#else // } {
       db=bs1770gain_stats_get_loudness(track,options);
       sprintf(tags->val,"%.2f LU",level-db);
-#endif // }
     }
     else if (0==strcasecmp("REPLAYGAIN_TRACK_PEAK",tags->key)) {
       if (0!=options->truepeak)
@@ -169,22 +158,18 @@ static void bs1770gain_tags_rg(bs1770gain_tag_t *tags,
         sprintf(tags->val,"%.f",track->peak_s);
     }
     else if (0==strcasecmp("REPLAYGAIN_TRACK_RANGE",tags->key)) {
-      if (0!=options->range) {
-        db=lib1770_stats_get_range(track->stats_rs,-20.0,0.1,0.95);
+      if (0!=options->shortterm.range) {
+        db=lib1770_stats_get_range(track->shortterm,
+            options->shortterm.range_gate,
+            options->shortterm.range_lower_bound,
+            options->shortterm.range_upper_bound);
         sprintf(tags->val,"%.2f LU",db);
       }
     }
     ///////////////////////////////////////////////////////////////////////////
     else if (0==strcasecmp("REPLAYGAIN_ALBUM_GAIN",tags->key)) {
-#if 0 // {
-      if (0!=options->integrated) {
-        db=lib1770_stats_get_mean(album->stats_im,-10.0);
-        sprintf(tags->val,"%.2f LU",level-db);
-      }
-#else // } {
       db=bs1770gain_stats_get_loudness(album,options);
       sprintf(tags->val,"%.2f LU",level-db);
-#endif // }
     }
     else if (0==strcasecmp("REPLAYGAIN_ALBUM_PEAK",tags->key)) {
       if (0!=options->truepeak)
@@ -193,8 +178,11 @@ static void bs1770gain_tags_rg(bs1770gain_tag_t *tags,
         sprintf(tags->val,"%.f",album->peak_s);
     }
     else if (0==strcasecmp("REPLAYGAIN_ALBUM_RANGE",tags->key)) {
-      if (0!=options->range) {
-        db=lib1770_stats_get_range(album->stats_rs,-20.0,0.1,0.95);
+      if (0!=options->shortterm.range) {
+        db=lib1770_stats_get_range(album->shortterm,
+            options->shortterm.range_gate,
+            options->shortterm.range_lower_bound,
+            options->shortterm.range_upper_bound);
         sprintf(tags->val,"%.2f LU",db);
       }
     }
@@ -211,17 +199,9 @@ static void bs1770gain_tags_bwf(bs1770gain_tag_t *tags,
 
   while (NULL!=tags->key) { 
     if (0==strcasecmp("LoudnessValue",tags->key)) {
-#if 0 // {
-      if (0!=options->integrated) {
-        level=options->preamp+options->level;
-        db=lib1770_stats_get_mean(stats->stats_im,-10.0);
-        sprintf(tags->val,"%d",(int)floor(100.0*(level-db)+0.5));
-      }
-#else // } {
       level=options->preamp+options->level;
       db=bs1770gain_stats_get_loudness(stats,options);
       sprintf(tags->val,"%d",(int)floor(100.0*(level-db)+0.5));
-#endif // }
     }
     else if (0==strcasecmp("MaxTruePeakLevel",tags->key)) {
       if (0!=options->truepeak)
@@ -230,8 +210,11 @@ static void bs1770gain_tags_bwf(bs1770gain_tag_t *tags,
         sprintf(tags->val,"%.f",stats->peak_s);
     }
     else if (0==strcasecmp("LoudnessRange",tags->key)) {
-      if (0!=options->range) {
-        db=lib1770_stats_get_range(stats->stats_rs,-20.0,0.1,0.95);
+      if (0!=options->shortterm.range) {
+        db=lib1770_stats_get_range(stats->shortterm,
+            options->shortterm.range_gate,
+            options->shortterm.range_lower_bound,
+            options->shortterm.range_upper_bound);
         sprintf(tags->val,"%d",(int)floor(100.0*db+0.5));
       }
     }
