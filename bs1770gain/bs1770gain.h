@@ -45,6 +45,7 @@ extern "C" {
 #define BS1770GAIN_SAMPLE_FMT AV_SAMPLE_FMT_S32
 
 ///////////////////////////////////////////////////////////////////////////////
+typedef struct bs1770gain_block_options bs1770gain_block_options_t;
 typedef struct bs1770gain_options bs1770gain_options_t;
 typedef struct bs1770gain_tag bs1770gain_tag_t;
 typedef struct bs1770gain_tree_vmt bs1770gain_tree_vmt_t;
@@ -94,13 +95,33 @@ int bs1770gain_transcode(bs1770gain_stats_t *track, bs1770gain_stats_t *album,
     const char *ipath, const char *opath, const bs1770gain_options_t *options);
 
 ///////////////////////////////////////////////////////////////////////////////
-#define BS1770GAIN_MODE_RG_TAGS       0
-#define BS1770GAIN_MODE_BWF_TAGS      1
-#define BS1770GAIN_MODE_APPLY         2
+#define BS1770GAIN_MODE_RG_TAGS               1
+#define BS1770GAIN_MODE_BWF_TAGS              2
+#define BS1770GAIN_MODE_APPLY                 3
 
-#define BS1770GAIN_METHOD_INTEGRATED  0
-#define BS1770GAIN_METHOD_SHORTTERM   1
-#define BS1770GAIN_METHOD_MOMENTARY   2
+#define BS1770GAIN_METHOD_MOMENTARY_MEAN      1
+#define BS1770GAIN_METHOD_MOMENTARY_MAXIMUM   2
+#define BS1770GAIN_METHOD_SHORTTERM_MEAN      3
+#define BS1770GAIN_METHOD_SHORTTERM_MAXIMUM   4
+
+#define BS1770GAIN_BLOCK_OPTIONS_EMPTY_METHOD(o) \
+  (0==(o)->maximum&&0==(o)->mean)
+#define BS1770GAIN_BLOCK_OPTIONS_EMPTY(o) \
+  (0==(o)->maximum&&0==(o)->mean&&0==(o)->range)
+#define BS1770GAIN_PEAK_OPTIONS_EMPTY(o) \
+  (0==(o)->samplepeak&&0==(o)->truepeak)
+
+struct bs1770gain_block_options {
+  int maximum;
+  int mean;
+  int range;
+  double length;
+  int partition;
+  double mean_gate;
+  double range_gate;
+  double range_lower_bound;
+  double range_upper_bound;
+};
 
 struct bs1770gain_options {
   FILE *f;
@@ -111,10 +132,8 @@ struct bs1770gain_options {
   int64_t duration;
   int audio;
   int video;
-  int integrated;
-  int momentary;
-  int range;
-  int shortterm;
+  bs1770gain_block_options_t momentary;
+  bs1770gain_block_options_t shortterm;
   int truepeak;
   int samplepeak;
   int mono2stereo;
@@ -200,7 +219,7 @@ void bs1770gain_tree_free_path(bs1770gain_tree_t *tree);
 
 ///////////////////////////////////////////////////////////////////////////////
 struct bs1770gain_stats {
-  lib1770_stats_t *stats_im,*stats_rs;
+  lib1770_stats_t *momentary,*shortterm;
   double peak_s,peak_t;
 };
 
@@ -216,7 +235,7 @@ void bs1770gain_stats_print(bs1770gain_stats_t *stats,
 ///////////////////////////////////////////////////////////////////////////////
 struct bs1770gain_head {
   bs1770gain_stats_t *stats;
-  lib1770_block_t *block_04,*block_30;
+  lib1770_block_t *momentary,*shortterm;
   lib1770_pre_t *pre;
 };
 

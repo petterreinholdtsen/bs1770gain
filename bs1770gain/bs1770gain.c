@@ -46,7 +46,12 @@ void bs1770gain_usage(char **argv, int code)
   fprintf(stderr," -u <method>,--use <method>:  base replay gain calculation\n"
       "   on method (with respect to the -a/--apply and -o/--output\n"
       "   options),\n"
-      "   method:  integrated (default), shortterm, or momentary\n");
+      "   methods:  \"integrated\" (default), \"shortterm\", or\n"
+      "   \"momentary\"\n"
+      "   experimental methods:  \"momentary-mean\" (same as\n"
+      "   \"integrated\"), \"momentary-maximum\" (same as \"momentary\"),\n"
+      "   \"shortterm-mean\", or \"shortterm-maximum\" (same as\n"
+      "   \"shortterm\")\n");
   fprintf(stderr," -a:  apply the EBU/ATSC/RG album gain to the output\n"
       "   (in conjunction with the -o/--output option)\n");
   fprintf(stderr," -o <folder>,--output <folder>:  write RG tags\n"
@@ -76,14 +81,57 @@ void bs1770gain_usage(char **argv, int code)
   fprintf(stderr," --drc <drc>:  set AC3 dynamic range compression (DRC)\n");
   fprintf(stderr," --format <format>:  convert to format\n");
   fprintf(stderr," --loglevel <level>:  set loglevel,\n"
-      "   level:  quiet, panic, fatal, error, warning, info,\n"
-      "   verbose, debug\n");
+      "   level:  \"quiet\", \"panic\", \"fatal\", \"error\", \"warning\",\n"
+      "   \"info\", \"verbose\", \"debug\"\n");
   fprintf(stderr," --time:  print out duration of program invocation\n");
   //fprintf(stderr," --level:\n");
   //fprintf(stderr," --preamp <preamp>:\n");
   //fprintf(stderr," --mono2stero:\n");
   //fprintf(stderr," --rg-tags:\n");
   //fprintf(stderr," --bwf-tags:\n");
+  /////////////////////////////////////////////////////////////////////////////
+  fprintf(stderr,"\n");
+  fprintf(stderr,"Experimental options:\n");
+  ////////
+  fprintf(stderr,"1) momentary block\n");
+  fprintf(stderr," --momentary-mean:  calculate mean loudness based on\n"
+      "   momentary block (same as --integrated)\n");
+  fprintf(stderr," --momentary-maximum:  calculate maximum loudness based\n"
+      "   on momentary block (same as --momentary)\n");
+  fprintf(stderr," --momentary-range:  calculate loudness range based on\n"
+      "   momentary block\n");
+  fprintf(stderr," --momentary-length <ms>:  length of momentary block\n"
+      "   in milliseconds (default: 400)\n");
+  fprintf(stderr," --momentary-overlap <percent>:  overlap of momentary\n"
+      "   block in percent (default: 75)\n");
+  fprintf(stderr," --momentary-mean-gate <gate>:  silence gate for mean\n"
+      "   measurement of momentary block (default: -10.0)\n");
+  fprintf(stderr," --momentary-range-gate <gate>:  silence gate for range\n"
+      "   measurement of momentary block (default: -20.0)\n");
+  fprintf(stderr," --momentary-range-lower-bound <float>:  lower bound for\n"
+      "   range measurement of momentary block (default: 0.1)\n");
+  fprintf(stderr," --momentary-range-upper-bound <float>:  upper bound for\n"
+      "   range measurement of momentary block (default: 0.95)\n");
+  ////////
+  fprintf(stderr,"2) shortterm block\n");
+  fprintf(stderr," --shortterm-mean:  calculate mean loudness based on\n"
+      "   shortterm block\n");
+  fprintf(stderr," --shortterm-maximum:  calculate maximum loudness based\n"
+      "   on shortterm block (same as --shortterm)\n");
+  fprintf(stderr," --shortterm-range:  calculate loudness range based on\n"
+      "   shortterm block (same as --range)\n");
+  fprintf(stderr," --shortterm-length <ms>:  length of shortterm block\n"
+      "   in milliseconds (default: 3000)\n");
+  fprintf(stderr," --shortterm-overlap <percent>:  overlap of shortterm\n"
+      "   block in percent (default: 67)\n");
+  fprintf(stderr," --shortterm-mean-gate <gate>:  silence gate for mean\n"
+      "   measurement of shortterm block (default: -10.0)\n");
+  fprintf(stderr," --shortterm-range-gate <gate>:  silence gate for range\n"
+      "   measurement of shortterm block (default: -20.0)\n");
+  fprintf(stderr," --shortterm-range-lower-bound <float>:  lower bound for\n"
+      "   range measurement of shortterm block (default: 0.1)\n");
+  fprintf(stderr," --shortterm-range-upper-bound <float>:  upper bound for\n"
+      "   range measurement of shortterm block (default: 0.95)\n");
   /////////////////////////////////////////////////////////////////////////////
   fprintf(stderr,"\n");
   fprintf(stderr,"Command line arguments can appear in any order.\n");
@@ -108,7 +156,22 @@ enum {
   MONO2STEREO,
   REPLAYGAIN,
   RG_TAGS,
-  BWF_TAGS
+  BWF_TAGS,
+  ////////////////
+  MOMENTARY_RANGE,
+  MOMENTARY_LENGTH,
+  MOMENTARY_OVERLAP,
+  MOMENTARY_MEAN_GATE,
+  MOMENTARY_RANGE_GATE,
+  MOMENTARY_RANGE_LOWER_BOUND,
+  MOMENTARY_RANGE_UPPER_BOUND,
+  SHORTTERM_MEAN,
+  SHORTTERM_LENGTH,
+  SHORTTERM_OVERLAP,
+  SHORTTERM_MEAN_GATE,
+  SHORTTERM_RANGE_GATE,
+  SHORTTERM_RANGE_LOWER_BOUND,
+  SHORTTERM_RANGE_UPPER_BOUND
 };
 
 static const const char *bs1770gain_flags="b:d:f:o:u:ahlimprstx";
@@ -122,6 +185,7 @@ static struct option bs1770gain_opts[]={
   { name:"use",has_arg:required_argument,flag:NULL,val:'u' },
   ////
   { name:"help",has_arg:no_argument,flag:NULL,val:'h' },
+  { name:"integrated",has_arg:no_argument,flag:NULL,val:'i' },
   { name:"list",has_arg:no_argument,flag:NULL,val:'l' },
   { name:"momentary",has_arg:no_argument,flag:NULL,val:'m' },
   { name:"range",has_arg:no_argument,flag:NULL,val:'r' },
@@ -146,6 +210,41 @@ static struct option bs1770gain_opts[]={
   { name:"replaygain",has_arg:no_argument,flag:NULL,val:REPLAYGAIN },
   { name:"rg-tags",has_arg:no_argument,flag:NULL,val:RG_TAGS },
   { name:"bwf-tags",has_arg:no_argument,flag:NULL,val:BWF_TAGS },
+  ////
+  { name:"momentary-mean",has_arg:no_argument,flag:NULL,val:'i' },
+  { name:"momentary-maximum",has_arg:no_argument,flag:NULL,val:'m' },
+  { name:"momentary-range",has_arg:no_argument,flag:NULL,
+      val:MOMENTARY_RANGE },
+  { name:"momentary-length",has_arg:required_argument,flag:NULL,
+      val:MOMENTARY_LENGTH },
+  { name:"momentary-overlap",has_arg:required_argument,flag:NULL,
+      val:MOMENTARY_OVERLAP },
+  { name:"momentary-mean-gate",has_arg:required_argument,flag:NULL,
+      val:MOMENTARY_MEAN_GATE },
+  { name:"momentary-range-gate",has_arg:required_argument,flag:NULL,
+      val:MOMENTARY_RANGE_GATE },
+  { name:"momentary-range-lower-bound",has_arg:required_argument,flag:NULL,
+      val:MOMENTARY_RANGE_LOWER_BOUND },
+  { name:"momentary-range-upper-bound",has_arg:required_argument,flag:NULL,
+      val:MOMENTARY_RANGE_UPPER_BOUND },
+  ////
+  { name:"shortterm-mean",has_arg:no_argument,flag:NULL,
+      val:SHORTTERM_MEAN },
+  { name:"shortterm-maximum",has_arg:no_argument,flag:NULL,val:'s' },
+  { name:"shortterm-range",has_arg:no_argument,flag:NULL,val:'r' },
+  { name:"shortterm-length",has_arg:required_argument,flag:NULL,
+      val:SHORTTERM_LENGTH },
+  { name:"shortterm-overlap",has_arg:required_argument,flag:NULL,
+      val:SHORTTERM_OVERLAP },
+  { name:"shortterm-mean-gate",has_arg:required_argument,flag:NULL,
+      val:SHORTTERM_MEAN_GATE },
+  { name:"shortterm-range-gate",has_arg:required_argument,flag:NULL,
+      val:SHORTTERM_RANGE_GATE },
+  { name:"shortterm-range-lower-bound",has_arg:required_argument,flag:NULL,
+      val:SHORTTERM_RANGE_LOWER_BOUND },
+  { name:"shortterm-range-upper-bound",has_arg:required_argument,flag:NULL,
+      val:SHORTTERM_RANGE_UPPER_BOUND },
+  ////
   { name:NULL,has_arg:0,flag:NULL,val:0 }
 };
 
@@ -157,6 +256,7 @@ int main(int argc, char **argv)
   char *fpath=NULL;
   char *odirname=NULL;
   int loglevel=AV_LOG_QUIET;
+  double overlap;
   clock_t t1,t2;
   int c;
 
@@ -168,6 +268,20 @@ int main(int argc, char **argv)
   options.level=-23.0;
   options.audio_ext="flac";
   options.video_ext="mkv";
+
+  options.momentary.length=400.0;
+  options.momentary.partition=4;
+  options.momentary.mean_gate=-10.0;
+  options.momentary.range_gate=-20.0;
+  options.momentary.range_lower_bound=0.1;
+  options.momentary.range_upper_bound=0.95;
+
+  options.shortterm.length=3000.0;
+  options.shortterm.partition=3;
+  options.shortterm.mean_gate=-10.0;
+  options.shortterm.range_gate=-20.0;
+  options.shortterm.range_lower_bound=0.1;
+  options.shortterm.range_upper_bound=0.95;
 
   opterr=0;
 
@@ -191,17 +305,24 @@ int main(int argc, char **argv)
       odirname=optarg;
       break;
     case 'u':
-      if (0==strcasecmp("integrated",optarg)) {
-        options.integrated=1;
-        options.method=BS1770GAIN_METHOD_INTEGRATED;
+      if (0==strcasecmp("integrated",optarg)
+          ||0==strcasecmp("momentary-mean",optarg)) {
+        options.momentary.mean=1;
+        options.method=BS1770GAIN_METHOD_MOMENTARY_MEAN;
       }
-      else if (0==strcasecmp("shortterm",optarg)) {
-        options.shortterm=1;
-        options.method=BS1770GAIN_METHOD_SHORTTERM;
+      else if (0==strcasecmp("momentary",optarg)
+          ||0==strcasecmp("momentary-maximum",optarg)) {
+        options.momentary.maximum=1;
+        options.method=BS1770GAIN_METHOD_MOMENTARY_MAXIMUM;
       }
-      else if (0==strcasecmp("momentary",optarg)) {
-        options.momentary=1;
-        options.method=BS1770GAIN_METHOD_MOMENTARY;
+      else if (0==strcasecmp("shortterm-mean",optarg)) {
+        options.shortterm.mean=1;
+        options.method=BS1770GAIN_METHOD_SHORTTERM_MEAN;
+      }
+      else if (0==strcasecmp("shortterm",optarg)
+          ||0==strcasecmp("shortterm-maximum",optarg)) {
+        options.shortterm.maximum=1;
+        options.method=BS1770GAIN_METHOD_SHORTTERM_MAXIMUM;
       }
       else
         bs1770gain_usage(argv,-1);
@@ -218,19 +339,19 @@ int main(int argc, char **argv)
       options.dump=1;
       break;
     case 'i':
-      options.integrated=1;
+      options.momentary.mean=1;
+      break;
+    case 's':
+      options.shortterm.maximum=1;
       break;
     case 'm':
-      options.momentary=1;
+      options.momentary.maximum=1;
       break;
     case 'r':
-      options.range=1;
+      options.shortterm.range=1;
       break;
     case 'p':
       options.samplepeak=1;
-      break;
-    case 's':
-      options.shortterm=1;
       break;
     case 't':
       options.truepeak=1;
@@ -304,6 +425,64 @@ int main(int argc, char **argv)
       options.mono2stereo=1;
       break;
     ///////////////////////////////////////////////////////////////////////////
+    case MOMENTARY_RANGE:
+      options.momentary.range=1;
+      break;
+    ////////
+    case MOMENTARY_LENGTH:
+      options.momentary.length=atof(optarg);
+      break;
+    case MOMENTARY_OVERLAP:
+      overlap=atof(optarg);
+
+      if (0.0<=overlap&&overlap<100.0)
+        options.momentary.partition=floor(100.0/(100.0-overlap)+0.5);
+      else
+        bs1770gain_usage(argv,-1);
+
+      break;
+    case MOMENTARY_MEAN_GATE:
+      options.momentary.mean_gate=atof(optarg);
+      break;
+    case MOMENTARY_RANGE_GATE:
+      options.momentary.range_gate=atof(optarg);
+      break;
+    case MOMENTARY_RANGE_LOWER_BOUND:
+      options.momentary.range_lower_bound=atof(optarg);
+      break;
+    case MOMENTARY_RANGE_UPPER_BOUND:
+      options.momentary.range_upper_bound=atof(optarg);
+      break;
+    ////////
+    case SHORTTERM_MEAN:
+      options.shortterm.mean=1;
+      break;
+    ////////
+    case SHORTTERM_LENGTH:
+      options.shortterm.length=atof(optarg);
+      break;
+    case SHORTTERM_OVERLAP:
+      overlap=atof(optarg);
+
+      if (0.0<=overlap&&overlap<100.0)
+        options.shortterm.partition=floor(100.0/(100.0-overlap)+0.5);
+      else
+        bs1770gain_usage(argv,-1);
+
+      break;
+    case SHORTTERM_MEAN_GATE:
+      options.shortterm.mean_gate=atof(optarg);
+      break;
+    case SHORTTERM_RANGE_GATE:
+      options.shortterm.range_gate=atof(optarg);
+      break;
+    case SHORTTERM_RANGE_LOWER_BOUND:
+      options.shortterm.range_lower_bound=atof(optarg);
+      break;
+    case SHORTTERM_RANGE_UPPER_BOUND:
+      options.shortterm.range_upper_bound=atof(optarg);
+      break;
+    ///////////////////////////////////////////////////////////////////////////
     default:
       break;
     }
@@ -312,9 +491,34 @@ int main(int argc, char **argv)
   if (argc==optind)
     bs1770gain_usage(argv,-1);
 
-  if (0==options.integrated&&0==options.shortterm&&0==options.momentary) {
-    if (NULL!=odirname||0==options.range)
-      options.integrated=1;
+  if (0!=options.method&&NULL==odirname)
+    bs1770gain_usage(argv,-1);
+
+  if (options.momentary.partition<1||options.shortterm.partition<1)
+    bs1770gain_usage(argv,-1);
+
+  if (options.momentary.range_lower_bound<=0.0
+      ||options.momentary.range_upper_bound
+          <=options.momentary.range_lower_bound
+      ||1.0<=options.momentary.range_upper_bound
+      ||options.shortterm.range_lower_bound<=0.0
+      ||options.shortterm.range_upper_bound
+          <=options.shortterm.range_lower_bound
+      ||1.0<=options.shortterm.range_upper_bound) {
+
+    bs1770gain_usage(argv,-1);
+  }
+
+  if (BS1770GAIN_BLOCK_OPTIONS_EMPTY_METHOD(&options.momentary)
+      &&BS1770GAIN_BLOCK_OPTIONS_EMPTY_METHOD(&options.shortterm)) {
+
+    if (NULL!=odirname||
+        (BS1770GAIN_PEAK_OPTIONS_EMPTY(&options)
+        &&0==options.momentary.range
+        &&0==options.shortterm.range)) {
+
+      options.momentary.mean=1;
+    }
   }
 
   // load the FFmpeg and SoX libraries from "bs1770gain-tools".

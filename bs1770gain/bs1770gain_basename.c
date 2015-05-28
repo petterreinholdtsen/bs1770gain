@@ -20,6 +20,8 @@
 #if defined (WIN32) // {
 #include <windows.h>
 #include <direct.h>
+#else // } {
+#include <sys/stat.h>
 #endif // }
 #include <bs1770gain.h>
 
@@ -102,7 +104,7 @@ void bs1770gain_mkdir_dirname(char *path)
 #if defined (WIN32) // {
       _wmkdir(wpath);
 #else // } {
-      mkdir(path);
+      mkdir(path,S_IRWXU|S_IRWXG|S_IRWXO);
 #endif // }
       break;
     }
@@ -112,7 +114,7 @@ void bs1770gain_mkdir_dirname(char *path)
 #if defined (WIN32) // {
       _wmkdir(wpath);
 #else // } {
-      mkdir(path);
+      mkdir(path,S_IRWXU|S_IRWXG|S_IRWXO);
 #endif // }
       *p2=ch;
       p1=p2+1;
