@@ -26,16 +26,20 @@ extern "C" {
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
+#define EXTENSION_RENAME      BS1770GAIN_EXTENSION_RENAME
+#define EXTENSION_CSV         BS1770GAIN_EXTENSION_CSV
+#define EXTENSION_JPG         BS1770GAIN_EXTENSION_JPG
+#define EXTENSION_TAGS        BS1770GAIN_EXTENSION_TAGS
+#define EXTENSION_ALL         BS1770GAIN_EXTENSION_ALL
+
+///////////////////////////////////////////////////////////////////////////////
 typedef bs1770gain_block_options_t block_options_t;
 typedef bs1770gain_options_t options_t;
 typedef bs1770gain_tag_t tag_t;
 typedef bs1770gain_tree_vmt_t tree_vmt_t;
 typedef bs1770gain_tree_t tree_t;
-typedef bs1770gain_head_t head_t;
-typedef bs1770gain_stats_t stats_t;
 typedef bs1770gain_album_t album_t;
 typedef bs1770gain_track_t track_t;
-//typedef bs1770gain_read_t read_t;
 
 #ifdef __cpluplus
 }

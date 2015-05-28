@@ -17,12 +17,31 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
-#include <bs1770gain.h>
+#include <bs1770gain_priv.h>
 #include <getopt.h>
 //#include <locale.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 #define CLOCKS_PER_MILLIS (CLOCKS_PER_SEC/1000)
+
+#define BS1770GAIN_AGGREGATE_METHOD ( \
+  AGGREGATE_MOMENTARY_MAXIMUM \
+  &AGGREGATE_MOMENTARY_MEAN \
+  &AGGREGATE_SHORTTERM_MAXIMUM \
+  &AGGREGATE_SHORTTERM_MEAN \
+)
+
+#define BS1770GAIN_AGGREGATE_RANGE_PEAK ( \
+  AGGREGATE_MOMENTARY_RANGE \
+  &AGGREGATE_SHORTTERM_RANGE \
+  &AGGREGATE_SAMPLEPEAK \
+  &AGGREGATE_TRUEPEAK \
+)
+
+#define BS1770GAIN_OPTIONS_NO_METHOD(o) \
+  (0==((o)->flags&BS1770GAIN_AGGREGATE_METHOD))
+#define BS1770GAIN_OPTIONS_NO_RANGE_PEAK(o) \
+  (0==((o)->flags&BS1770GAIN_AGGREGATE_RANGE_PEAK))
 
 ///////////////////////////////////////////////////////////////////////////////
 void bs1770gain_usage(char **argv, int code)
@@ -58,11 +77,12 @@ void bs1770gain_usage(char **argv, int code)
       "   or apply the EBU/ATSC/RG gain, respectively,\n"
       "   and output to folder\n");
   fprintf(stderr," -f <file>,--file <file>:  write analysis to file\n");
-  fprintf(stderr," -x,--extensions:  enable extensions:\n"
+  fprintf(stderr," -x,--extensions:  enable following extensions\n"
       "   1) rename files according to TITLE tag\n"
       "   2) read metadata from per-folder CSV file \"folder.csv\"\n"
       "   3) copy file \"folder.jpg\" from source to destination\n"
-      "      folder\n");
+      "      folder\n"
+      "   4) automatically add the TRACK and DISC tags\n");
   fprintf(stderr," -l,--list:  print FFmpeg format/stream information\n");
   /////////////////////////////////////////////////////////////////////////////
   fprintf(stderr," --ebu:  calculate replay gain according to EBU R128\n"
@@ -80,6 +100,12 @@ void bs1770gain_usage(char **argv, int code)
   fprintf(stderr," --video <index>:  select video index (corresponds to\n"
       "   [0:<index>] in FFmpeg listing, cf. -l/--list option)\n");
   fprintf(stderr," --drc <drc>:  set AC3 dynamic range compression (DRC)\n");
+  fprintf(stderr," --extension <extension>:  enable extension out of\n"
+      "   \"rename\":  rename files according to TITLE tag\n"
+      "   \"csv\":  read metadata from per-folder CSV file \"folder.csv\"\n"
+      "   \"jpg\":  copy file \"folder.jpg\" from source to destination\n"
+      "      folder\n"
+      "   \"tags\":  automatically add the TRACK and DISC tags\n");
   fprintf(stderr," --format <format>:  convert to format\n");
   fprintf(stderr," --loglevel <level>:  set loglevel,\n"
       "   level:  \"quiet\", \"panic\", \"fatal\", \"error\", \"warning\",\n"
@@ -151,6 +177,7 @@ enum {
   ////////////////
   TIME,
   EBU,
+  EXTENSION,
   ATSC,
   AUDIO,
   VIDEO,
@@ -198,6 +225,7 @@ static struct option bs1770gain_opts[]={
   { name:"apply",has_arg:required_argument,flag:NULL,val:APPLY },
   { name:"audio",has_arg:required_argument,flag:NULL,val:AUDIO },
   { name:"drc",has_arg:required_argument,flag:NULL,val:DRC },
+  { name:"extension",has_arg:required_argument,flag:NULL,val:EXTENSION },
   { name:"format",has_arg:required_argument,flag:NULL,val:FORMAT },
   { name:"loglevel",has_arg:required_argument,flag:NULL,val:LOGLEVEL },
   { name:"level",has_arg:required_argument,flag:NULL,val:LEVEL },
@@ -252,14 +280,17 @@ static struct option bs1770gain_opts[]={
 ///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv)
 {
-  bs1770gain_options_t options;
-  bs1770gain_tree_t root;
+  options_t options;
+  tree_t root;
   char *fpath=NULL;
   char *odirname=NULL;
   int loglevel=AV_LOG_QUIET;
   double overlap;
   clock_t t1,t2;
   int c;
+
+  if (1==argc)
+    bs1770gain_usage(argv,-1);
 
   //setlocale(LC_ALL,"C");
   memset(&options,0,sizeof options);
@@ -270,14 +301,14 @@ int main(int argc, char **argv)
   options.audio_ext="flac";
   options.video_ext="mkv";
 
-  options.momentary.length=400.0;
+  options.momentary.ms=400.0;
   options.momentary.partition=4;
   options.momentary.mean_gate=-10.0;
   options.momentary.range_gate=-20.0;
   options.momentary.range_lower_bound=0.1;
   options.momentary.range_upper_bound=0.95;
 
-  options.shortterm.length=3000.0;
+  options.shortterm.ms=3000.0;
   options.shortterm.partition=3;
   options.shortterm.mean_gate=-10.0;
   options.shortterm.range_gate=-20.0;
@@ -310,21 +341,21 @@ int main(int argc, char **argv)
     case 'u':
       if (0==strcasecmp("integrated",optarg)
           ||0==strcasecmp("momentary-mean",optarg)) {
-        options.momentary.mean=1;
+        options.flags|=AGGREGATE_MOMENTARY_MEAN;
         options.method=BS1770GAIN_METHOD_MOMENTARY_MEAN;
       }
       else if (0==strcasecmp("momentary",optarg)
           ||0==strcasecmp("momentary-maximum",optarg)) {
-        options.momentary.maximum=1;
+        options.flags|=AGGREGATE_MOMENTARY_MAXIMUM;
         options.method=BS1770GAIN_METHOD_MOMENTARY_MAXIMUM;
       }
       else if (0==strcasecmp("shortterm-mean",optarg)) {
-        options.shortterm.mean=1;
+        options.flags|=AGGREGATE_SHORTTERM_MEAN;
         options.method=BS1770GAIN_METHOD_SHORTTERM_MEAN;
       }
       else if (0==strcasecmp("shortterm",optarg)
           ||0==strcasecmp("shortterm-maximum",optarg)) {
-        options.shortterm.maximum=1;
+        options.flags|=AGGREGATE_SHORTTERM_MAXIMUM;
         options.method=BS1770GAIN_METHOD_SHORTTERM_MAXIMUM;
       }
       else {
@@ -345,48 +376,26 @@ int main(int argc, char **argv)
     case 'l':
       options.dump=1;
       break;
-#if defined (BS1770GAIN_PROPERTY) // {
     case 'i':
-      //options.momentary.mean=1;
-      options.momentary.property|=
+      options.flags|=AGGREGATE_MOMENTARY_MEAN;
       break;
     case 's':
-      options.shortterm.maximum=1;
+      options.flags|=AGGREGATE_SHORTTERM_MAXIMUM;
       break;
     case 'm':
-      options.momentary.maximum=1;
+      options.flags|=AGGREGATE_MOMENTARY_MAXIMUM;
       break;
     case 'r':
-      options.shortterm.range=1;
+      options.flags|=AGGREGATE_SHORTTERM_RANGE;
       break;
     case 'p':
-      options.samplepeak=1;
+      options.flags|=AGGREGATE_SAMPLEPEAK;
       break;
     case 't':
-      options.truepeak=1;
+      options.flags|=AGGREGATE_TRUEPEAK;
       break;
-#else // } {
-    case 'i':
-      options.momentary.mean=1;
-      break;
-    case 's':
-      options.shortterm.maximum=1;
-      break;
-    case 'm':
-      options.momentary.maximum=1;
-      break;
-    case 'r':
-      options.shortterm.range=1;
-      break;
-    case 'p':
-      options.samplepeak=1;
-      break;
-    case 't':
-      options.truepeak=1;
-      break;
-#endif // }
     case 'x':
-      options.extensions=1;
+      options.extensions=BS1770GAIN_EXTENSION_ALL;
       break;
     /// without flag //////////////////////////////////////////////////////////
     case AUDIO:
@@ -402,25 +411,37 @@ int main(int argc, char **argv)
     case DRC:
       options.drc=atof(optarg);
       break;
+    case EXTENSION:
+      if (0==strcasecmp("rename",optarg))
+        options.extensions|=EXTENSION_RENAME;
+      else if (0==strcasecmp("csv",optarg))
+        options.extensions|=EXTENSION_CSV;
+      else if (0==strcasecmp("jpg",optarg))
+        options.extensions|=EXTENSION_JPG;
+      else if (0==strcasecmp("tags",optarg))
+        options.extensions|=EXTENSION_TAGS;
+      else
+        bs1770gain_usage(argv,-1);
+      break;
     case FORMAT:
       options.format=optarg;
       break;
     case LOGLEVEL:
-      if (0==strcmp("quiet",optarg))
+      if (0==strcasecmp("quiet",optarg))
         loglevel=AV_LOG_QUIET;
-      else if (0==strcmp("panic",optarg))
+      else if (0==strcasecmp("panic",optarg))
         loglevel=AV_LOG_PANIC;
-      else if (0==strcmp("fatal",optarg))
+      else if (0==strcasecmp("fatal",optarg))
         loglevel=AV_LOG_FATAL;
-      else if (0==strcmp("error",optarg))
+      else if (0==strcasecmp("error",optarg))
         loglevel=AV_LOG_ERROR;
-      else if (0==strcmp("warning",optarg))
+      else if (0==strcasecmp("warning",optarg))
         loglevel=AV_LOG_WARNING;
-      else if (0==strcmp("info",optarg))
+      else if (0==strcasecmp("info",optarg))
         loglevel=AV_LOG_INFO;
-      else if (0==strcmp("verbose",optarg))
+      else if (0==strcasecmp("verbose",optarg))
         loglevel=AV_LOG_VERBOSE;
-      else if (0==strcmp("debug",optarg))
+      else if (0==strcasecmp("debug",optarg))
         loglevel=AV_LOG_DEBUG;
       else
         bs1770gain_usage(argv,-1);
@@ -455,11 +476,11 @@ int main(int argc, char **argv)
       break;
     ///////////////////////////////////////////////////////////////////////////
     case MOMENTARY_RANGE:
-      options.momentary.range=1;
+      options.flags|=AGGREGATE_MOMENTARY_RANGE;
       break;
     ////////
     case MOMENTARY_LENGTH:
-      options.momentary.length=atof(optarg);
+      options.momentary.ms=atof(optarg);
       break;
     case MOMENTARY_OVERLAP:
       overlap=atof(optarg);
@@ -487,11 +508,11 @@ int main(int argc, char **argv)
       break;
     ////////
     case SHORTTERM_MEAN:
-      options.shortterm.mean=1;
+      options.flags|=AGGREGATE_SHORTTERM_MEAN;
       break;
     ////////
     case SHORTTERM_LENGTH:
-      options.shortterm.length=atof(optarg);
+      options.shortterm.ms=atof(optarg);
       break;
     case SHORTTERM_OVERLAP:
       overlap=atof(optarg);
@@ -546,28 +567,20 @@ int main(int argc, char **argv)
       ||options.shortterm.range_upper_bound
           <=options.shortterm.range_lower_bound
       ||1.0<=options.shortterm.range_upper_bound) {
-
     fprintf(stderr,"Error: Range bounds out of range "
         " 0.0 < lower < upper < 1.0.\n");
     fprintf(stderr,"\n");
     bs1770gain_usage(argv,-1);
   }
 
-  if (BS1770GAIN_BLOCK_OPTIONS_EMPTY_METHOD(&options.momentary)
-      &&BS1770GAIN_BLOCK_OPTIONS_EMPTY_METHOD(&options.shortterm)) {
-
-    if (NULL!=odirname||
-        (BS1770GAIN_PEAK_OPTIONS_EMPTY(&options)
-        &&0==options.momentary.range
-        &&0==options.shortterm.range)) {
-
-      options.momentary.mean=1;
-    }
+  if (BS1770GAIN_OPTIONS_NO_METHOD(&options)) {
+    if (NULL!=odirname||BS1770GAIN_OPTIONS_NO_RANGE_PEAK(&options))
+      options.flags|=AGGREGATE_MOMENTARY_MEAN;
   }
 
   // load the FFmpeg and SoX libraries from "bs1770gain-tools".
   if (ffsox_dynload("bs1770gain-tools")<0) {
-    PBU_MESSAGE("loading shared libraries");
+    MESSAGE("loading shared libraries");
     goto dynload;
   }
 

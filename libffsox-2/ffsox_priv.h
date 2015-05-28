@@ -26,15 +26,27 @@ extern "C" {
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-#define STATE_RUN           FFSOX_STATE_RUN
-#define STATE_FLUSH         FFSOX_STATE_FLUSH
-#define STATE_END           FFSOX_STATE_END
+#define STATE_RUN                     FFSOX_STATE_RUN
+#define STATE_FLUSH                   FFSOX_STATE_FLUSH
+#define STATE_END                     FFSOX_STATE_END
 
-#define MACHINE_PUSH        FFSOX_MACHINE_PUSH
-#define MACHINE_POP         FFSOX_MACHINE_POP
+#define MACHINE_PUSH                  FFSOX_MACHINE_PUSH
+#define MACHINE_POP                   FFSOX_MACHINE_POP
+
+#define AGGREGATE_MOMENTARY_MAXIMUM   FFSOX_AGGREGATE_MOMENTARY_MAXIMUM
+#define AGGREGATE_MOMENTARY_MEAN      FFSOX_AGGREGATE_MOMENTARY_MEAN
+#define AGGREGATE_MOMENTARY_RANGE     FFSOX_AGGREGATE_MOMENTARY_RANGE
+#define AGGREGATE_SHORTTERM_MAXIMUM   FFSOX_AGGREGATE_SHORTTERM_MAXIMUM
+#define AGGREGATE_SHORTTERM_MEAN      FFSOX_AGGREGATE_SHORTTERM_MEAN
+#define AGGREGATE_SHORTTERM_RANGE     FFSOX_AGGREGATE_SHORTTERM_RANGE
+#define AGGREGATE_SAMPLEPEAK          FFSOX_AGGREGATE_SAMPLEPEAK
+#define AGGREGATE_TRUEPEAK            FFSOX_AGGREGATE_TRUEPEAK
+#define AGGREGATE_MOMENTARY           FFSOX_AGGREGATE_MOMENTARY
+#define AGGREGATE_SHORTTERM           FFSOX_AGGREGATE_SHORTTERM
+#define AGGREGATE_ALL                 FFSOX_AGGREGATE_ALL
 
 ///////////////////////////////////////////////////////////////////////////////
-typedef ffsox_read_ptr_t read_ptr_t;
+typedef ffsox_intercept_t intercept_t;
 typedef ffsox_convert_t convert_t;
 typedef ffsox_format_t format_t;
 typedef ffsox_stream_t stream_t;
@@ -44,6 +56,13 @@ typedef ffsox_read_list_t read_list_t;
 typedef ffsox_packet_consumer_list_t packet_consumer_list_t;
 typedef ffsox_stream_list_t stream_list_t;
 typedef ffsox_sink_t sink_t;
+
+typedef ffsox_aggregate_t aggregate_t;
+typedef ffsox_collect_t collect_t;
+
+typedef ffsox_block_config_t collect_block_t;
+typedef ffsox_collect_config_t collect_config_t;
+typedef ffsox_analyze_config_t analyze_config_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 typedef ffsox_node_vmt_t node_vmt_t;
@@ -65,6 +84,7 @@ typedef ffsox_node_t node_t;
     typedef ffsox_sox_reader_t sox_reader_t;
 
 ///////////////////////////////////////////////////////////////////////////////
+typedef ffsox_pull_callback_t pull_cb_t;
 typedef ffsox_source_callback_t source_cb_t;
 
 #ifdef __cpluplus

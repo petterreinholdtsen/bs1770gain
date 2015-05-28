@@ -19,14 +19,14 @@
  */
 #ifndef __FFSOX_H__
 #define __FFSOX_H__ // {
-#include <pbutil.h>
+#include <lib1770.h>
 #include <ffsox_dynload.h>
 #ifdef __cpluplus
 extern "C" {
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-typedef union ffsox_read_ptr ffsox_read_ptr_t;
+typedef struct ffsox_intercept ffsox_intercept_t;
 typedef struct ffsox_convert ffsox_convert_t;
 typedef struct ffsox_format ffsox_format_t;
 typedef struct ffsox_stream ffsox_stream_t;
@@ -36,6 +36,13 @@ typedef struct ffsox_read_list ffsox_read_list_t;
 typedef struct ffsox_packet_consumer_list ffsox_packet_consumer_list_t;
 typedef struct ffsox_stream_list ffsox_stream_list_t;
 typedef struct ffsox_sink ffsox_sink_t;
+
+typedef struct ffsox_aggregate ffsox_aggregate_t;
+typedef struct ffsox_collect ffsox_collect_t;
+
+typedef struct ffsox_block_config ffsox_block_config_t;
+typedef struct ffsox_collect_config ffsox_collect_config_t;
+typedef struct ffsox_analyze_config ffsox_analyze_config_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 typedef struct ffsox_node_vmt ffsox_node_vmt_t;
@@ -57,6 +64,21 @@ typedef struct ffsox_node ffsox_node_t;
     typedef struct ffsox_sox_reader ffsox_sox_reader_t;
 
 /// utilities /////////////////////////////////////////////////////////////////
+typedef void (*ffsox_pull_callback_t)(void *, double x);
+
+sox_effect_handler_t const *ffsox_sox_read_handler(void);
+sox_effect_handler_t const *ffsox_sox_pull_handler(void);
+
+int ffsox_sox_add_effect(sox_effect_t *e, sox_effects_chain_t *chain,
+    sox_signalinfo_t *signal_in, sox_signalinfo_t const *signal_out,
+    int n, char *opts[]);
+int ffsox_sox_add_effect_fn(sox_effects_chain_t *chain,
+    sox_signalinfo_t *signal_in, sox_signalinfo_t const *signal_out,
+    int n, char *opts[], sox_effect_fn_t fn);
+int ffsox_sox_add_effect_name(sox_effects_chain_t *chain,
+    sox_signalinfo_t *signal_in, sox_signalinfo_t const *signal_out,
+    int n, char *opts[], const char *name);
+
 #if defined (WIN32) // {
 wchar_t *ffsox_path3(const wchar_t *ws1, const char *s2, const char *s3);
 #else // } {
@@ -65,36 +87,27 @@ char *ffsox_path3(const char *s1, const char *s2, const char *s3);
 int ffsox_csv2avdict(const char *file, char sep, AVDictionary **metadata);
 
 AVCodec *ffsox_find_decoder(enum AVCodecID id);
-int ffsox_audiostream(AVFormatContext *ic, int *aip, int *vip);
+int ffsox_audiostream(AVFormatContext *fci, int *aip, int *vip);
 
-/// ffsox_read_pointer ////////////////////////////////////////////////////////
-union ffsox_read_ptr {
-  // interleaved.
-  struct { const uint8_t *rp; } u8i;
-  struct { const int8_t  *rp; } s8i;
-  struct { const int16_t *rp; } s16i;
-  struct { const int32_t *rp; } s32i;
-  struct { const float   *rp; } flti;
-  struct { const double  *rp; } dbli;
-  // planar.
-  struct { const uint8_t *rp[AV_NUM_DATA_POINTERS]; } u8p;
-  struct { const int8_t  *rp[AV_NUM_DATA_POINTERS]; } s8p;
-  struct { const int16_t *rp[AV_NUM_DATA_POINTERS]; } s16p;
-  struct { const int32_t *rp[AV_NUM_DATA_POINTERS]; } s32p;
-  struct { const float   *rp[AV_NUM_DATA_POINTERS]; } fltp;
-  struct { const double  *rp[AV_NUM_DATA_POINTERS]; } dblp;
+/// intercept /////////////////////////////////////////////////////////////////
+struct ffsox_intercept {
+  void *data;
+  void (*channel)(void *data, int ch, double x);
+  void (*sample)(void *data);
 };
 
 /// convert ///////////////////////////////////////////////////////////////////
 struct ffsox_convert {
   ffsox_frame_t *fr;
   ffsox_frame_t *fw;
+  double q;
+  ffsox_intercept_t *intercept;
   int channels;
   int nb_samples;
 };
 
 void ffsox_convert_setup(ffsox_convert_t *convert, ffsox_frame_t *fr,
-    ffsox_frame_t *fw);
+    ffsox_frame_t *fw, double q, ffsox_intercept_t *intercept);
 
 /// format ////////////////////////////////////////////////////////////////////
 struct ffsox_format {
@@ -132,7 +145,7 @@ int ffsox_frame_complete(ffsox_frame_t *f);
 void ffsox_frame_reset(ffsox_frame_t *f);
 int ffsox_frame_convert(ffsox_frame_t *fr, ffsox_frame_t *fw, double q);
 int ffsox_frame_convert_sox(ffsox_frame_t *fr, ffsox_frame_t *fw, double q,
-    sox_uint64_t *clipsp);
+    ffsox_intercept_t *intercept, sox_uint64_t *clipsp);
 
 /// machine ///////////////////////////////////////////////////////////////////
 #define FFSOX_MACHINE_PUSH   0
@@ -178,6 +191,92 @@ int ffsox_sink_append(ffsox_sink_t *sink, ffsox_stream_t *si,
 
 int ffsox_sink_open(ffsox_sink_t *s);
 void ffsox_sink_close(ffsox_sink_t *s);
+
+///////////////////////////////////////////////////////////////////////////////
+enum {
+  FFSOX_AGGREGATE_MOMENTARY_MAXIMUM=1<<1,
+  FFSOX_AGGREGATE_MOMENTARY_MEAN=1<<2,
+  FFSOX_AGGREGATE_MOMENTARY_RANGE=1<<3,
+  FFSOX_AGGREGATE_SHORTTERM_MAXIMUM=1<<4,
+  FFSOX_AGGREGATE_SHORTTERM_MEAN=1<<5,
+  FFSOX_AGGREGATE_SHORTTERM_RANGE=1<<6,
+  FFSOX_AGGREGATE_SAMPLEPEAK=1<<7,
+  FFSOX_AGGREGATE_TRUEPEAK=1<<8,
+  FFSOX_AGGREGATE_MOMENTARY
+      =FFSOX_AGGREGATE_MOMENTARY_MAXIMUM
+      |FFSOX_AGGREGATE_MOMENTARY_MEAN
+      |FFSOX_AGGREGATE_MOMENTARY_RANGE,
+  FFSOX_AGGREGATE_SHORTTERM
+      =FFSOX_AGGREGATE_SHORTTERM_MAXIMUM
+      |FFSOX_AGGREGATE_SHORTTERM_MEAN
+      |FFSOX_AGGREGATE_SHORTTERM_RANGE,
+  FFSOX_AGGREGATE_ALL
+      =FFSOX_AGGREGATE_MOMENTARY
+      |FFSOX_AGGREGATE_SHORTTERM
+      |FFSOX_AGGREGATE_SAMPLEPEAK
+      |FFSOX_AGGREGATE_TRUEPEAK
+};
+
+struct ffsox_aggregate {
+  int flags;
+  double samplepeak;
+  double truepeak;
+  lib1770_stats_t *momentary;
+  lib1770_stats_t *shortterm;
+};
+
+int ffsox_aggregate_create(ffsox_aggregate_t *aggregate, int flags);
+void ffsox_aggregate_cleanup(ffsox_aggregate_t *aggregate);
+
+int ffsox_aggregate_merge(ffsox_aggregate_t *lhs, ffsox_aggregate_t *rhs);
+
+///////////////////////////////////////////////////////////////////////////////
+struct ffsox_block_config {
+  double ms;
+  int partition;
+};
+
+struct ffsox_collect_config {
+  ffsox_aggregate_t *aggregate;
+  double scale;
+  double samplerate;
+  int channels;
+  ffsox_block_config_t momentary;
+  ffsox_block_config_t shortterm;
+};
+
+struct ffsox_collect {
+  ffsox_aggregate_t *aggregate;
+  double scale;
+  double invscale;
+  int channels;
+  double *sp;
+  lib1770_pre_t *pre;
+  lib1770_block_t *momentary;
+  lib1770_block_t *shortterm;
+  lib1770_sample_t sample;
+};
+
+int ffsox_collect_create(ffsox_collect_t *collect, ffsox_collect_config_t *cc);
+void ffsox_collect_cleanup(ffsox_collect_t *collect);
+
+void ffsox_collect_flush(ffsox_collect_t *collect);
+void ffsox_collect_channel(void *data, int ch, double x);
+void ffsox_collect_sample(void *data);
+void ffsox_collect_truepeak(void *data, double x);
+
+///////////////////////////////////////////////////////////////////////////////
+struct ffsox_analyze_config {
+  const char *path;
+  ffsox_aggregate_t *aggregate;
+  double drc;
+  ffsox_block_config_t momentary;
+  ffsox_block_config_t shortterm;
+  FILE *f;
+  int dump;
+};
+
+int ffsox_analyze(ffsox_analyze_config_t *ac);
 
 /// node //////////////////////////////////////////////////////////////////////
 #define FFSOX_STATE_RUN      0
@@ -276,6 +375,7 @@ int ffsox_source_seek(ffsox_source_t *n, int64_t ts);
 
 int ffsox_source_link(ffsox_source_t *si, ffsox_sink_t *so, double drc,
     int codec_id, int sample_fmt, double q);
+void ffsox_source_progress(const ffsox_source_t *si, /* FILE */void *data);
 
 /// packet_consumer ///////////////////////////////////////////////////////////
 struct ffsox_packet_consumer_vmt {
@@ -504,6 +604,7 @@ struct ffsox_sox_reader {
       ffsox_frame_t fo; \
       ffsox_frame_consumer_t *next; \
       double q; \
+      ffsox_intercept_t *intercept; \
       sox_uint64_t clips; \
       int sox_errno;
       FFSOX_SOX_READER_MEM(ffsox_sox_reader_vmt_t)
@@ -512,9 +613,9 @@ struct ffsox_sox_reader {
 };
 
 int ffsox_sox_reader_create(ffsox_sox_reader_t *sa,
-    ffsox_frame_reader_t *fr, double q);
+    ffsox_frame_reader_t *fr, double q, ffsox_intercept_t *intercept);
 ffsox_sox_reader_t *ffsox_sox_reader_new(ffsox_frame_reader_t *fr,
-    double q);
+    double q, ffsox_intercept_t *intercept);
 const ffsox_sox_reader_vmt_t *ffsox_sox_reader_get_vmt(void);
 
 size_t ffsox_sox_reader_read(ffsox_sox_reader_t *sa, sox_sample_t *buf,

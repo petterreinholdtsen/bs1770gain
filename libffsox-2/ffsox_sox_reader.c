@@ -21,7 +21,8 @@
 
 static sox_reader_vmt_t vmt;
 
-int ffsox_sox_reader_create(sox_reader_t *sa, frame_reader_t *fr, double q)
+int ffsox_sox_reader_create(sox_reader_t *sa, frame_reader_t *fr, double q,
+    intercept_t *intercept)
 {
   AVCodecContext *cc=fr->si.cc;
   AVFrame *frame;
@@ -62,6 +63,7 @@ int ffsox_sox_reader_create(sox_reader_t *sa, frame_reader_t *fr, double q)
   frame->nb_samples=0;
 
   sa->q=q;
+  sa->intercept=intercept;
   sa->clips=0;
   sa->sox_errno=0;
   sa->prev=&fr->node;
@@ -77,7 +79,8 @@ base:
   return -1;
 }
 
-sox_reader_t *ffsox_sox_reader_new(frame_reader_t *fr, double q)
+sox_reader_t *ffsox_sox_reader_new(frame_reader_t *fr, double q,
+    intercept_t *intercept)
 {
   sox_reader_t *sa;
 
@@ -86,7 +89,7 @@ sox_reader_t *ffsox_sox_reader_new(frame_reader_t *fr, double q)
     goto malloc;
   }
 
-  if (ffsox_sox_reader_create(sa,fr,q)<0) {
+  if (ffsox_sox_reader_create(sa,fr,q,intercept)<0) {
     MESSAGE("creating write encode node");
     goto create;
   }
@@ -165,7 +168,7 @@ static int sox_reader_run(sox_reader_t *sa)
   case STATE_RUN:
     if (NULL!=fi) {
       while (0==ffsox_frame_complete(fi)) {
-        if (ffsox_frame_convert_sox(fi,fo,sa->q,&sa->clips)<0) {
+        if (ffsox_frame_convert_sox(fi,fo,sa->q,sa->intercept,&sa->clips)<0) {
           MESSAGE("converting");
           return -1;
         }

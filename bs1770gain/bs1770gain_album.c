@@ -27,25 +27,29 @@ bs1770gain_album_t *bs1770gain_album_new(const char *ipath, const char *opath,
 {
   bs1770gain_album_t *album;
 
-  BS1770GAIN_GOTO(NULL==(album=malloc(sizeof *album)),
-      "allocation album",album);
-
-  if (NULL!=ipath) {
-    BS1770GAIN_GOTO(NULL==(album->ipath=strdup(ipath)),
-        "copying input path ",ipath);
+  if (NULL==(album=malloc(sizeof *album))) {
+    MESSAGE("allocating album");
+    goto album;
   }
-  else
+
+  if (NULL==ipath)
     album->ipath=NULL;
-
-  if (NULL!=opath) {
-    BS1770GAIN_GOTO(NULL==(album->opath=strdup(opath)),
-        "copying input path ",opath);
+  else if (NULL==(album->ipath=strdup(ipath))) {
+     MESSAGE("copying input path");
+     goto ipath;
   }
-  else
-    album->opath=NULL;
 
-  BS1770GAIN_GOTO(NULL==(album->stats=bs1770gain_stats_new(options)),
-      "allocation album",stats);
+  if (NULL==opath)
+    album->opath=NULL;
+  else if (NULL==(album->opath=strdup(opath))) {
+    MESSAGE("copying output path");
+    goto opath;
+  }
+
+  if (ffsox_aggregate_create(&album->aggregate,options->flags)<0) {
+    MESSAGE("creating album aggregator");
+    goto aggregate;
+  }
   
   album->n=0;
   album->head=NULL;
@@ -53,8 +57,8 @@ bs1770gain_album_t *bs1770gain_album_new(const char *ipath, const char *opath,
 
   return album;
 // cleanup:
-  bs1770gain_stats_close(album->stats);
-stats:
+  ffsox_aggregate_cleanup(&album->aggregate);
+aggregate:
   if (NULL!=album->opath);
     free(album->opath);
 opath:
@@ -80,7 +84,7 @@ void bs1770gain_album_close(bs1770gain_album_t *album)
   }
 
 
-  bs1770gain_stats_close(album->stats);
+  ffsox_aggregate_cleanup(&album->aggregate);
 
   if (NULL!=album->opath)
     free(album->opath);
@@ -145,12 +149,20 @@ bs1770gain_track_t *bs1770gain_track_new(const char *ipath,
   bs1770gain_track_t *track;
   bs1770gain_track_t *prev,*cur;
 
-  BS1770GAIN_GOTO(NULL==(track=malloc(sizeof *track)),
-      "allocation track",track);
-  BS1770GAIN_GOTO(NULL==(track->ipath=strdup(ipath)),
-      "copying input path ",ipath);
-  BS1770GAIN_GOTO(NULL==(track->stats=bs1770gain_stats_new(options)),
-      "allocation album",stats);
+  if (NULL==(track=malloc(sizeof *track))) {
+    MESSAGE("allocation track");
+    goto track;
+  }
+
+  if (NULL==(track->ipath=strdup(ipath))) {
+    MESSAGE("copying input path");
+    goto ipath;
+  }
+
+  if (ffsox_aggregate_create(&track->aggregate,options->flags)<0) {
+    MESSAGE("creating album aggregator");
+    goto aggregate;
+  }
   
   track->opath=NULL;
   track->album=album;
@@ -178,8 +190,8 @@ bs1770gain_track_t *bs1770gain_track_new(const char *ipath,
 
   return track;
 // cleanup:
-  bs1770gain_stats_close(track->stats);
-stats:
+  ffsox_aggregate_cleanup(&track->aggregate);
+aggregate:
   free(track->ipath);
 ipath:
   free(track);
@@ -189,7 +201,7 @@ track:
 
 void bs1770gain_track_close(bs1770gain_track_t *track)
 {
-  bs1770gain_stats_close(track->stats);
+  ffsox_aggregate_cleanup(&track->aggregate);
 
   if (NULL!=track->opath)
     free(track->opath);
@@ -215,7 +227,7 @@ int bs1770gain_track_alloc_output(track_t *track, const source_t *si,
   else
     ext=pbu_ext(track->ipath);
 
-  if (0==options->extensions||NULL==de)
+  if (0==(EXTENSION_RENAME&options->extensions)||NULL==de)
     track->opath=bs1770gain_opath(track->ipath,odirname,ext,options);
   else
     track->opath=bs1770gain_opathx(track->n,de->value,odirname,ext,options);

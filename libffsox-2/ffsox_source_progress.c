@@ -1,6 +1,6 @@
 /*
- * bs1770gain_seek.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * mux3.c
+ * Copyright (C) 2015 Peter Belkner <pbelkner@snafu.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -17,26 +17,29 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
-#include <bs1770gain.h>
+#include <ffsox_priv.h>
 
-int64_t bs1770gain_seek(AVFormatContext *ifc, const bs1770gain_options_t *o)
+void ffsox_source_progress(const source_t *si, void *data)
 {
-  AVStream *st;
-  int si;
-  int64_t ts;
+  FILE *f=data;
+  const AVPacket *pkt;
+  const AVStream *st;
+  int64_t duration;
+  double percent;
+  char buf[32];
+  int i;
 
-  ts=0;
+  pkt=&si->pkt;
+  st=si->f.fc->streams[pkt->stream_index];
+  duration=av_rescale_q(si->f.fc->duration,AV_TIME_BASE_Q,st->time_base);
+  percent=0ll<pkt->dts&&0ll<duration?100.0*pkt->dts/duration:0.0;
+  sprintf(buf,"%.0f%%",percent);
+  fputs(buf,f);
+  fflush(f);
+  i=strlen(buf);
 
-  if (o->begin>0) {
-    si=av_find_default_stream_index(ifc);
-    st=ifc->streams[si];
-    ts=av_rescale_q(o->begin,AV_TIME_BASE_Q,st->time_base);
-    BS1770GAIN_GOTO(avformat_seek_file(ifc,si,INT64_MIN,ts,INT64_MAX,0)<0,
-        "seeking",seek);
-    ts=av_rescale_q(st->cur_dts,st->time_base,AV_TIME_BASE_Q);
+  while (0<i) {
+    fputc('\b',f);
+    --i;
   }
-
-  return ts;
-seek:
-  return -1;
 }
