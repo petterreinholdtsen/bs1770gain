@@ -339,6 +339,7 @@ RELEASE=bs1770gain-$(BS1770GAIN_VERSION)
 RELEASE_BIN+=-C $(SRCDIR)/bs1770gain
 RELEASE_BIN+=doc
 RELEASE_BIN+=-C $(PREFIX)
+RELEASE_BIN+=bin/bs1770gain-tools
 release-bin: $(BS1770GAIN_INSTALL)
 ifeq (mingw,$(OS))
 RELEXT=win$(BITS)
