@@ -37,6 +37,8 @@ int ffsox_source_create(source_t *n, const char *path)
     goto fc;
   }
 
+  n->f.fc->flags|=AVFMT_FLAG_GENPTS;
+
   if (avformat_find_stream_info(n->f.fc,0)<0) {
     MESSAGE("finding stream info");
     goto find;
@@ -45,6 +47,7 @@ int ffsox_source_create(source_t *n, const char *path)
   n->reads.h=NULL;
   n->reads.n=NULL;
   n->next=NULL;
+  n->ts=0ll;
   memset(&n->pkt,0,sizeof n->pkt);
   av_init_packet(&n->pkt);
 
@@ -54,6 +57,29 @@ find:
 fc:
   vmt.parent->cleanup(&n->node);
 base:
+  return -1;
+}
+
+int ffsox_source_seek(source_t *n, int64_t ts)
+{
+  AVStream *st;
+  int si;
+
+  if (0ll<ts) {
+    si=av_find_default_stream_index(n->f.fc);
+    st=n->f.fc->streams[si];
+    ts=av_rescale_q(ts,AV_TIME_BASE_Q,st->time_base);
+
+    if (avformat_seek_file(n->f.fc,si,INT64_MIN,ts,INT64_MAX,0)<0) {
+      MESSAGE("seeking");
+      goto seek;
+    }
+
+    n->ts=av_rescale_q(st->cur_dts,st->time_base,AV_TIME_BASE_Q);
+  }
+
+  return 0;
+seek:
   return -1;
 }
 
@@ -72,6 +98,7 @@ static node_t *source_next(source_t *n)
 static int source_run(source_t *n)
 {
   read_t *read;
+  int64_t ts;
 
   switch (n->state) {
   case STATE_RUN:
@@ -87,6 +114,16 @@ static int source_run(source_t *n)
         read=n->reads.n->read;
 
         if (n->pkt.stream_index==read->s.stream_index) {
+          if (0ll<n->ts) {
+            ts=av_rescale_q(n->ts,AV_TIME_BASE_Q,read->s.st->time_base);
+
+            if (n->pkt.dts!=AV_NOPTS_VALUE)
+              n->pkt.dts-=ts;
+
+            if (n->pkt.pts!=AV_NOPTS_VALUE)
+              n->pkt.pts-=ts;
+          }
+
           read->vmt->set_packet(read,&n->pkt);
           n->next=read;
           return MACHINE_PUSH;

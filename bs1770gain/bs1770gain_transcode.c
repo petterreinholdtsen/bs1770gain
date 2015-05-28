@@ -226,11 +226,13 @@ int bs1770gain_transcode(bs1770gain_stats_t *track, bs1770gain_stats_t *album,
     goto si;
   }
 
+  if (0!=options->extensions)
+    ffsox_csv2avdict(si.f.path,'\t',&si.f.fc->metadata);
+
   if (ffsox_sink_create(&so,opath)<0) {
     FFSOX_MESSAGE("creating sink");
     goto so;
   }
-
 
   if (BS1770GAIN_MODE_APPLY==options->mode) {
     q=options->preamp+options->level;
@@ -254,7 +256,7 @@ int bs1770gain_transcode(bs1770gain_stats_t *track, bs1770gain_stats_t *album,
     bs1770gain_write_dict(&so.f.fc->metadata,si.f.fc->metadata,tags);
   }
 
-  if (bs1770gain_seek(si.f.fc,options)<0ll) {
+  if (ffsox_source_seek(&si,options->begin)<0) {
     FFSOX_MESSAGE("seeking");
     goto seek;
   }
