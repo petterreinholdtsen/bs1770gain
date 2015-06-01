@@ -1,0 +1,51 @@
+Description: Disable dynamic loading and link directly to shared libraries
+ No need to dynamically load libraries.
+Author: Petter Reinholdtsen <pere@debian.org>
+Forwarded: no
+Last-Update: 2015-06-01
+
+diff --git a/libffsox-2/ffsox_dynload.h b/libffsox-2/ffsox_dynload.h
+index 7b00801..b9784f0 100644
+--- a/libffsox-2/ffsox_dynload.h
++++ b/libffsox-2/ffsox_dynload.h
+@@ -24,8 +24,9 @@
+ #ifdef __cpluplus
+ extern "C" {
+ #endif
+-
+-#define FFSOX_DYNLOAD
++#ifndef DISABLE_DYNLOAD
++#  define FFSOX_DYNLOAD
++#endif
+ #if defined (FFSOX_DYNLOAD) // {
+ ///////////////////////////////////////////////////////////////////////////////
+ typedef struct ffsox_avutil ffsox_avutil_t;
+diff --git a/bs1770gain/bs1770gain.c b/bs1770gain/bs1770gain.c
+index f79cc47..eaaf461 100644
+--- a/bs1770gain/bs1770gain.c
++++ b/bs1770gain/bs1770gain.c
+@@ -578,12 +578,13 @@ int main(int argc, char **argv)
+       options.flags|=AGGREGATE_MOMENTARY_MEAN;
+   }
+ 
++#ifdef DISABLE_DYNLOAD
+   // load the FFmpeg and SoX libraries from "bs1770gain-tools".
+   if (ffsox_dynload("bs1770gain-tools")<0) {
+     MESSAGE("loading shared libraries");
+     goto dynload;
+   }
+-
++#endif
+   av_register_all();
+   sox_init();
+ 
+@@ -605,7 +606,9 @@ int main(int argc, char **argv)
+ 
+   if (options.time)
+     fprintf(stderr, "Duration: %ld ms.\n",(t2-t1)/CLOCKS_PER_MILLIS);
++#ifdef DISABLE_DYNLOAD
+ dynload:
++#endif
+   if (NULL!=fpath)
+     fclose(options.f);
+ file:

@@ -4,3 +4,4 @@
 12-ffmpeg-av-lib.diff
 20-memleak-album.diff
 21-accesss-freed-mem.diff
+22-disable-dynload.diff
