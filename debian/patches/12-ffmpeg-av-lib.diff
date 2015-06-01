@@ -1,0 +1,35 @@
+Description: Change the dynamic library loading to use the ffmpeg based libraries, as
+ the others do not seem to work with bs1770gain (missing symbols).
+Forwarded: not-needed
+Author: Petter Reinholdtsen <pere@hungry.com>
+Last-Update: 2015-06-01
+
+diff --git a/libffsox-2/ffsox_dynload.c b/libffsox-2/ffsox_dynload.c
+index 6d375be..5665a83 100644
+--- a/libffsox-2/ffsox_dynload.c
++++ b/libffsox-2/ffsox_dynload.c
+@@ -142,10 +142,10 @@ found:
+   return hLib;
+ }
+ #else // } {
+-#define FFSOX_AVUTIL "libavutil.so." FFSOX_AVUTIL_V
+-#define FFSOX_SWRESAMPLE "libswresample.so." FFSOX_SWRESAMPLE_V
+-#define FFSOX_AVCODEC "libavcodec.so." FFSOX_AVCODEC_V
+-#define FFSOX_AVFORMAT "libavformat.so." FFSOX_AVFORMAT_V
++#define FFSOX_AVUTIL "libavutil-ffmpeg.so." FFSOX_AVUTIL_V
++#define FFSOX_SWRESAMPLE "libswresample-ffmpeg.so." FFSOX_SWRESAMPLE_V
++#define FFSOX_AVCODEC "libavcodec-ffmpeg.so." FFSOX_AVCODEC_V
++#define FFSOX_AVFORMAT "libavformat-ffmpeg.so." FFSOX_AVFORMAT_V
+ 
+ #define FFSOX_LIBSOX "libsox.so." FFSOX_LIBSOX_V
+ 
+@@ -219,6 +219,9 @@ static void *ffsox_loadlib(const char *root, const char *dirname,
+   if (NULL!=(lib=ffsox_loadlib_try("/usr/lib",NULL,basename)))
+     goto found;
+ 
++  if (NULL!=(lib=ffsox_loadlib_try("/usr/lib/x86_64-linux-gnu",NULL,basename)))
++    goto found;
++
+   if (NULL!=(path=getenv("LD_LIBRARY_PATH"))) {
+     if (NULL==(path=strdup(path)))
+       goto path;

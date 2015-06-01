@@ -1,0 +1,5 @@
+bs1770gain (0.4.1-1) UNRELEASED; urgency=medium
+
+  * Initial release (Closes: #781026).
+
+ -- Petter Reinholdtsen <pere@debian.org>  Sat, 30 May 2015 05:38:33 +0000

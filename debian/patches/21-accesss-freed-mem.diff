@@ -1,0 +1,108 @@
+Description: Try to avoid valgrind errors about reading free-ed
+ memory.  Part of the patch is sent upstream, and it need more work.
+Forwarded: part of it is forwarded via email to upstream
+Author: Petter Reinholdtsen <pere@hungry.com>
+Last-Update: 2015-06-01
+
+diff --git a/libffsox-2/ffsox_frame.c b/libffsox-2/ffsox_frame.c
+index 0407e90..1c73f26 100644
+--- a/libffsox-2/ffsox_frame.c
++++ b/libffsox-2/ffsox_frame.c
+@@ -32,6 +32,7 @@ int ffsox_frame_create(frame_t *f)
+   return 0;
+ // cleanup:
+   av_frame_free(&f->frame);
++  f->frame = NULL;
+ frame:
+   return -1;
+ }
+@@ -75,6 +76,7 @@ frame:
+ void ffsox_frame_cleanup(frame_t *f)
+ {
+   av_frame_free(&f->frame);
++  f->frame = NULL;
+ }
+ 
+ int ffsox_frame_complete(frame_t *f)
+diff --git a/libffsox-2/ffsox_frame_reader.c b/libffsox-2/ffsox_frame_reader.c
+index 74a757b..902d701 100644
+--- a/libffsox-2/ffsox_frame_reader.c
++++ b/libffsox-2/ffsox_frame_reader.c
+@@ -71,6 +71,7 @@ int ffsox_frame_reader_create(frame_reader_t *fr, source_t *si,
+   ffsox_frame_cleanup(&fr->fo);
+ frame:
+   avcodec_close(fr->si.cc);
++  fr->si.cc = NULL;
+ open:
+ find:
+   vmt.parent->cleanup(&fr->packet_consumer);
+@@ -105,6 +106,7 @@ static void frame_reader_cleanup(frame_reader_t *fr)
+ {
+   ffsox_frame_cleanup(&fr->fo);
+   avcodec_close(fr->si.cc);
++  fr->si.cc = NULL;
+   vmt.parent->cleanup(&fr->packet_consumer);
+ }
+ 
+diff --git a/libffsox-2/ffsox_frame_writer.c b/libffsox-2/ffsox_frame_writer.c
+index 42eee0a..9b3dd34 100644
+--- a/libffsox-2/ffsox_frame_writer.c
++++ b/libffsox-2/ffsox_frame_writer.c
+@@ -87,6 +87,7 @@ append:
+   ffsox_frame_cleanup(&fw->fo);
+ frame:
+   avcodec_close(fw->so.cc);
++  fw->so.cc = NULL;
+ open:
+ codec:
+ ost:
+@@ -122,6 +123,7 @@ static void frame_writer_cleanup(frame_writer_t *fw)
+ {
+   ffsox_frame_cleanup(&fw->fo);
+   avcodec_close(fw->so.cc);
++  fw->so.cc = NULL;
+   vmt.parent->cleanup(&fw->frame_consumer);
+ }
+ 
+diff --git a/libffsox-2/ffsox_sink.c b/libffsox-2/ffsox_sink.c
+index c2a3051..9a2baad 100644
+--- a/libffsox-2/ffsox_sink.c
++++ b/libffsox-2/ffsox_sink.c
+@@ -34,6 +34,7 @@ int ffsox_sink_create(sink_t *s, const char *path)
+   return 0;
+ // cleanup:
+   avformat_free_context(s->f.fc);
++  s->f.fc = NULL;
+ fc:
+   return -1;
+ }
+@@ -42,6 +43,7 @@ void ffsox_sink_cleanup(sink_t *s)
+ {
+   pbu_list_free(s->streams);
+   avformat_free_context(s->f.fc);
++  s->f.fc = NULL;
+ }
+ 
+ int ffsox_sink_append(sink_t *sink, stream_t *si, stream_t *so)
+@@ -72,8 +74,10 @@ int ffsox_sink_open(sink_t *s)
+ // close:
+   av_write_trailer(s->f.fc);
+ header:
+-  if (0==(s->f.fc->flags&AVFMT_NOFILE))
++  if (0==(s->f.fc->flags&AVFMT_NOFILE)) {
+     avio_close(s->f.fc->pb);
++    s->f.fc->pb = NULL;
++  }
+ open:
+   return -1;
+ }
+@@ -82,6 +86,8 @@ void ffsox_sink_close(sink_t *s)
+ {
+   av_write_trailer(s->f.fc);
+ 
+-  if (0==(s->f.fc->flags&AVFMT_NOFILE))
++  if (0==(s->f.fc->flags&AVFMT_NOFILE)) {
+     avio_close(s->f.fc->pb);
++    s->f.fc->pb = NULL;
++  }
+ }

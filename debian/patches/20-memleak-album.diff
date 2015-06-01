@@ -1,0 +1,22 @@
+Description: Fix memory leak.
+Forwarded: via email to upstream
+Author: Petter Reinholdtsen <pere@hungry.com>
+Last-Update: 2015-06-01
+
+diff --git a/bs1770gain/bs1770gain_album.c b/bs1770gain/bs1770gain_album.c
+index 0cc9707..daa80f0 100644
+--- a/bs1770gain/bs1770gain_album.c
++++ b/bs1770gain/bs1770gain_album.c
+@@ -59,10 +59,10 @@ bs1770gain_album_t *bs1770gain_album_new(const char *ipath, const char *opath,
+ // cleanup:
+   ffsox_aggregate_cleanup(&album->aggregate);
+ aggregate:
+-  if (NULL!=album->opath);
++  if (NULL!=album->opath)
+     free(album->opath);
+ opath:
+-  if (NULL!=album->ipath);
++  if (NULL!=album->ipath)
+     free(album->ipath);
+ ipath:
+   free(album);

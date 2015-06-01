@@ -1,0 +1,23 @@
+Source: bs1770gain
+Section: sound
+Priority: optional
+Maintainer: Debian Multimedia Team <pkg-multimedia-maintainers@lists.alioth.debian.org>
+Uploaders: Petter Reinholdtsen <pere@debian.org>
+Build-depends: debhelper (>> 9)
+ , dh-autoreconf
+ , libsox-dev
+ , libavformat-ffmpeg-dev | libavformat-dev (>= 6:11.3-3~)
+Standards-Version: 3.9.6
+Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-multimedia/bs1770gain.git
+Vcs-Git: git://anonscm.debian.org/pkg-multimedia/bs1770gain.git
+
+Package: bs1770gain
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}
+ , libswresample-ffmpeg1
+ , libavutil-ffmpeg54
+Description: measure and adjust audio and video sound loudness
+ The command line tool bs1770gain is a loudness scanner compliant with
+ ITU-R BS.1770 and its flavors EBU R128, ATSC A/85, and ReplayGain
+ 2.0. It helps normalizing the loudness of audio and video files to
+ the same level.
