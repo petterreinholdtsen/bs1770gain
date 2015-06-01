@@ -6,7 +6,7 @@ Uploaders: Petter Reinholdtsen <pere@debian.org>
 Build-depends: debhelper (>> 9)
  , dh-autoreconf
  , libsox-dev
- , libavformat-ffmpeg-dev | libavformat-dev (>= 6:11.3-3~)
+ , libavformat-ffmpeg-dev
 Standards-Version: 3.9.6
 Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-multimedia/bs1770gain.git
 Vcs-Git: git://anonscm.debian.org/pkg-multimedia/bs1770gain.git
