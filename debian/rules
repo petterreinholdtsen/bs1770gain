@@ -23,6 +23,7 @@ override_dh_auto_clean:
 	$(RM) aclocal.m4 ar-lib compile config.guess config.sub depcomp install-sh
 	$(RM) libtool ltmain.sh missing
 	$(RM) m4/libtool.m4 m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4
-	$(RM) Makefile */Makefile config.log config.status
+	if ! grep -q config.mak Makefile; then $(RM) Makefile; fi
+	$(RM) */Makefile config.log config.status
 	$(RM) */*.lo */*.o bs1770gain/bs1770gain
 	$(RM) -r */.libs
