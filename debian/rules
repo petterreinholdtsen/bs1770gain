@@ -16,9 +16,9 @@ override_dh_autoreconf:
 override_dh_autoreconf_clean:
 	dh_autoreconf_clean
 	if [ -f configure.orig ] ; then cp configure.orig configure; fi
-override_dh_clean:
-	$(MAKE) distclean || true
-	dh_clean
+override_dh_auto_clean:
+	if [ -f Makefile.am ] && [ -f Makefile ]; then $(MAKE) distclean || true; fi
+	#dh_auto_clean
 	$(RM) *.in */*.in */*.la
 	$(RM) aclocal.m4 ar-lib compile config.guess config.sub depcomp install-sh
 	$(RM) libtool ltmain.sh missing
