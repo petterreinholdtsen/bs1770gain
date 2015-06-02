@@ -6,7 +6,14 @@
 override_dh_auto_configure:
 	dh_auto_configure -- --libdir=/usr/lib/bs1770gain
 
-#
+override_dh_strip:
+	dh_strip --dbg-package=bs1770gain-dbg
+
+# Avoid this lintian warning: E: bs1770gain: non-empty-dependency_libs-in-la-file usr/lib/bs1770gain/libffsox-2.la
+override_dh_install:
+	sed -i "/dependency_libs/ s/'.*'/''/" `find -name '*.la'`
+	dh_install
+
 # Hack around the fact that we replace the build system.  Remove the
 # old one and recreate an autotools based system.
 #
