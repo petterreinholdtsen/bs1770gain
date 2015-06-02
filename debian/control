@@ -14,8 +14,6 @@ Vcs-Git: git://anonscm.debian.org/pkg-multimedia/bs1770gain.git
 Package: bs1770gain
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends}
- , libswresample-ffmpeg1
- , libavutil-ffmpeg54
 Description: measure and adjust audio and video sound loudness
  The command line tool bs1770gain is a loudness scanner compliant with
  ITU-R BS.1770 and its flavors EBU R128, ATSC A/85, and ReplayGain
@@ -26,7 +24,7 @@ Package: bs1770gain-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}
  , bs1770gain
 Description: measure and adjust audio and video sound loudness (debug symbols)
  The command line tool bs1770gain is a loudness scanner compliant with
