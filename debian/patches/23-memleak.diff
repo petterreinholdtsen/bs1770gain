@@ -1,0 +1,36 @@
+Description: Reduce memleak.
+ Patch based on suggestion from upstream.
+Author: Petter Reinholdtsen <pere@debian.org>
+Forwarded: not-needed
+Reviewed-By: Petter Reinholdtsen <pere@debian.org>
+Last-Update: 2015-06-03
+
+--- bs1770gain-0.4.1.orig/bs1770gain/bs1770gain.c
++++ bs1770gain-0.4.1/bs1770gain/bs1770gain.c
+@@ -605,6 +605,7 @@ int main(int argc, char **argv)
+ 
+   if (options.time)
+     fprintf(stderr, "Duration: %ld ms.\n",(t2-t1)/CLOCKS_PER_MILLIS);
++  sox_quit();
+ dynload:
+   if (NULL!=fpath)
+     fclose(options.f);
+--- bs1770gain-0.4.1.orig/libffsox-2/ffsox_source.c
++++ bs1770gain-0.4.1/libffsox-2/ffsox_source.c
+@@ -145,6 +145,7 @@ static int source_run(source_t *n)
+   case STATE_RUN:
+     for (;;) {
+       n->consumer.n=n->consumer.h;
++      av_free_packet(pkt);
+ 
+       if (av_read_frame(n->f.fc,pkt)<0) {
+         n->state=STATE_FLUSH;
+@@ -176,8 +177,6 @@ static int source_run(source_t *n)
+ 
+         LIST_NEXT(&n->consumer.n,n->consumer.h);
+       }
+-
+-      av_free_packet(pkt);
+     }
+   case STATE_FLUSH:
+   flush:
