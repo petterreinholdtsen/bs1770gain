@@ -1,0 +1,23 @@
+#!/bin/sh
+
+set -e
+
+at_exit() {
+    echo "info: test exiting, removing $WORKDIR"
+    rm -rf $WORKDIR
+}
+
+WORKDIR=$(mktemp -d)
+trap at_exit INT TERM EXIT
+
+set -x
+
+bs1770gain -h
+
+bs1770gain debian/tests/yell.wav
+
+bs1770gain debian/tests/yell.wav -o $WORKDIR/test1
+for f in $WORKDIR/test1/*; do bs1770gain $f; done
+
+bs1770gain debian/tests/yell.wav -a -o $WORKDIR/test2 
+for f in $WORKDIR/test2/*; do bs1770gain $f; done
