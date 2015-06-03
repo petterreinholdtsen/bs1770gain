@@ -104,8 +104,10 @@ Index: bs1770gain-git/lib1770-2/Makefile.am
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
 +++ bs1770gain-git/lib1770-2/Makefile.am	2015-06-01 21:25:25.000000000 +0000
-@@ -0,0 +1,11 @@
+@@ -0,0 +1,13 @@
 +lib_LTLIBRARIES = lib1770-2.la
++lib1770_2_la_LIBADD = \
++	-lm
 +lib1770_2_la_SOURCES = \
 +	lib1770_biquad.c \
 +	lib1770_block.c \
@@ -120,10 +122,19 @@ Index: bs1770gain-git/libffsox-2/Makefile.am
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
 +++ bs1770gain-git/libffsox-2/Makefile.am	2015-06-01 21:25:25.000000000 +0000
-@@ -0,0 +1,49 @@
+@@ -0,0 +1,58 @@
 +lib_LTLIBRARIES = libffsox-2.la
 +
-+libffsox_2_la_LIBADD = -lavformat-ffmpeg
++libffsox_2_la_LIBADD = \
++	-L../lib1770-2 \
++	-L../libpbutil \
++	-lavformat-ffmpeg \
++	-lavcodec-ffmpeg \
++	-lavutil-ffmpeg \
++	-lsox \
++	-l1770-2 \
++	-lpbutil \
++	-lm
 +
 +libffsox_2_la_SOURCES = \
 +	ffsox_aggregate.c \
