@@ -1,5 +1,4 @@
 01-libpbutil.diff
+02-bs1770gain-0.4.2.diff
 11-autotools.diff
-20-memleak-album.diff
 22-disable-dynload.diff
-23-memleak.diff

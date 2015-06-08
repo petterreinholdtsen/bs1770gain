@@ -1,0 +1,1017 @@
+Index: bs1770gain-git/bs1770gain/bs1770gain_album.c
+===================================================================
+--- bs1770gain-git.orig/bs1770gain/bs1770gain_album.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/bs1770gain/bs1770gain_album.c	2015-06-08 07:33:37.578450324 +0000
+@@ -59,10 +59,10 @@
+ // cleanup:
+   ffsox_aggregate_cleanup(&album->aggregate);
+ aggregate:
+-  if (NULL!=album->opath);
++  if (NULL!=album->opath)
+     free(album->opath);
+ opath:
+-  if (NULL!=album->ipath);
++  if (NULL!=album->ipath)
+     free(album->ipath);
+ ipath:
+   free(album);
+@@ -228,9 +228,9 @@
+     ext=pbu_ext(track->ipath);
+ 
+   if (0==(EXTENSION_RENAME&options->extensions)||NULL==de)
+-    track->opath=bs1770gain_opath(track->ipath,odirname,ext,options);
++    track->opath=bs1770gain_opath(track->ipath,odirname,ext);
+   else
+-    track->opath=bs1770gain_opathx(track->n,de->value,odirname,ext,options);
++    track->opath=bs1770gain_opathx(track->n,de->value,odirname,ext);
+ 
+   BS1770GAIN_GOTO(NULL==track->opath,"allocating output path",path);
+   code=0;
+Index: bs1770gain-git/bs1770gain/bs1770gain.c
+===================================================================
+--- bs1770gain-git.orig/bs1770gain/bs1770gain.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/bs1770gain/bs1770gain.c	2015-06-08 07:33:37.578450324 +0000
+@@ -46,6 +46,8 @@
+ ///////////////////////////////////////////////////////////////////////////////
+ void bs1770gain_usage(char **argv, int code)
+ {
++  fprintf(stderr,"BS1770GAIN, Copyright (C) Peter Belkner 2014, 2015.\n");
++  fprintf(stderr,"\n");
+   fprintf(stderr,"Usage:  %s [options] <file/dir> [<file/dir> ...]\n",
+       pbu_basename(argv[0]));
+   fprintf(stderr,"\n");
+@@ -605,9 +607,12 @@
+ 
+   if (options.time)
+     fprintf(stderr, "Duration: %ld ms.\n",(t2-t1)/CLOCKS_PER_MILLIS);
+-dynload:
++
+   if (NULL!=fpath)
+     fclose(options.f);
+ file:
++  sox_quit();
++  ffsox_unload();
++dynload:
+   return 0;
+ }
+Index: bs1770gain-git/bs1770gain/bs1770gain.h
+===================================================================
+--- bs1770gain-git.orig/bs1770gain/bs1770gain.h	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/bs1770gain/bs1770gain.h	2015-06-08 07:33:37.578450324 +0000
+@@ -46,9 +46,9 @@
+ 
+ ///////////////////////////////////////////////////////////////////////////////
+ char *bs1770gain_opath(const char *ipath, const char *odirname,
+-    const char *oext, const bs1770gain_options_t *options);
++    const char *oext);
+ char *bs1770gain_opathx(int n, const char *title, const char *odirname,
+-    const char *oext, const bs1770gain_options_t *options);
++    const char *oext);
+ 
+ int bs1770gain_transcode(bs1770gain_track_t *track,
+     const bs1770gain_options_t *options);
+@@ -168,8 +168,8 @@
+ 
+ int bs1770gain_tree_analyze(bs1770gain_tree_t *tree, const char *odirname,
+     const bs1770gain_options_t *options);
+-int bs1770gain_tree_track(bs1770gain_tree_t *tree, const char *odirname,
+-    bs1770gain_album_t *album, const bs1770gain_options_t *options);
++int bs1770gain_tree_track(bs1770gain_tree_t *tree, bs1770gain_album_t *album,
++    const bs1770gain_options_t *options);
+ int bs1770gain_tree_album(const bs1770gain_tree_t *root, const char *odirname,
+     const bs1770gain_options_t *options);
+ 
+Index: bs1770gain-git/bs1770gain/bs1770gain_opath.c
+===================================================================
+--- bs1770gain-git.orig/bs1770gain/bs1770gain_opath.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/bs1770gain/bs1770gain_opath.c	2015-06-08 07:33:37.578450324 +0000
+@@ -38,7 +38,7 @@
+ }
+ 
+ char *bs1770gain_opathx(int n, const char *title, const char *odirname,
+-    const char *oext, const options_t *options)
++    const char *oext)
+ {
+   char buf[32];
+   int len1,len2,len3,len4;
+@@ -77,7 +77,7 @@
+ }
+ 
+ char *bs1770gain_opath(const char *ipath, const char *odirname,
+-    const char *oext, const options_t *options)
++    const char *oext)
+ {
+   const char *p1,*p2;;
+   size_t len1,len2,len3;
+Index: bs1770gain-git/bs1770gain/bs1770gain_transcode.c
+===================================================================
+--- bs1770gain-git.orig/bs1770gain/bs1770gain_transcode.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/bs1770gain/bs1770gain_transcode.c	2015-06-08 07:33:37.578450324 +0000
+@@ -160,8 +160,7 @@
+   }
+ }
+ 
+-static void bs1770gain_write_dict(AVDictionary **ometadata,
+-    AVDictionary *imetadata, tag_t *tags)
++static void bs1770gain_write_dict(AVDictionary **ometadata,tag_t *tags)
+ {
+   tag_t *t;
+ 
+@@ -203,7 +202,7 @@
+     bs1770gain_clone_dict(track,&sto->metadata,sti->metadata,tags,options);
+ #if 0 // {
+     if (ai==i)
+-      bs1770gain_write_dict(&ost->metadata,ist->metadata,tags);
++      bs1770gain_write_dict(&ost->metadata,tags);
+ #endif // }
+   }
+ }
+@@ -280,7 +279,7 @@
+     sample_fmt=-1;
+   }
+ 
+-  if (ffsox_source_link(&si,&so,drc,CODEC_ID,sample_fmt,q)<0) {
++  if (ffsox_source_link_create(&si,&so,drc,CODEC_ID,sample_fmt,q)<0) {
+     MESSAGE("creating link");
+     goto link;
+   }
+@@ -290,7 +289,7 @@
+ 
+   if (BS1770GAIN_MODE_APPLY!=options->mode) {
+     // set the RG/BWF tags.
+-    bs1770gain_write_dict(&so.f.fc->metadata,si.f.fc->metadata,tags);
++    bs1770gain_write_dict(&so.f.fc->metadata,tags);
+   }
+ 
+   if (ffsox_source_seek(&si,options->begin)<0) {
+@@ -323,6 +322,7 @@
+   ffsox_sink_close(&so);
+ open:
+ seek:
++  ffsox_source_link_cleanup(&si);
+ link:
+   ffsox_sink_cleanup(&so);
+ so:
+Index: bs1770gain-git/bs1770gain/bs1770gain_tree.c
+===================================================================
+--- bs1770gain-git.orig/bs1770gain/bs1770gain_tree.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/bs1770gain/bs1770gain_tree.c	2015-06-08 07:33:37.578450324 +0000
+@@ -77,7 +77,7 @@
+   while (0<tree->vmt->next(tree,options)) {
+     switch (tree->state) {
+     case BS1770GAIN_TREE_STATE_REG:
+-      BS1770GAIN_GOTO(bs1770gain_tree_track(tree,odirname,album,options)<0,
++      BS1770GAIN_GOTO(bs1770gain_tree_track(tree,album,options)<0,
+           "initializing track",track);
+       break;
+     case BS1770GAIN_TREE_STATE_DIR:
+@@ -165,8 +165,8 @@
+   return code;
+ }
+ 
+-int bs1770gain_tree_track(bs1770gain_tree_t *tree, const char *odirname,
+-    bs1770gain_album_t *album, const bs1770gain_options_t *options)
++int bs1770gain_tree_track(bs1770gain_tree_t *tree, bs1770gain_album_t *album,
++    const bs1770gain_options_t *options)
+ {
+   int code =-1;
+ 
+@@ -338,6 +338,7 @@
+ 
+ void bs1770gain_tree_cli_cleanup(bs1770gain_tree_t *tree)
+ {
++  (void)tree;
+ }
+ 
+ int bs1770gain_tree_cli_next(bs1770gain_tree_t *tree,
+Index: bs1770gain-git/bs1770gain/configure
+===================================================================
+--- bs1770gain-git.orig/bs1770gain/configure	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/bs1770gain/configure	2015-06-08 07:33:37.578450324 +0000
+@@ -63,6 +63,10 @@
+ while test "$1" != ''; do
+   case $1 in
+     --help) help 0 ;;
++    --os=*) os=`extract "$1" '--os'` ;;
++    --bits=*) bits=`extract "$1" '--bits'` ;;
++    --msvs=*) msvs=`extract "$1" '--msvs'` ;;
++    --mssdk=*) mssdk=`extract "$1" '--mssdk'` ;;
+     --prefix=*) pfx=`extract "$1" '--prefix'` ;;
+     --bindir=*) bindir=`extract "$1" '--bindir'` ;;
+     --libdir=*) libdir=`extract "$1" '--libdir'` ;;
+@@ -95,6 +99,7 @@
+ pfx=`normpath "$pfx"`
+ srcdir=`normpath "$srcdir"`
+ reldir=`normpath "$reldir"`
++#if [ 'x' = "x${bits}" ]; then bits=`"$srcdir"/bits`; fi
+ 
+ ###############################################################################
+ pfxpath() {
+@@ -124,6 +129,9 @@
+ echo "HOST=$host" >> config.mak
+ echo "ENABLE_STATIC=$enable_static" >> config.mak
+ echo "ENABLE_SHARED=$enable_shared" >> config.mak
++if [ 'x' != "x$bits" ]; then echo "BITS=$bits" >> config.mak; fi
++if [ 'x' != "x$mssdk" ]; then echo "MSSDK=$mssdk" >> config.mak; fi
++if [ 'x' != "x$msvs" ]; then echo "MSVS=$msvs" >> config.mak; fi
+ if [ 'x' != "x$cflags" ]; then echo "CFLAGS+=$cflags" >> config.mak; fi
+ if [ 'x' != "x$cppflags" ]; then echo "CPPFLAGS+=$cppflags" >> config.mak; fi
+ if [ 'x' != "x$ldflags" ]; then echo "LDFLAGS+=$ldflags" >> config.mak; fi
+Index: bs1770gain-git/bs1770gain/Makefile
+===================================================================
+--- bs1770gain-git.orig/bs1770gain/Makefile	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/bs1770gain/Makefile	2015-06-08 07:33:37.578450324 +0000
+@@ -3,12 +3,27 @@
+ vpath % $(PWD) $(SRCDIR)
+ .PHONY: all install clean
+ 
++ifeq (msvc,$(OS)) # {
++# https://msdn.microsoft.com/en-us/library/abx4dbyh.aspx
++DOS2UX=$(shell echo '$(1)'|sed -e 's,\(.\):/,/\1/,g')
++export PATH+=:$(call DOS2UX,$(MSVS))/Common7/IDE
++MSVC=$(MSVS)/VC
++CL='$(MSVC)/bin/cl'
++
++CFLAGS+=-nologo
++CFLAGS+=-O2
++CFLAGS+=-MD
++CFLAGS+=-WX
++
++CPPFLAGS+=-D_MT
++CPPFLAGS+=-D_DLL
++CPPFLAGS+='-I$(MSVC)/include'
++CPPFLAGS+='-I$(MSSDK)/include'
++else # } {
+ CC=gcc
+-CPPFLAGS+=-I$(PWD)
+-CPPFLAGS+=-I$(SRCDIR)
+-CPPFLAGS+=-I$(INCLUDEDIR)
+ CFLAGS+=-O2
+ CFLAGS+=-Wall
++CFLAGS+=-Wextra
+ CFLAGS+=-Werror
+ LDFLAGS+=-L$(PWD)
+ LDFLAGS+=-L$(LIBDIR)
+@@ -16,31 +31,37 @@
+ LDLIBS+=-ldl
+ LDLIBS+=-lm
+ endif # // }
++endif # }
++
++CPPFLAGS+=-I$(PWD)
++CPPFLAGS+=-I$(SRCDIR)
++CPPFLAGS+=-I$(INCLUDEDIR)
+ 
+ ALL+=bs1770gain
++SOXDLLV=2
+ all: $(ALL)
+-ifeq (mingw,$(OS)) # // {
++ifeq ($(filter $(OS),mingw msvc),$(OS)) # {
+ all: bs1770gain-tools/avutil-54.dll
+ all: bs1770gain-tools/swresample-1.dll
+ all: bs1770gain-tools/avcodec-56.dll
+ all: bs1770gain-tools/avformat-56.dll
+-all: bs1770gain-tools/libsox-2.dll
++all: bs1770gain-tools/libsox-$(SOXDLLV).dll
+ install: $(BINDIR)/bs1770gain-tools/avutil-54.dll
+ install: $(BINDIR)/bs1770gain-tools/swresample-1.dll
+ install: $(BINDIR)/bs1770gain-tools/avcodec-56.dll
+ install: $(BINDIR)/bs1770gain-tools/avformat-56.dll
+-install: $(BINDIR)/bs1770gain-tools/libsox-2.dll
++install: $(BINDIR)/bs1770gain-tools/libsox-$(SOXDLLV).dll
+ else # } {
+ all: bs1770gain-tools/libavutil.so.54
+ all: bs1770gain-tools/libswresample.so.1
+ all: bs1770gain-tools/libavcodec.so.56
+ all: bs1770gain-tools/libavformat.so.56
+-all: bs1770gain-tools/libsox.so.2
++all: bs1770gain-tools/libsox.so.$(SOXDLLV)
+ install: $(BINDIR)/bs1770gain-tools/libavutil.so.54
+ install: $(BINDIR)/bs1770gain-tools/libswresample.so.1
+ install: $(BINDIR)/bs1770gain-tools/libavcodec.so.56
+ install: $(BINDIR)/bs1770gain-tools/libavformat.so.56
+-install: $(BINDIR)/bs1770gain-tools/libsox.so.2
++install: $(BINDIR)/bs1770gain-tools/libsox.so.$(SOXDLLV)
+ endif # }
+ 
+ LIBBS1770GAIN_H+=$(INCLUDEDIR)/pbutil.h
+@@ -65,13 +86,13 @@
+ $(LIBBS1770GAIN_O) bs1770gain: $(LIBDIR)/lib1770-2.a
+ $(LIBBS1770GAIN_O) bs1770gain: $(LIBDIR)/libpbutil.a
+ install: all
+-ifeq (mingw,$(OS))
++ifeq ($(filter $(OS),mingw msvc),$(OS)) # {
+ install: $(patsubst %,$(BINDIR)/%.exe,$(ALL))
+ else
+ install: $(patsubst %,$(BINDIR)/%,$(ALL))
+ endif
+ 
+-ifeq (mingw,$(OS)) # // {
++ifeq ($(filter $(OS),mingw msvc),$(OS)) # {
+ bs1770gain-tools/%: $(BINDIR)/%
+ 	mkdir -p $(@D)
+ 	cp $< $(@D)
+@@ -95,3 +116,15 @@
+ 
+ clean:
+ 	rm -f bs1770gain bs1770gain.exe *.a *.o
++
++###############################################################################
++ifeq (msvc,$(OS)) # {
++%.dll: %.obj
++	$(CL) -LD $(CFLAGS) $(CPPFLAGS) -Fe$@ $^ -link $(LDFLAGS) $(LDLIBS)
++%.exe: %.obj
++	$(CL) $(CFLAGS) $(CPPFLAGS) -Fe$@ $^ -link $(LDFLAGS) $(LDLIBS)
++%.obj: %.c
++	$(CL) $(CFLAGS) $(CPPFLAGS) -c -Fo$@ $<
++%.obj: %.cpp
++	$(CL) $(CFLAGS) $(CPPFLAGS) -c -Fo$@ $<
++endif # }
+Index: bs1770gain-git/bs1770gain/version.mak
+===================================================================
+--- bs1770gain-git.orig/bs1770gain/version.mak	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/bs1770gain/version.mak	2015-06-08 07:33:37.578450324 +0000
+@@ -16,4 +16,4 @@
+ # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ # MA  02110-1301  USA
+ #
+-BS1770GAIN_VERSION=0.4.1
++BS1770GAIN_VERSION=0.4.2
+Index: bs1770gain-git/configure
+===================================================================
+--- bs1770gain-git.orig/configure	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/configure	2015-06-08 07:33:37.578450324 +0000
+@@ -65,6 +65,10 @@
+ while test "$1" != ''; do
+   case $1 in
+     --help) help 0 ;;
++    --os=*) os=`extract "$1" '--os'` ;;
++    --bits=*) bits=`extract "$1" '--bits'` ;;
++    --msvs=*) msvs=`extract "$1" '--msvs'` ;;
++    --mssdk=*) mssdk=`extract "$1" '--mssdk'` ;;
+     --prefix=*) pfx=`extract "$1" '--prefix'` ;;
+     --bindir=*) bindir=`extract "$1" '--bindir'` ;;
+     --libdir=*) libdir=`extract "$1" '--libdir'` ;;
+@@ -100,7 +104,7 @@
+ pfx=`normpath "$pfx"`
+ srcdir=`normpath "$srcdir"`
+ reldir=`normpath "$reldir"`
+-bits=`"$srcdir"/bits`
++if [ 'x' = "x${bits}" ]; then bits=`"$srcdir"/bits`; fi
+ 
+ ###############################################################################
+ pfxpath() {
+@@ -120,6 +124,7 @@
+ touch config.mak
+ 
+ echo "OS=$os" >> config.mak
++echo "BITS=$bits" >> config.mak
+ echo "PREFIX=$pfx" >> config.mak
+ echo "SRCDIR=$srcdir" >> config.mak
+ echo "BINDIR=$bindir" >> config.mak
+@@ -133,6 +138,8 @@
+ echo "ENABLE_STATIC=$enable_static" >> config.mak
+ echo "ENABLE_SHARED=$enable_shared" >> config.mak
+ echo "ENABLE_EXAMPLES=$enable_examples" >> config.mak
++if [ 'x' != "x$mssdk" ]; then echo "MSSDK=$mssdk" >> config.mak; fi
++if [ 'x' != "x$msvs" ]; then echo "MSVS=$msvs" >> config.mak; fi
+ if [ 'x' != "x$cflags" ]; then echo "CFLAGS+=$cflags" >> config.mak; fi
+ if [ 'x' != "x$cppflags" ]; then echo "CPPFLAGS+=$cppflags" >> config.mak; fi
+ if [ 'x' != "x$ldflags" ]; then echo "LDFLAGS+=$ldflags" >> config.mak; fi
+Index: bs1770gain-git/lib1770-2/configure
+===================================================================
+--- bs1770gain-git.orig/lib1770-2/configure	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/lib1770-2/configure	2015-06-08 07:33:37.582450342 +0000
+@@ -63,6 +63,8 @@
+ while test "$1" != ''; do
+   case $1 in
+     --help) help 0 ;;
++    --os=*) os=`extract "$1" '--os'` ;;
++    --bits=*) bits=`extract "$1" '--bits'` ;;
+     --prefix=*) pfx=`extract "$1" '--prefix'` ;;
+     --bindir=*) bindir=`extract "$1" '--bindir'` ;;
+     --libdir=*) libdir=`extract "$1" '--libdir'` ;;
+@@ -95,6 +97,7 @@
+ pfx=`normpath "$pfx"`
+ srcdir=`normpath "$srcdir"`
+ reldir=`normpath "$reldir"`
++#if [ 'x' = "x${bits}" ]; then bits=`"$srcdir"/bits`; fi
+ 
+ ###############################################################################
+ pfxpath() {
+@@ -124,6 +127,9 @@
+ echo "HOST=$host" >> config.mak
+ echo "ENABLE_STATIC=$enable_static" >> config.mak
+ echo "ENABLE_SHARED=$enable_shared" >> config.mak
++if [ 'x' != "x$bits" ]; then echo "BITS=$bits" >> config.mak; fi
++if [ 'x' != "x$mssdk" ]; then echo "MSSDK=$mssdk" >> config.mak; fi
++if [ 'x' != "x$msvs" ]; then echo "MSVS=$msvs" >> config.mak; fi
+ if [ 'x' != "x$cflags" ]; then echo "CFLAGS+=$cflags" >> config.mak; fi
+ if [ 'x' != "x$cppflags" ]; then echo "CPPFLAGS+=$cppflags" >> config.mak; fi
+ if [ 'x' != "x$ldflags" ]; then echo "LDFLAGS+=$ldflags" >> config.mak; fi
+Index: bs1770gain-git/lib1770-2/lib1770_block.c
+===================================================================
+--- bs1770gain-git.orig/lib1770-2/lib1770_block.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/lib1770-2/lib1770_block.c	2015-06-08 07:33:37.582450342 +0000
+@@ -79,7 +79,7 @@
+   }
+ 
+   if (++block->ring.count==block->overlap_size) {
+-    int next_offs=block->ring.offs+1;
++    size_t next_offs=block->ring.offs+1;
+ 
+     if (next_offs==block->ring.size)
+       next_offs=0;
+Index: bs1770gain-git/lib1770-2/Makefile
+===================================================================
+--- bs1770gain-git.orig/lib1770-2/Makefile	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/lib1770-2/Makefile	2015-06-08 07:33:37.582450342 +0000
+@@ -8,6 +8,7 @@
+ CPPFLAGS+=-I$(INCLUDEDIR)
+ CFLAGS+=-O2
+ CFLAGS+=-Wall
++CFLAGS+=-Wextra
+ CFLAGS+=-Werror
+ 
+ LIB1770_A=lib1770-2.a
+Index: bs1770gain-git/libffsox-2/configure
+===================================================================
+--- bs1770gain-git.orig/libffsox-2/configure	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libffsox-2/configure	2015-06-08 07:33:37.582450342 +0000
+@@ -63,6 +63,10 @@
+ while test "$1" != ''; do
+   case $1 in
+     --help) help 0 ;;
++    --os=*) os=`extract "$1" '--os'` ;;
++    --bits=*) bits=`extract "$1" '--bits'` ;;
++    --msvs=*) msvs=`extract "$1" '--msvs'` ;;
++    --mssdk=*) mssdk=`extract "$1" '--mssdk'` ;;
+     --prefix=*) pfx=`extract "$1" '--prefix'` ;;
+     --bindir=*) bindir=`extract "$1" '--bindir'` ;;
+     --libdir=*) libdir=`extract "$1" '--libdir'` ;;
+@@ -95,6 +99,7 @@
+ pfx=`normpath "$pfx"`
+ srcdir=`normpath "$srcdir"`
+ reldir=`normpath "$reldir"`
++#if [ 'x' = "x${bits}" ]; then bits=`"$srcdir"/bits`; fi
+ 
+ ###############################################################################
+ pfxpath() {
+@@ -124,6 +129,9 @@
+ echo "HOST=$host" >> config.mak
+ echo "ENABLE_STATIC=$enable_static" >> config.mak
+ echo "ENABLE_SHARED=$enable_shared" >> config.mak
++if [ 'x' != "x$bits" ]; then echo "BITS=$bits" >> config.mak; fi
++if [ 'x' != "x$mssdk" ]; then echo "MSSDK=$mssdk" >> config.mak; fi
++if [ 'x' != "x$msvs" ]; then echo "MSVS=$msvs" >> config.mak; fi
+ if [ 'x' != "x$cflags" ]; then echo "CFLAGS+=$cflags" >> config.mak; fi
+ if [ 'x' != "x$cppflags" ]; then echo "CPPFLAGS+=$cppflags" >> config.mak; fi
+ if [ 'x' != "x$ldflags" ]; then echo "LDFLAGS+=$ldflags" >> config.mak; fi
+Index: bs1770gain-git/libffsox-2/ffsox_audiostream.c
+===================================================================
+--- bs1770gain-git.orig/libffsox-2/ffsox_audiostream.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libffsox-2/ffsox_audiostream.c	2015-06-08 07:33:37.582450342 +0000
+@@ -46,7 +46,7 @@
+   ai=-1;
+   vi=-1;
+ 
+-  for (i=0;i<fc->nb_streams;++i) {
++  for (i=0;i<(int)fc->nb_streams;++i) {
+     cc=fc->streams[i]->codec;
+ 
+     if (ffsox_codec_blacklist(cc->codec_id))
+Index: bs1770gain-git/libffsox-2/ffsox_csv2avdict.c
+===================================================================
+--- bs1770gain-git.orig/libffsox-2/ffsox_csv2avdict.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libffsox-2/ffsox_csv2avdict.c	2015-06-08 07:33:37.582450342 +0000
+@@ -255,7 +255,7 @@
+   static unsigned short mask[] = {192, 224, 240}; 
+ 
+   char *wp=b->ch;
+-  int n; 
++  unsigned int n; 
+ 
+   // read first byte into buffer
+   if (EOF==(*wp=getc(b->f)))
+Index: bs1770gain-git/libffsox-2/ffsox_dynload.c
+===================================================================
+--- bs1770gain-git.orig/libffsox-2/ffsox_dynload.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libffsox-2/ffsox_dynload.c	2015-06-08 07:33:37.582450342 +0000
+@@ -18,7 +18,7 @@
+  * MA  02110-1301  USA
+  */
+ #define FFSOX_DYNLOAD_PRIV
+-#include <ffsox.h>
++#include <ffsox_priv.h>
+ #if defined (FFSOX_DYNLOAD) // {
+ #if ! defined (WIN32) // {
+ #include <unistd.h>
+@@ -48,6 +48,8 @@
+ 
+ #define FFSOX_LIBSOX "libsox-" FFSOX_LIBSOX_V  ".dll"
+ 
++#define FFSOX_UNLOAD(lib) FreeLibrary(lib)
++
+ #define FFSOX_BIND(hLib,app,np) do { \
+   if (NULL==(*(app)=(void *)GetProcAddress(hLib,np))) { \
+     fprintf(stderr,"Error loding symbol \"%s\".\n",np); \
+@@ -149,6 +151,8 @@
+ 
+ #define FFSOX_LIBSOX "libsox.so." FFSOX_LIBSOX_V
+ 
++#define FFSOX_UNLOAD(lib) dlclose(lib)
++
+ #define FFSOX_BIND(lib,app,np) do { \
+   if (NULL==(*(app)=dlsym(lib,np))) { \
+     fprintf(stderr,"Error loding symbol \"%s\".\n",np); \
+@@ -285,15 +289,9 @@
+ 
+ static int ffsox_dynload_swresample(void *lib)
+ {
+-#if 0 // {
+-  int code=-1;
++  (void)lib;
+ 
+-  code=0;
+-loadlib:
+-  return code;
+-#else // } {
+   return 0;
+-#endif // }
+ }
+ 
+ static int ffsox_dynload_avcodec(void *lib)
+@@ -380,6 +378,12 @@
+ }
+ 
+ ///////////////////////////////////////////////////////////////////////////////
++static void *avutil;
++static void *swresample;
++static void *avcodec;
++static void *avformat;
++static void *libsox;
++
+ int ffsox_dynload(const char *dirname)
+ {
+   int code=-1;
+@@ -388,7 +392,6 @@
+ #else // } {
+   char *root;
+ #endif // }
+-  void *lib;
+ 
+   if (NULL==dirname||'/'==dirname[0])
+     root=NULL;
+@@ -400,38 +403,48 @@
+     goto exit;
+ 
+   /////////////////////////////////////////////////////////////////////////////
+-  if (NULL==(lib=ffsox_loadlib(root,dirname,FFSOX_AVUTIL)))
++  if (NULL==(avutil=ffsox_loadlib(root,dirname,FFSOX_AVUTIL))) {
++    MESSAGE("loading avutil");
+     goto root;
++  }
+     
+-  if (ffsox_dynload_avutil(lib)<0)
++  if (ffsox_dynload_avutil(avutil)<0)
+     goto root;
+   
+   /////////////////////////////////////////////////////////////////////////////
+-  if (NULL==(lib=ffsox_loadlib(root,dirname,FFSOX_SWRESAMPLE)))
++  if (NULL==(swresample=ffsox_loadlib(root,dirname,FFSOX_SWRESAMPLE))) {
++    MESSAGE("loading swresample");
+     goto root;
++  }
+     
+-  if (ffsox_dynload_swresample(lib)<0)
++  if (ffsox_dynload_swresample(swresample)<0)
+     goto root;
+   
+   /////////////////////////////////////////////////////////////////////////////
+-  if (NULL==(lib=ffsox_loadlib(root,dirname,FFSOX_AVCODEC)))
++  if (NULL==(avcodec=ffsox_loadlib(root,dirname,FFSOX_AVCODEC))) {
++    MESSAGE("loading avcodec");
+     goto root;
++  }
+     
+-  if (ffsox_dynload_avcodec(lib)<0)
++  if (ffsox_dynload_avcodec(avcodec)<0)
+     goto root;
+   
+   /////////////////////////////////////////////////////////////////////////////
+-  if (NULL==(lib=ffsox_loadlib(root,dirname,FFSOX_AVFORMAT)))
++  if (NULL==(avformat=ffsox_loadlib(root,dirname,FFSOX_AVFORMAT))) {
++    MESSAGE("loading avformat");
+     goto root;
++  }
+     
+-  if (ffsox_dynload_avformat(lib)<0)
++  if (ffsox_dynload_avformat(avformat)<0)
+     goto root;
+   
+   /////////////////////////////////////////////////////////////////////////////
+-  if (NULL==(lib=ffsox_loadlib(root,dirname,FFSOX_LIBSOX)))
++  if (NULL==(libsox=ffsox_loadlib(root,dirname,FFSOX_LIBSOX))) {
++    MESSAGE("loading libsox");
+     goto root;
++  }
+     
+-  if (ffsox_dynload_libsox(lib)<0)
++  if (ffsox_dynload_libsox(libsox)<0)
+     goto root;
+   
+   code=0;
+@@ -441,4 +454,39 @@
+ exit:
+   return code;
+ }
++
++void ffsox_unload(void)
++{
++#if 0 // {
++  if (NULL!=libsox) {
++    memset(&ffsox_libsox,0,sizeof ffsox_libsox);
++    FFSOX_UNLOAD(libsox);
++    libsox=NULL;
++  }
++
++  if (NULL!=avformat) {
++    memset(&ffsox_avformat,0,sizeof ffsox_avformat);
++    FFSOX_UNLOAD(avformat);
++    avformat=NULL;
++  }
++
++  if (NULL!=avcodec) {
++    memset(&ffsox_avcodec,0,sizeof ffsox_avcodec);
++    FFSOX_UNLOAD(avcodec);
++    avcodec=NULL;
++  }
++
++  if (NULL!=swresample) {
++    //memset(&ffsox_swresample,0,sizeof ffsox_swresample);
++    FFSOX_UNLOAD(swresample);
++    swresample=NULL;
++  }
++
++  if (NULL!=avutil) {
++    memset(&ffsox_avutil,0,sizeof ffsox_avutil);
++    FFSOX_UNLOAD(avutil);
++    avutil=NULL;
++  }
++#endif // }
++}
+ #endif // }
+Index: bs1770gain-git/libffsox-2/ffsox_dynload.h
+===================================================================
+--- bs1770gain-git.orig/libffsox-2/ffsox_dynload.h	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libffsox-2/ffsox_dynload.h	2015-06-08 07:33:37.582450342 +0000
+@@ -126,6 +126,7 @@
+ 
+ ///////////////////////////////////////////////////////////////////////////////
+ int ffsox_dynload(const char *dirname);
++void ffsox_unload(void);
+ 
+ #if ! defined (FFSOX_DYNLOAD_PRIV) // {
+ ///////////////////////////////////////////////////////////////////////////////
+Index: bs1770gain-git/libffsox-2/ffsox.h
+===================================================================
+--- bs1770gain-git.orig/libffsox-2/ffsox.h	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libffsox-2/ffsox.h	2015-06-08 07:34:35.958681058 +0000
+@@ -395,8 +395,9 @@
+ int ffsox_source_append(ffsox_source_t *si, ffsox_packet_consumer_t *pc);
+ int ffsox_source_seek(ffsox_source_t *n, int64_t ts);
+ 
+-int ffsox_source_link(ffsox_source_t *si, ffsox_sink_t *so, double drc,
++int ffsox_source_link_create(ffsox_source_t *si, ffsox_sink_t *so, double drc,
+     int codec_id, int sample_fmt, double q);
++void ffsox_source_link_cleanup(ffsox_source_t *si);
+ void ffsox_source_progress(const ffsox_source_t *si, /* FILE */void *data);
+ 
+ /// packet_consumer ///////////////////////////////////////////////////////////
+Index: bs1770gain-git/libffsox-2/ffsox_node.c
+===================================================================
+--- bs1770gain-git.orig/libffsox-2/ffsox_node.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libffsox-2/ffsox_node.c	2015-06-08 07:33:37.582450342 +0000
+@@ -38,21 +38,26 @@
+ ////////
+ static void node_cleanup(node_t *n)
+ {
++  (void)n;
+ }
+ 
+ static node_t *node_prev(node_t *n)
+ {
++  (void)n;
+   return NULL;
+ }
+ 
+ static node_t *node_next(node_t *n)
+ {
++  (void)n;
++
+   return NULL;
+ }
+ 
+ static int node_run(node_t *n)
+ {
+   MESSAGE("running node");
++  (void)n;
+ 
+   return -1;
+ }
+Index: bs1770gain-git/libffsox-2/ffsox_packet_consumer.c
+===================================================================
+--- bs1770gain-git.orig/libffsox-2/ffsox_packet_consumer.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libffsox-2/ffsox_packet_consumer.c	2015-06-08 07:33:37.582450342 +0000
+@@ -58,6 +58,8 @@
+ static int packet_consumer_set_packet(packet_consumer_t *pc, AVPacket *pkt)
+ {
+   MESSAGE("not implemented");
++  (void)pc;
++  (void)pkt;
+ 
+   return -1;
+ }
+Index: bs1770gain-git/libffsox-2/ffsox_source.c
+===================================================================
+--- bs1770gain-git.orig/libffsox-2/ffsox_source.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libffsox-2/ffsox_source.c	2015-06-08 07:33:37.586450359 +0000
+@@ -122,9 +122,8 @@
+ ////////
+ static void source_cleanup(source_t *n)
+ {
+-  pbu_list_free_full(n->consumer.h,ffsox_packet_consumer_list_free);
+-  n->consumer.h=NULL;
+-  n->consumer.n=NULL;
++  if (NULL!=n->consumer.h)
++    ffsox_source_link_cleanup(n);
+ 
+   avformat_close_input(&n->f.fc);
+   vmt.parent->cleanup(&n->node);
+@@ -145,6 +144,7 @@
+   case STATE_RUN:
+     for (;;) {
+       n->consumer.n=n->consumer.h;
++      av_free_packet(pkt);
+ 
+       if (av_read_frame(n->f.fc,pkt)<0) {
+         n->state=STATE_FLUSH;
+@@ -176,8 +176,6 @@
+ 
+         LIST_NEXT(&n->consumer.n,n->consumer.h);
+       }
+-
+-      av_free_packet(pkt);
+     }
+   case STATE_FLUSH:
+   flush:
+Index: bs1770gain-git/libffsox-2/ffsox_source_link.c
+===================================================================
+--- bs1770gain-git.orig/libffsox-2/ffsox_source_link.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libffsox-2/ffsox_source_link.c	2015-06-08 07:33:37.586450359 +0000
+@@ -63,12 +63,12 @@
+   return -1;
+ }
+ 
+-int ffsox_source_link(source_t *si, sink_t *so, double drc, int codec_id,
++int ffsox_source_link_create(source_t *si, sink_t *so, double drc, int codec_id,
+     int sample_fmt, double q)
+ {
+   int i;
+ 
+-  for (i=0;i<si->f.fc->nb_streams;++i) {
++  for (i=0;i<(int)si->f.fc->nb_streams;++i) {
+     if (si->ai==i||si->vi==i) {
+       if (si->vi==i||q<0.0) {
+         if (ffsox_source_link_copy(si,so,i)<0) {
+@@ -89,3 +89,10 @@
+ link:
+   return -1;
+ }
++
++void ffsox_source_link_cleanup(source_t *si)
++{
++  pbu_list_free_full(si->consumer.h,ffsox_packet_consumer_list_free);
++  si->consumer.h=NULL;
++  si->consumer.n=NULL;
++}
+Index: bs1770gain-git/libffsox-2/ffsox_sox_pull_handler.c
+===================================================================
+--- bs1770gain-git.orig/libffsox-2/ffsox_sox_pull_handler.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libffsox-2/ffsox_sox_pull_handler.c	2015-06-08 07:33:37.586450359 +0000
+@@ -47,6 +47,8 @@
+   double scale;
+   sox_sample_t const *rp,*mp;
+ 
++  (void)obuf;
++
+   if (NULL!=cb) {
+     data=priv->data;
+     scale=1.0/MAXOF(*rp);
+Index: bs1770gain-git/libffsox-2/Makefile
+===================================================================
+--- bs1770gain-git.orig/libffsox-2/Makefile	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libffsox-2/Makefile	2015-06-08 07:33:37.586450359 +0000
+@@ -8,6 +8,7 @@
+ CPPFLAGS+=-I$(INCLUDEDIR)
+ CFLAGS+=-O2
+ CFLAGS+=-Wall
++CFLAGS+=-Wextra
+ CFLAGS+=-Werror
+ #LDFLAGS+=-L$(LIBDIR)
+ #LDLIBS+=-lavformat
+Index: bs1770gain-git/libffsox-2/mux1.c
+===================================================================
+--- bs1770gain-git.orig/libffsox-2/mux1.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libffsox-2/mux1.c	2015-06-08 07:33:37.586450359 +0000
+@@ -52,7 +52,7 @@
+     goto so;
+   }
+ 
+-  if (ffsox_source_link(&si,&so,0.0,CODEC_ID,SAMPLE_FMT,q)<0) {
++  if (ffsox_source_link_create(&si,&so,0.0,CODEC_ID,SAMPLE_FMT,q)<0) {
+     PBU_MESSAGE("creating link");
+     goto link;
+   }
+@@ -74,6 +74,7 @@
+ machine:
+   ffsox_sink_close(&so);
+ open:
++  ffsox_source_link_cleanup(&si);
+ link:
+   ffsox_sink_cleanup(&so);
+ so:
+Index: bs1770gain-git/libffsox-2/mux2.c
+===================================================================
+--- bs1770gain-git.orig/libffsox-2/mux2.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libffsox-2/mux2.c	2015-06-08 07:33:37.586450359 +0000
+@@ -112,6 +112,8 @@
+   sox_format_t *out=priv->out;
+   size_t len;
+ 
++  (void)obuf;
++
+   /* Write out *isamp samples */
+   len=sox_write(out, ibuf, *isamp);
+ 
+Index: bs1770gain-git/libffsox-2/wasapi.c
+===================================================================
+--- bs1770gain-git.orig/libffsox-2/wasapi.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libffsox-2/wasapi.c	2015-06-08 07:33:37.586450359 +0000
+@@ -291,7 +291,7 @@
+   return hr;
+ }
+ 
+-int main(int argc, char **argv)
++int main()
+ {
+   HRESULT hr;
+   IMMDeviceEnumerator *pEnumerator;
+Index: bs1770gain-git/libpbutil/Makefile
+===================================================================
+--- bs1770gain-git.orig/libpbutil/Makefile	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libpbutil/Makefile	2015-06-08 07:33:37.586450359 +0000
+@@ -8,6 +8,7 @@
+ CPPFLAGS+=-I$(INCLUDEDIR)
+ CFLAGS+=-O2
+ CFLAGS+=-Wall
++CFLAGS+=-Wextra
+ CFLAGS+=-Werror
+ 
+ LIBPBUTIL_H+=pbutil.h
+Index: bs1770gain-git/libpbutil/pbu_copy_file.c
+===================================================================
+--- bs1770gain-git.orig/libpbutil/pbu_copy_file.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libpbutil/pbu_copy_file.c	2015-06-08 07:33:37.586450359 +0000
+@@ -55,23 +55,18 @@
+   if (NULL==(f1=fopen(src,"rb")))
+     goto f1;
+ 
+-  if (NULL==(f2=fopen(src,"wb")))
++  if (NULL==(f2=fopen(dst,"wb")))
+     goto f2;
+ 
+   if (NULL==(buf=malloc(SIZE)))
+     goto buf;
+ 
+-  for (;;) {
+-    if ((size=fread(buf,SIZE,1,f1))<SIZE) {
+-      if (feof(f1))
+-        break;
+-      else
+-        goto read;
+-    }
+-  }
++  do {
++    size=fread(buf,1,SIZE,f1);
++  } while (size==fwrite(buf,1,size,f2)&&!feof(f1));
+ 
+   code=0;
+-read:
++//read:
+   free(buf);
+ buf:
+   fclose(f2);
+Index: bs1770gain-git/libpbutil/pbu_strtok.c
+===================================================================
+--- bs1770gain-git.orig/libpbutil/pbu_strtok.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libpbutil/pbu_strtok.c	2015-06-08 07:33:37.586450359 +0000
+@@ -22,6 +22,8 @@
+ 
+ static char *pbu_strtok(char *str, const char *delim, char **saveptr)
+ {
++  (void)saveptr;
++
+   return strtok(str,delim);
+ }
+ 
+Index: bs1770gain-git/libpbutil/pbu_wcstok.c
+===================================================================
+--- bs1770gain-git.orig/libpbutil/pbu_wcstok.c	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/libpbutil/pbu_wcstok.c	2015-06-08 07:33:37.586450359 +0000
+@@ -23,6 +23,8 @@
+ static wchar_t *pbu_wcstok(wchar_t *str, const wchar_t *delim,
+     wchar_t **saveptr)
+ {
++  (void)saveptr;
++
+   return wcstok(str,delim);
+ }
+ 
+Index: bs1770gain-git/Makefile
+===================================================================
+--- bs1770gain-git.orig/Makefile	2015-06-08 07:33:37.590450375 +0000
++++ bs1770gain-git/Makefile	2015-06-08 07:33:37.586450359 +0000
+@@ -3,6 +3,7 @@
+ include $(SRCDIR)/examples/version.mak
+ include $(SRCDIR)/libffsox-2/version.mak
+ include $(SRCDIR)/lib1770-2/version.mak
++include $(SRCDIR)/libpbutil/version.mak
+ 
+ .PHONY: all install release-bin release-src release-tools
+ 
+@@ -36,12 +37,13 @@
+ 
+ ########
+ SOXV=14.4.1
++SOXDLLV=2
+ SOX=sox-$(SOXV)
+ SOX_INSTALL+=$(INCLUDEDIR)/sox.h
+ ifeq (mingw,$(OS))
+-SOX_INSTALL+=$(BINDIR)/libsox-2.dll
++SOX_INSTALL+=$(BINDIR)/libsox-$(SOXDLLV).dll
+ else
+-SOX_INSTALL+=$(LIBDIR)/libsox.so.2
++SOX_INSTALL+=$(LIBDIR)/libsox.so.$(SOXDLLV)
+ endif
+ #install: $(SOX_INSTALL)
+ 
+@@ -154,7 +156,6 @@
+ 
+ ###############################################################################
+ SOX_OPTS+=--prefix=$(PREFIX)
+-SOX_OPTS+=--disable-gomp
+ SOX_OPTS+=--with-gnu-ld
+ SOX_OPTS+=--without-ladspa
+ SOX_OPTS+=--without-ffmpeg
+@@ -163,8 +164,11 @@
+ SOX_OPTS+='CPPFLAGS=-I$(INCLUDEDIR)'
+ SOX_OPTS+='LDFLAGS=-L$(LIBDIR)'
+ ifeq (mingw,$(OS)) # {
++SOX_OPTS+=--disable-gomp
++#SOX_OPTS+=--disable-openmp
+ SOX_OPTS+=--disable-symlinks
+ SOX_OPTS+=--disable-shared
++#SOX_OPTS+=CFLAGS=-fno-stack-protector
+ ifeq (mingw,$(OS)) # {
+ SOX_LIBS+=-lFLAC
+ SOX_LIBS+=-lvorbisfile
+@@ -392,6 +396,7 @@
+ RELEASE_SRC+=bits
+ RELEASE_SRC+=configure
+ RELEASE_SRC+=Makefile
++RELEASE_SRC+=libpbutil
+ RELEASE_SRC+=libffsox-2
+ RELEASE_SRC+=lib1770-2
+ RELEASE_SRC+=examples
+@@ -420,8 +425,8 @@
+ 
+ ###############################################################################
+ ifeq (mingw,$(OS)) # {
+-.PRECIOUS: %-2.dll
+-%-2.dll: %.dll
++.PRECIOUS: %-$(SOXDLLV).dll
++%-$(SOXDLLV).dll: %.dll
+ 	cp $< $@
+ 
+ .PRECIOUS: $(LIBDIR)/%.dll.a $(LIBDIR)/%.def
+@@ -439,6 +444,9 @@
+ endif # }
+ endif # }
+ 
++ifeq (msvc,$(OS)) # {
++endif # }
++
+ ###############################################################################
+ .PHONY: FORCE
+ FORCE:

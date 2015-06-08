@@ -6,8 +6,8 @@ Last-Update: 2015-06-01
 
 Index: bs1770gain-git/libffsox-2/ffsox_dynload.h
 ===================================================================
---- bs1770gain-git.orig/libffsox-2/ffsox_dynload.h	2015-06-01 21:27:30.332781415 +0000
-+++ bs1770gain-git/libffsox-2/ffsox_dynload.h	2015-06-01 21:27:30.328781399 +0000
+--- bs1770gain-git.orig/libffsox-2/ffsox_dynload.h	2015-06-08 07:36:54.963175368 +0000
++++ bs1770gain-git/libffsox-2/ffsox_dynload.h	2015-06-08 07:43:34.144451086 +0000
 @@ -24,8 +24,9 @@
  #ifdef __cpluplus
  extern "C" {
@@ -20,26 +20,30 @@ Index: bs1770gain-git/libffsox-2/ffsox_dynload.h
  #if defined (FFSOX_DYNLOAD) // {
  ///////////////////////////////////////////////////////////////////////////////
  typedef struct ffsox_avutil ffsox_avutil_t;
-@@ -209,6 +210,8 @@
+@@ -210,6 +211,9 @@
  #define sox_close (*ffsox_libsox.sox_close)
  #define sox_init_encodinginfo (*ffsox_libsox.sox_init_encodinginfo)
  #endif // }
 +#else
 +int ffsox_dynload(const char *dirname);
++void ffsox_unload(void);
  #endif // }
  
  #ifdef __cpluplus
 Index: bs1770gain-git/libffsox-2/ffsox_dynload.c
 ===================================================================
---- bs1770gain-git.orig/libffsox-2/ffsox_dynload.c	2015-06-01 21:25:25.000000000 +0000
-+++ bs1770gain-git/libffsox-2/ffsox_dynload.c	2015-06-01 21:31:56.341835595 +0000
-@@ -444,4 +444,9 @@
- exit:
-   return code;
+--- bs1770gain-git.orig/libffsox-2/ffsox_dynload.c	2015-06-08 07:36:54.963175368 +0000
++++ bs1770gain-git/libffsox-2/ffsox_dynload.c	2015-06-08 07:42:35.932214979 +0000
+@@ -489,4 +489,12 @@
+   }
+ #endif // }
  }
 +#else
 +int ffsox_dynload(const char *dirname)
 +{
 +  return 0;
++}
++void ffsox_unload(void)
++{
 +}
  #endif // }
