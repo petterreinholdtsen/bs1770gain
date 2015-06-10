@@ -58,6 +58,8 @@ static node_t *packet_consumer_prev(packet_consumer_t *pc)
 static int packet_consumer_set_packet(packet_consumer_t *pc, AVPacket *pkt)
 {
   MESSAGE("not implemented");
+  (void)pc;
+  (void)pkt;
 
   return -1;
 }

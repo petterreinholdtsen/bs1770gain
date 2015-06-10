@@ -112,6 +112,8 @@ static int output_flow(sox_effect_t *e, sox_sample_t const *ibuf,
   sox_format_t *out=priv->out;
   size_t len;
 
+  (void)obuf;
+
   /* Write out *isamp samples */
   len=sox_write(out, ibuf, *isamp);
 

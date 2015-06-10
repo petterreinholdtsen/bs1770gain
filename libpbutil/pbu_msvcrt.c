@@ -1,5 +1,5 @@
 /*
- * ffsox_basename.c
+ * pbu_strtok.c
  * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
  *
  * This library is free software; you can redistribute it and/or
@@ -17,63 +17,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
-#include <ffsox_priv.h>
+#if defined (WIN32) // {
+#include <pbutil.h>
 
-static node_vmt_t vmt;
-
-int ffsox_node_create(node_t *n)
+HANDLE pbu_msvcrt(void)
 {
-  n->vmt=ffsox_node_get_vmt();
-  n->state=STATE_RUN;
+  static HANDLE hLib=NULL;
 
-  return 0;
+  if (NULL==hLib)
+    hLib=LoadLibraryA("msvcrt.dll");
+
+  return hLib;
 }
-
-void ffsox_node_destroy(node_t *n)
-{
-  n->vmt->cleanup(n);
-  free(n);
-}
-
-////////
-static void node_cleanup(node_t *n)
-{
-  (void)n;
-}
-
-static node_t *node_prev(node_t *n)
-{
-  (void)n;
-  return NULL;
-}
-
-static node_t *node_next(node_t *n)
-{
-  (void)n;
-
-  return NULL;
-}
-
-static int node_run(node_t *n)
-{
-  MESSAGE("running node");
-  (void)n;
-
-  return -1;
-}
-
-const node_vmt_t *ffsox_node_get_vmt(void)
-{
-  static int initialized;
-
-  if (0==initialized) {
-    vmt.name="node";
-    vmt.cleanup=node_cleanup;
-    vmt.prev=node_prev;
-    vmt.next=node_next;
-    vmt.run=node_run;
-    initialized=1;
-  }
-
-  return &vmt;
-}
+#endif // }

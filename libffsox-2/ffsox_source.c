@@ -122,9 +122,8 @@ append:
 ////////
 static void source_cleanup(source_t *n)
 {
-  pbu_list_free_full(n->consumer.h,ffsox_packet_consumer_list_free);
-  n->consumer.h=NULL;
-  n->consumer.n=NULL;
+  if (NULL!=n->consumer.h)
+    ffsox_source_link_cleanup(n);
 
   avformat_close_input(&n->f.fc);
   vmt.parent->cleanup(&n->node);
@@ -145,6 +144,7 @@ static int source_run(source_t *n)
   case STATE_RUN:
     for (;;) {
       n->consumer.n=n->consumer.h;
+      av_free_packet(pkt);
 
       if (av_read_frame(n->f.fc,pkt)<0) {
         n->state=STATE_FLUSH;
@@ -176,8 +176,6 @@ static int source_run(source_t *n)
 
         LIST_NEXT(&n->consumer.n,n->consumer.h);
       }
-
-      av_free_packet(pkt);
     }
   case STATE_FLUSH:
   flush:

@@ -38,7 +38,7 @@ static char *bs177gain_norm_title(char *tp)
 }
 
 char *bs1770gain_opathx(int n, const char *title, const char *odirname,
-    const char *oext, const options_t *options)
+    const char *oext)
 {
   char buf[32];
   int len1,len2,len3,len4;
@@ -77,7 +77,7 @@ opath:
 }
 
 char *bs1770gain_opath(const char *ipath, const char *odirname,
-    const char *oext, const options_t *options)
+    const char *oext)
 {
   const char *p1,*p2;;
   size_t len1,len2,len3;

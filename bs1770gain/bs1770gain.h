@@ -46,9 +46,9 @@ typedef struct bs1770gain_track bs1770gain_track_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 char *bs1770gain_opath(const char *ipath, const char *odirname,
-    const char *oext, const bs1770gain_options_t *options);
+    const char *oext);
 char *bs1770gain_opathx(int n, const char *title, const char *odirname,
-    const char *oext, const bs1770gain_options_t *options);
+    const char *oext);
 
 int bs1770gain_transcode(bs1770gain_track_t *track,
     const bs1770gain_options_t *options);
@@ -168,8 +168,8 @@ bs1770gain_tree_t *bs1770gain_tree_init(bs1770gain_tree_t *tree,
 
 int bs1770gain_tree_analyze(bs1770gain_tree_t *tree, const char *odirname,
     const bs1770gain_options_t *options);
-int bs1770gain_tree_track(bs1770gain_tree_t *tree, const char *odirname,
-    bs1770gain_album_t *album, const bs1770gain_options_t *options);
+int bs1770gain_tree_track(bs1770gain_tree_t *tree, bs1770gain_album_t *album,
+    const bs1770gain_options_t *options);
 int bs1770gain_tree_album(const bs1770gain_tree_t *root, const char *odirname,
     const bs1770gain_options_t *options);
 

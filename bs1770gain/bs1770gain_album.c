@@ -59,10 +59,10 @@ bs1770gain_album_t *bs1770gain_album_new(const char *ipath, const char *opath,
 // cleanup:
   ffsox_aggregate_cleanup(&album->aggregate);
 aggregate:
-  if (NULL!=album->opath);
+  if (NULL!=album->opath)
     free(album->opath);
 opath:
-  if (NULL!=album->ipath);
+  if (NULL!=album->ipath)
     free(album->ipath);
 ipath:
   free(album);
@@ -228,9 +228,9 @@ int bs1770gain_track_alloc_output(track_t *track, const source_t *si,
     ext=pbu_ext(track->ipath);
 
   if (0==(EXTENSION_RENAME&options->extensions)||NULL==de)
-    track->opath=bs1770gain_opath(track->ipath,odirname,ext,options);
+    track->opath=bs1770gain_opath(track->ipath,odirname,ext);
   else
-    track->opath=bs1770gain_opathx(track->n,de->value,odirname,ext,options);
+    track->opath=bs1770gain_opathx(track->n,de->value,odirname,ext);
 
   BS1770GAIN_GOTO(NULL==track->opath,"allocating output path",path);
   code=0;

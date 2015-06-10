@@ -46,6 +46,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 void bs1770gain_usage(char **argv, int code)
 {
+  fprintf(stderr,"BS1770GAIN, Copyright (C) Peter Belkner 2014, 2015.\n");
+  fprintf(stderr,"\n");
   fprintf(stderr,"Usage:  %s [options] <file/dir> [<file/dir> ...]\n",
       pbu_basename(argv[0]));
   fprintf(stderr,"\n");
@@ -605,9 +607,12 @@ int main(int argc, char **argv)
 
   if (options.time)
     fprintf(stderr, "Duration: %ld ms.\n",(t2-t1)/CLOCKS_PER_MILLIS);
-dynload:
+
   if (NULL!=fpath)
     fclose(options.f);
 file:
+  sox_quit();
+  ffsox_unload();
+dynload:
   return 0;
 }

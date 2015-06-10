@@ -395,8 +395,9 @@ const ffsox_source_vmt_t *ffsox_source_get_vmt(void);
 int ffsox_source_append(ffsox_source_t *si, ffsox_packet_consumer_t *pc);
 int ffsox_source_seek(ffsox_source_t *n, int64_t ts);
 
-int ffsox_source_link(ffsox_source_t *si, ffsox_sink_t *so, double drc,
+int ffsox_source_link_create(ffsox_source_t *si, ffsox_sink_t *so, double drc,
     int codec_id, int sample_fmt, double q);
+void ffsox_source_link_cleanup(ffsox_source_t *si);
 void ffsox_source_progress(const ffsox_source_t *si, /* FILE */void *data);
 
 /// packet_consumer ///////////////////////////////////////////////////////////

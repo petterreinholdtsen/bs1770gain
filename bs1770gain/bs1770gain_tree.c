@@ -77,7 +77,7 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
   while (0<tree->vmt->next(tree,options)) {
     switch (tree->state) {
     case BS1770GAIN_TREE_STATE_REG:
-      BS1770GAIN_GOTO(bs1770gain_tree_track(tree,odirname,album,options)<0,
+      BS1770GAIN_GOTO(bs1770gain_tree_track(tree,album,options)<0,
           "initializing track",track);
       break;
     case BS1770GAIN_TREE_STATE_DIR:
@@ -165,8 +165,8 @@ album:
   return code;
 }
 
-int bs1770gain_tree_track(bs1770gain_tree_t *tree, const char *odirname,
-    bs1770gain_album_t *album, const bs1770gain_options_t *options)
+int bs1770gain_tree_track(bs1770gain_tree_t *tree, bs1770gain_album_t *album,
+    const bs1770gain_options_t *options)
 {
   int code =-1;
 
@@ -338,6 +338,7 @@ bs1770gain_tree_t *bs1770gain_tree_cli_init(bs1770gain_tree_t *tree,
 
 void bs1770gain_tree_cli_cleanup(bs1770gain_tree_t *tree)
 {
+  (void)tree;
 }
 
 int bs1770gain_tree_cli_next(bs1770gain_tree_t *tree,
