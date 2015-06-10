@@ -1,4 +1,4 @@
-bs1770gain (0.4.2-1) UNRELEASED; urgency=medium
+bs1770gain (0.4.2-1) unstable; urgency=low
 
   * Initial release (Closes: #781026).
   * Add 10-autotools.diff to provide and use autotools based build
