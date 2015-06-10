@@ -1,5 +1,12 @@
 bs1770gain (0.4.2-1) UNRELEASED; urgency=medium
 
   * Initial release (Closes: #781026).
+  * Add 10-autotools.diff to provide and use autotools based build
+    system instead of the original one to avoid trying to download
+    libraries from the net and use the system libraries instead.
+  * Add 20-disable-dynload.diff to disable dynamic loading of shared
+    libraries, and leave it to the linker at compile time.
+  * Add autopkgtest script to check that the program is able to
+    process a simple WAV file.
 
  -- Petter Reinholdtsen <pere@debian.org>  Sat, 30 May 2015 05:38:33 +0000
