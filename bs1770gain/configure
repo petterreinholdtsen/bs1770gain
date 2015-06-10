@@ -63,6 +63,10 @@ extract_disable() {
 while test "$1" != ''; do
   case $1 in
     --help) help 0 ;;
+    --os=*) os=`extract "$1" '--os'` ;;
+    --bits=*) bits=`extract "$1" '--bits'` ;;
+    --msvs=*) msvs=`extract "$1" '--msvs'` ;;
+    --mssdk=*) mssdk=`extract "$1" '--mssdk'` ;;
     --prefix=*) pfx=`extract "$1" '--prefix'` ;;
     --bindir=*) bindir=`extract "$1" '--bindir'` ;;
     --libdir=*) libdir=`extract "$1" '--libdir'` ;;
@@ -95,6 +99,7 @@ normpath() {
 pfx=`normpath "$pfx"`
 srcdir=`normpath "$srcdir"`
 reldir=`normpath "$reldir"`
+#if [ 'x' = "x${bits}" ]; then bits=`"$srcdir"/bits`; fi
 
 ###############################################################################
 pfxpath() {
@@ -124,6 +129,9 @@ echo "RELDIR=$reldir" >> config.mak
 echo "HOST=$host" >> config.mak
 echo "ENABLE_STATIC=$enable_static" >> config.mak
 echo "ENABLE_SHARED=$enable_shared" >> config.mak
+if [ 'x' != "x$bits" ]; then echo "BITS=$bits" >> config.mak; fi
+if [ 'x' != "x$mssdk" ]; then echo "MSSDK=$mssdk" >> config.mak; fi
+if [ 'x' != "x$msvs" ]; then echo "MSVS=$msvs" >> config.mak; fi
 if [ 'x' != "x$cflags" ]; then echo "CFLAGS+=$cflags" >> config.mak; fi
 if [ 'x' != "x$cppflags" ]; then echo "CPPFLAGS+=$cppflags" >> config.mak; fi
 if [ 'x' != "x$ldflags" ]; then echo "LDFLAGS+=$ldflags" >> config.mak; fi

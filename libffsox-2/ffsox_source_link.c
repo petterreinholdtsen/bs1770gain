@@ -63,12 +63,12 @@ read:
   return -1;
 }
 
-int ffsox_source_link(source_t *si, sink_t *so, double drc, int codec_id,
+int ffsox_source_link_create(source_t *si, sink_t *so, double drc, int codec_id,
     int sample_fmt, double q)
 {
   int i;
 
-  for (i=0;i<si->f.fc->nb_streams;++i) {
+  for (i=0;i<(int)si->f.fc->nb_streams;++i) {
     if (si->ai==i||si->vi==i) {
       if (si->vi==i||q<0.0) {
         if (ffsox_source_link_copy(si,so,i)<0) {
@@ -88,4 +88,11 @@ int ffsox_source_link(source_t *si, sink_t *so, double drc, int codec_id,
   return 0;
 link:
   return -1;
+}
+
+void ffsox_source_link_cleanup(source_t *si)
+{
+  pbu_list_free_full(si->consumer.h,ffsox_packet_consumer_list_free);
+  si->consumer.h=NULL;
+  si->consumer.n=NULL;
 }

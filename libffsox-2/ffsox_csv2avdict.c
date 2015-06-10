@@ -255,7 +255,7 @@ static int priv_get_utf8(priv_t *b)
   static unsigned short mask[] = {192, 224, 240}; 
 
   char *wp=b->ch;
-  int n; 
+  unsigned int n; 
 
   // read first byte into buffer
   if (EOF==(*wp=getc(b->f)))

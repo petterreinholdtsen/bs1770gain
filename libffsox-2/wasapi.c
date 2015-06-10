@@ -291,7 +291,7 @@ print:
   return hr;
 }
 
-int main(int argc, char **argv)
+int main()
 {
   HRESULT hr;
   IMMDeviceEnumerator *pEnumerator;

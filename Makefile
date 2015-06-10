@@ -3,6 +3,7 @@ include $(SRCDIR)/bs1770gain/version.mak
 include $(SRCDIR)/examples/version.mak
 include $(SRCDIR)/libffsox-2/version.mak
 include $(SRCDIR)/lib1770-2/version.mak
+include $(SRCDIR)/libpbutil/version.mak
 
 .PHONY: all install release-bin release-src release-tools
 
@@ -36,12 +37,13 @@ install: $(LIB1770_INSTALL)
 
 ########
 SOXV=14.4.1
+SOXDLLV=2
 SOX=sox-$(SOXV)
 SOX_INSTALL+=$(INCLUDEDIR)/sox.h
 ifeq (mingw,$(OS))
-SOX_INSTALL+=$(BINDIR)/libsox-2.dll
+SOX_INSTALL+=$(BINDIR)/libsox-$(SOXDLLV).dll
 else
-SOX_INSTALL+=$(LIBDIR)/libsox.so.2
+SOX_INSTALL+=$(LIBDIR)/libsox.so.$(SOXDLLV)
 endif
 #install: $(SOX_INSTALL)
 
@@ -154,7 +156,6 @@ build/$(LIBPBUTIL)/Makefile: $(SRCDIR)/libpbutil/configure
 
 ###############################################################################
 SOX_OPTS+=--prefix=$(PREFIX)
-SOX_OPTS+=--disable-gomp
 SOX_OPTS+=--with-gnu-ld
 SOX_OPTS+=--without-ladspa
 SOX_OPTS+=--without-ffmpeg
@@ -163,8 +164,11 @@ SOX_OPTS+=--without-libltdl
 SOX_OPTS+='CPPFLAGS=-I$(INCLUDEDIR)'
 SOX_OPTS+='LDFLAGS=-L$(LIBDIR)'
 ifeq (mingw,$(OS)) # {
+SOX_OPTS+=--disable-gomp
+#SOX_OPTS+=--disable-openmp
 SOX_OPTS+=--disable-symlinks
 SOX_OPTS+=--disable-shared
+#SOX_OPTS+=CFLAGS=-fno-stack-protector
 ifeq (mingw,$(OS)) # {
 SOX_LIBS+=-lFLAC
 SOX_LIBS+=-lvorbisfile
@@ -392,6 +396,7 @@ RELEASE_SRC+=COPYING
 RELEASE_SRC+=bits
 RELEASE_SRC+=configure
 RELEASE_SRC+=Makefile
+RELEASE_SRC+=libpbutil
 RELEASE_SRC+=libffsox-2
 RELEASE_SRC+=lib1770-2
 RELEASE_SRC+=examples
@@ -420,8 +425,8 @@ $(RELDIR)/$(RELEASE)/$(RELEASE)-tools.tar.gz: FORCE
 
 ###############################################################################
 ifeq (mingw,$(OS)) # {
-.PRECIOUS: %-2.dll
-%-2.dll: %.dll
+.PRECIOUS: %-$(SOXDLLV).dll
+%-$(SOXDLLV).dll: %.dll
 	cp $< $@
 
 .PRECIOUS: $(LIBDIR)/%.dll.a $(LIBDIR)/%.def
@@ -437,6 +442,9 @@ else # } {
 	nm $<|sed -n "s/.* \(D\|R\) _\(.*\)/\2 DATA/p" >> $@
 	nm $<|sed -n "s/.* T _//p" >> $@
 endif # }
+endif # }
+
+ifeq (msvc,$(OS)) # {
 endif # }
 
 ###############################################################################

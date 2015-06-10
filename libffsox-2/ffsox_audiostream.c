@@ -46,7 +46,7 @@ int ffsox_audiostream(AVFormatContext *fc, int *aip, int *vip)
   ai=-1;
   vi=-1;
 
-  for (i=0;i<fc->nb_streams;++i) {
+  for (i=0;i<(int)fc->nb_streams;++i) {
     cc=fc->streams[i]->codec;
 
     if (ffsox_codec_blacklist(cc->codec_id))

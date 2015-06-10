@@ -18,7 +18,7 @@
  * MA  02110-1301  USA
  */
 #define FFSOX_DYNLOAD_PRIV
-#include <ffsox.h>
+#include <ffsox_priv.h>
 #if defined (FFSOX_DYNLOAD) // {
 #if ! defined (WIN32) // {
 #include <unistd.h>
@@ -47,6 +47,8 @@ ffsox_libsox_t ffsox_libsox;
 #define FFSOX_AVFORMAT "avformat-" FFSOX_AVFORMAT_V  ".dll"
 
 #define FFSOX_LIBSOX "libsox-" FFSOX_LIBSOX_V  ".dll"
+
+#define FFSOX_UNLOAD(lib) FreeLibrary(lib)
 
 #define FFSOX_BIND(hLib,app,np) do { \
   if (NULL==(*(app)=(void *)GetProcAddress(hLib,np))) { \
@@ -148,6 +150,8 @@ found:
 #define FFSOX_AVFORMAT "libavformat.so." FFSOX_AVFORMAT_V
 
 #define FFSOX_LIBSOX "libsox.so." FFSOX_LIBSOX_V
+
+#define FFSOX_UNLOAD(lib) dlclose(lib)
 
 #define FFSOX_BIND(lib,app,np) do { \
   if (NULL==(*(app)=dlsym(lib,np))) { \
@@ -285,15 +289,9 @@ loadlib:
 
 static int ffsox_dynload_swresample(void *lib)
 {
-#if 0 // {
-  int code=-1;
+  (void)lib;
 
-  code=0;
-loadlib:
-  return code;
-#else // } {
   return 0;
-#endif // }
 }
 
 static int ffsox_dynload_avcodec(void *lib)
@@ -380,6 +378,12 @@ loadlib:
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+static void *avutil;
+static void *swresample;
+static void *avcodec;
+static void *avformat;
+static void *libsox;
+
 int ffsox_dynload(const char *dirname)
 {
   int code=-1;
@@ -388,7 +392,6 @@ int ffsox_dynload(const char *dirname)
 #else // } {
   char *root;
 #endif // }
-  void *lib;
 
   if (NULL==dirname||'/'==dirname[0])
     root=NULL;
@@ -400,38 +403,48 @@ int ffsox_dynload(const char *dirname)
     goto exit;
 
   /////////////////////////////////////////////////////////////////////////////
-  if (NULL==(lib=ffsox_loadlib(root,dirname,FFSOX_AVUTIL)))
+  if (NULL==(avutil=ffsox_loadlib(root,dirname,FFSOX_AVUTIL))) {
+    MESSAGE("loading avutil");
     goto root;
+  }
     
-  if (ffsox_dynload_avutil(lib)<0)
+  if (ffsox_dynload_avutil(avutil)<0)
     goto root;
   
   /////////////////////////////////////////////////////////////////////////////
-  if (NULL==(lib=ffsox_loadlib(root,dirname,FFSOX_SWRESAMPLE)))
+  if (NULL==(swresample=ffsox_loadlib(root,dirname,FFSOX_SWRESAMPLE))) {
+    MESSAGE("loading swresample");
     goto root;
+  }
     
-  if (ffsox_dynload_swresample(lib)<0)
+  if (ffsox_dynload_swresample(swresample)<0)
     goto root;
   
   /////////////////////////////////////////////////////////////////////////////
-  if (NULL==(lib=ffsox_loadlib(root,dirname,FFSOX_AVCODEC)))
+  if (NULL==(avcodec=ffsox_loadlib(root,dirname,FFSOX_AVCODEC))) {
+    MESSAGE("loading avcodec");
     goto root;
+  }
     
-  if (ffsox_dynload_avcodec(lib)<0)
+  if (ffsox_dynload_avcodec(avcodec)<0)
     goto root;
   
   /////////////////////////////////////////////////////////////////////////////
-  if (NULL==(lib=ffsox_loadlib(root,dirname,FFSOX_AVFORMAT)))
+  if (NULL==(avformat=ffsox_loadlib(root,dirname,FFSOX_AVFORMAT))) {
+    MESSAGE("loading avformat");
     goto root;
+  }
     
-  if (ffsox_dynload_avformat(lib)<0)
+  if (ffsox_dynload_avformat(avformat)<0)
     goto root;
   
   /////////////////////////////////////////////////////////////////////////////
-  if (NULL==(lib=ffsox_loadlib(root,dirname,FFSOX_LIBSOX)))
+  if (NULL==(libsox=ffsox_loadlib(root,dirname,FFSOX_LIBSOX))) {
+    MESSAGE("loading libsox");
     goto root;
+  }
     
-  if (ffsox_dynload_libsox(lib)<0)
+  if (ffsox_dynload_libsox(libsox)<0)
     goto root;
   
   code=0;
@@ -440,5 +453,40 @@ root:
     free(root);
 exit:
   return code;
+}
+
+void ffsox_unload(void)
+{
+#if 0 // {
+  if (NULL!=libsox) {
+    memset(&ffsox_libsox,0,sizeof ffsox_libsox);
+    FFSOX_UNLOAD(libsox);
+    libsox=NULL;
+  }
+
+  if (NULL!=avformat) {
+    memset(&ffsox_avformat,0,sizeof ffsox_avformat);
+    FFSOX_UNLOAD(avformat);
+    avformat=NULL;
+  }
+
+  if (NULL!=avcodec) {
+    memset(&ffsox_avcodec,0,sizeof ffsox_avcodec);
+    FFSOX_UNLOAD(avcodec);
+    avcodec=NULL;
+  }
+
+  if (NULL!=swresample) {
+    //memset(&ffsox_swresample,0,sizeof ffsox_swresample);
+    FFSOX_UNLOAD(swresample);
+    swresample=NULL;
+  }
+
+  if (NULL!=avutil) {
+    memset(&ffsox_avutil,0,sizeof ffsox_avutil);
+    FFSOX_UNLOAD(avutil);
+    avutil=NULL;
+  }
+#endif // }
 }
 #endif // }

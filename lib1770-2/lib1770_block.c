@@ -79,7 +79,7 @@ void lib1770_block_add_sqs(lib1770_block_t *block, double wssqs)
   }
 
   if (++block->ring.count==block->overlap_size) {
-    int next_offs=block->ring.offs+1;
+    size_t next_offs=block->ring.offs+1;
 
     if (next_offs==block->ring.size)
       next_offs=0;

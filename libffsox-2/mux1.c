@@ -52,7 +52,7 @@ int main(int argc, char **argv)
     goto so;
   }
 
-  if (ffsox_source_link(&si,&so,0.0,CODEC_ID,SAMPLE_FMT,q)<0) {
+  if (ffsox_source_link_create(&si,&so,0.0,CODEC_ID,SAMPLE_FMT,q)<0) {
     PBU_MESSAGE("creating link");
     goto link;
   }
@@ -74,6 +74,7 @@ int main(int argc, char **argv)
 machine:
   ffsox_sink_close(&so);
 open:
+  ffsox_source_link_cleanup(&si);
 link:
   ffsox_sink_cleanup(&so);
 so:

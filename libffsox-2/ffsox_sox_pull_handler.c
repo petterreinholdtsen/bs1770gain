@@ -47,6 +47,8 @@ static int flow(sox_effect_t *e, sox_sample_t const *ibuf, sox_sample_t *obuf,
   double scale;
   sox_sample_t const *rp,*mp;
 
+  (void)obuf;
+
   if (NULL!=cb) {
     data=priv->data;
     scale=1.0/MAXOF(*rp);

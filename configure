@@ -65,6 +65,10 @@ extract_disable() {
 while test "$1" != ''; do
   case $1 in
     --help) help 0 ;;
+    --os=*) os=`extract "$1" '--os'` ;;
+    --bits=*) bits=`extract "$1" '--bits'` ;;
+    --msvs=*) msvs=`extract "$1" '--msvs'` ;;
+    --mssdk=*) mssdk=`extract "$1" '--mssdk'` ;;
     --prefix=*) pfx=`extract "$1" '--prefix'` ;;
     --bindir=*) bindir=`extract "$1" '--bindir'` ;;
     --libdir=*) libdir=`extract "$1" '--libdir'` ;;
@@ -100,7 +104,7 @@ normpath() {
 pfx=`normpath "$pfx"`
 srcdir=`normpath "$srcdir"`
 reldir=`normpath "$reldir"`
-bits=`"$srcdir"/bits`
+if [ 'x' = "x${bits}" ]; then bits=`"$srcdir"/bits`; fi
 
 ###############################################################################
 pfxpath() {
@@ -120,6 +124,7 @@ rm -f config.mak
 touch config.mak
 
 echo "OS=$os" >> config.mak
+echo "BITS=$bits" >> config.mak
 echo "PREFIX=$pfx" >> config.mak
 echo "SRCDIR=$srcdir" >> config.mak
 echo "BINDIR=$bindir" >> config.mak
@@ -133,6 +138,8 @@ echo "BITS=$bits" >> config.mak
 echo "ENABLE_STATIC=$enable_static" >> config.mak
 echo "ENABLE_SHARED=$enable_shared" >> config.mak
 echo "ENABLE_EXAMPLES=$enable_examples" >> config.mak
+if [ 'x' != "x$mssdk" ]; then echo "MSSDK=$mssdk" >> config.mak; fi
+if [ 'x' != "x$msvs" ]; then echo "MSVS=$msvs" >> config.mak; fi
 if [ 'x' != "x$cflags" ]; then echo "CFLAGS+=$cflags" >> config.mak; fi
 if [ 'x' != "x$cppflags" ]; then echo "CPPFLAGS+=$cppflags" >> config.mak; fi
 if [ 'x' != "x$ldflags" ]; then echo "LDFLAGS+=$ldflags" >> config.mak; fi

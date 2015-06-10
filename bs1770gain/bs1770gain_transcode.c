@@ -160,8 +160,7 @@ static void bs1770gain_clone_dict(track_t *track, AVDictionary **ometadata,
   }
 }
 
-static void bs1770gain_write_dict(AVDictionary **ometadata,
-    AVDictionary *imetadata, tag_t *tags)
+static void bs1770gain_write_dict(AVDictionary **ometadata,tag_t *tags)
 {
   tag_t *t;
 
@@ -203,7 +202,7 @@ static void bs1770gain_clone_tags(tag_t *tags, sink_t *so, source_t *si,
     bs1770gain_clone_dict(track,&sto->metadata,sti->metadata,tags,options);
 #if 0 // {
     if (ai==i)
-      bs1770gain_write_dict(&ost->metadata,ist->metadata,tags);
+      bs1770gain_write_dict(&ost->metadata,tags);
 #endif // }
   }
 }
@@ -280,7 +279,7 @@ int bs1770gain_transcode(track_t *t, const options_t *options)
     sample_fmt=-1;
   }
 
-  if (ffsox_source_link(&si,&so,drc,CODEC_ID,sample_fmt,q)<0) {
+  if (ffsox_source_link_create(&si,&so,drc,CODEC_ID,sample_fmt,q)<0) {
     MESSAGE("creating link");
     goto link;
   }
@@ -290,7 +289,7 @@ int bs1770gain_transcode(track_t *t, const options_t *options)
 
   if (BS1770GAIN_MODE_APPLY!=options->mode) {
     // set the RG/BWF tags.
-    bs1770gain_write_dict(&so.f.fc->metadata,si.f.fc->metadata,tags);
+    bs1770gain_write_dict(&so.f.fc->metadata,tags);
   }
 
   if (ffsox_source_seek(&si,options->begin)<0) {
@@ -323,6 +322,7 @@ machine:
   ffsox_sink_close(&so);
 open:
 seek:
+  ffsox_source_link_cleanup(&si);
 link:
   ffsox_sink_cleanup(&so);
 so:
