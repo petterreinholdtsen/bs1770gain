@@ -14,6 +14,10 @@ override_dh_install:
 	sed -i "/dependency_libs/ s/'.*'/''/" `find -name '*.la'`
 	dh_install
 
+# Avoid this lintian warning: W: bs1770gain: postrm-has-useless-call-to-ldconfig
+override_dh_makeshlibs:
+	dh_makeshlibs -X/usr/lib/bs1770gain
+
 # Hack around the fact that we replace the build system.  Remove the
 # old one and recreate an autotools based system.
 #
