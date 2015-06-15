@@ -1,18 +1,18 @@
 /*
  * ffsox_analyze.c
- * Copyright (C) 2015 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2015 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -44,7 +44,7 @@ int ffsox_analyze(analyze_config_t *ac)
 
   // create a source.
   if (ffsox_source_create(&si,ac->path,-1,-1,progress,ac->f)<0) {
-    MESSAGE("creating source");
+    DMESSAGE("creating source");
     goto si;
   }
 
@@ -53,7 +53,7 @@ int ffsox_analyze(analyze_config_t *ac)
 
   // create a frame reader.
   if (NULL==(fr=ffsox_frame_reader_new(&si,si.ai,ac->drc))) {
-    MESSAGE("creating frame reader");
+    DMESSAGE("creating frame reader");
     goto fr;
   }
 
@@ -67,7 +67,7 @@ int ffsox_analyze(analyze_config_t *ac)
   cc.shortterm=ac->shortterm;
 
   if (ffsox_collect_create(&collect,&cc)<0) {
-    MESSAGE("creating collector");
+    DMESSAGE("creating collector");
     goto collect;
   }
 
@@ -77,7 +77,7 @@ int ffsox_analyze(analyze_config_t *ac)
   intercept.sample=ffsox_collect_sample;
 
   if (NULL==(read=ffsox_sox_reader_new(fr,collect.scale,&intercept))) {
-    MESSAGE("creating SoX reader");
+    DMESSAGE("creating SoX reader");
     goto sa;
   }
 
@@ -85,7 +85,7 @@ int ffsox_analyze(analyze_config_t *ac)
 
   // create the SoX chain.
   if (NULL==(chain=sox_create_effects_chain(&read->encoding,NULL))) {
-    MESSAGE("creating SoX chain");
+    DMESSAGE("creating SoX chain");
     goto chain;
   }
 
@@ -95,7 +95,7 @@ int ffsox_analyze(analyze_config_t *ac)
 
   if (SOX_SUCCESS!=ffsox_sox_add_effect_fn(chain,&signal,&signal,
       n,opts,ffsox_sox_read_handler)) {
-    MESSAGE("creating SoX read effect");
+    DMESSAGE("creating SoX read effect");
     goto effect;
   }
 
@@ -112,7 +112,7 @@ int ffsox_analyze(analyze_config_t *ac)
 
       if (SOX_SUCCESS!=ffsox_sox_add_effect_name(chain,&signal,&signal,
           n,opts,"rate")) {
-        MESSAGE("creating SoX rate effect");
+        DMESSAGE("creating SoX rate effect");
         goto effect;
       }
     }
@@ -123,7 +123,7 @@ int ffsox_analyze(analyze_config_t *ac)
 
     if (SOX_SUCCESS!=ffsox_sox_add_effect_name(chain,&signal,&signal,
         n,opts,"rate")) {
-      MESSAGE("creating SoX rate effect");
+      DMESSAGE("creating SoX rate effect");
       goto effect;
     }
 #endif // }
@@ -139,13 +139,13 @@ int ffsox_analyze(analyze_config_t *ac)
 
   if (SOX_SUCCESS!=ffsox_sox_add_effect_fn(chain,&signal,&signal,
       n,opts,ffsox_sox_pull_handler)) {
-    MESSAGE("creating SoX pull effect");
+    DMESSAGE("creating SoX pull effect");
     goto effect;
   }
 
   // run the SoX chain.
   if (SOX_SUCCESS!=sox_flow_effects(chain,NULL,NULL)) {
-    MESSAGE("running SoX effects chain");
+    DMESSAGE("running SoX effects chain");
     goto flow;
   }
 

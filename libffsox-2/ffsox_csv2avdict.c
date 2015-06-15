@@ -1,24 +1,24 @@
 /*
  * ffsox_csv2avdict.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
-#include <ffsox.h>
-#if defined (WIN32)
+#include <ffsox_priv.h>
+#if defined (_WIN32)
 #include <windows.h>
 #include <mbstring.h>
 #endif
@@ -52,7 +52,7 @@ static priv_t *priv_cleanup(priv_t *b);
 static int priv_realloc(priv_t *b, size_t n);
 static int priv_gets(priv_t *b);
 
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
 static int priv_get_utf16le(priv_t *b);
 static int priv_get_utf16be(priv_t *b);
 #endif // }
@@ -62,7 +62,7 @@ static int priv_get_ansi(priv_t *b);
 ///////////////////////////////////////////////////////////////////////////////
 static priv_t *priv_init(priv_t *b, FILE *f)
 {
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
   static uint8_t utf16le[]={ 0xFF,0xFE,0x00 };
   static uint8_t utf16be[]={ 0xFE,0xFF,0x00 };
 #endif // }
@@ -74,7 +74,7 @@ static priv_t *priv_init(priv_t *b, FILE *f)
 
   memset(b,0,sizeof *b);
 
-  if (NULL==(b->buf=malloc(PRIV_BUF_SIZE)))
+  if (NULL==(b->buf=MALLOC(PRIV_BUF_SIZE)))
     goto error;
 
   b->wp=b->buf;
@@ -84,7 +84,7 @@ static priv_t *priv_init(priv_t *b, FILE *f)
   if ((pos=ftell(f)<-1l))
     goto error;
 
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
   // UTF-16 LE
   rp=utf16le;
 
@@ -163,7 +163,7 @@ error:
 static priv_t *priv_cleanup(priv_t *b)
 {
   if (NULL!=b->buf)
-    free(b->buf);
+    FREE(b->buf);
 
   return b;
 }
@@ -179,7 +179,7 @@ static int priv_realloc(priv_t *b, size_t n)
       size*=2;
     } while (size<offs+n);
 
-    if (NULL==(tmp=realloc(b->buf,size)))
+    if (NULL==(tmp=REALLOC(b->buf,size)))
       return -1;
 
     b->buf=tmp;
@@ -190,7 +190,7 @@ static int priv_realloc(priv_t *b, size_t n)
   return 0;
 }
 
-#if defined (WIN32) && defined (UNICODE) // {
+#if defined (_WIN32) && defined (UNICODE) // {
 static FILE *priv_fopen(const char *name, const wchar_t *wmode)
 {
   int n1,n2;
@@ -206,7 +206,7 @@ static FILE *priv_fopen(const char *name, const wchar_t *wmode)
     0             // __in       int cchWideChar
   );
 
-  if (0==n1||NULL==(wname=malloc(n1*sizeof *wname)))
+  if (0==n1||NULL==(wname=MALLOC(n1*sizeof *wname)))
     goto cleanup;
 
   n2=MultiByteToWideChar(
@@ -224,7 +224,7 @@ static FILE *priv_fopen(const char *name, const wchar_t *wmode)
   f=_wfopen(wname,wmode);
 cleanup:
   if (NULL!=wname)
-    free(wname);
+    FREE(wname);
 
   return f;
 }
@@ -255,7 +255,7 @@ static int priv_get_utf8(priv_t *b)
   static unsigned short mask[] = {192, 224, 240}; 
 
   char *wp=b->ch;
-  unsigned int n; 
+  size_t n; 
 
   // read first byte into buffer
   if (EOF==(*wp=getc(b->f)))
@@ -287,7 +287,7 @@ error:
   return 0;
 }
 
-#if defined (WIN32) /*&& defined (UNICODE)*/ // {
+#if defined (_WIN32) /*&& defined (UNICODE)*/ // {
 static int priv_get_utf16(priv_t *b, int (*read)(wchar_t *, FILE *))
 {
   wchar_t wch;
@@ -428,7 +428,7 @@ static int priv_loop(FILE *f, const char *name, char sep,
   if (0!=priv_gets(&b))
     goto cleanup;
 
-  if (NULL==(head=malloc(b.wp-b.buf)))
+  if (NULL==(head=MALLOC(b.wp-b.buf)))
     goto cleanup;
 
   memcpy(head,b.buf,b.wp-b.buf);
@@ -470,7 +470,7 @@ static int priv_loop(FILE *f, const char *name, char sep,
   } while (0!=*b.ch);
 cleanup:
   if (NULL!=head)
-    free(head);
+    FREE(head);
 
   priv_cleanup(&b);
 
@@ -489,7 +489,7 @@ static const char *priv_name(const char *s)
     if (NULL==p3)
       break;
 
-#if defined (WIN32)
+#if defined (_WIN32)
     p=CharNextA(p3);
 #else
     p=p3+1;
@@ -508,14 +508,14 @@ int ffsox_csv2avdict(const char *file, char sep, AVDictionary **metadata)
 
   name=priv_name(file);
 
-  if (NULL==(csv=malloc((name-file)+strlen(PRIV_FOLDER_CSV)+1)))
+  if (NULL==(csv=MALLOC((name-file)+strlen(PRIV_FOLDER_CSV)+1)))
     goto cleanup;
 
   memcpy(csv,file,name-file);
   strcpy(csv+(name-file),PRIV_FOLDER_CSV);
 
 #if 0 // {
-#if defined (WIN32) && defined (UNICODE) // {
+#if defined (_WIN32) && defined (UNICODE) // {
   if (NULL==(f=priv_fopen(csv,L"rb")))
     goto cleanup;
 #else // } {
@@ -533,7 +533,7 @@ cleanup:
     fclose(f);
 
   if (NULL!=csv)
-    free(csv);
+    FREE(csv);
 
   return code;
 }
@@ -555,7 +555,7 @@ int main(int argc, char **argv)
   while (NULL!=(tag=av_dict_get(dict,"",tag,AV_DICT_IGNORE_SUFFIX)))
     printf("%s=%s\n",tag->key,tag->value);
 cleanup:
-  av_dict_free(&dict);
+  av_dict_FREE(&dict);
 
   return 0;
 }
@@ -569,7 +569,7 @@ int main1(int argc, char **argv)
   char *pp=NULL;
   char *hrp=NULL;
   char *hmp;
-#if ! defined (WIN32)
+#if ! defined (_WIN32)
   char *np=NULL;
 #endif
 
@@ -587,13 +587,13 @@ int main1(int argc, char **argv)
   if (0!=priv_gets(&b))
     goto cleanup;
 
-  if (NULL==(head=malloc(b.wp-b.buf)))
+  if (NULL==(head=MALLOC(b.wp-b.buf)))
     goto cleanup;
 
   memcpy(head,b.buf,b.wp-b.buf);
   hmp=head+(b.wp-b.buf);
 
-#if defined (WIN32)
+#if defined (_WIN32)
   for (rp=strtok(head,"\t");NULL!=rp;rp=strtok(NULL,"\t"))
 #else
   for (rp=strtok_r(head,"\t",&np);NULL!=rp;rp=strtok_r(NULL,"\t",&np))
@@ -622,7 +622,7 @@ int main1(int argc, char **argv)
   } while (EOF!=b.ch);
 cleanup:
   if (NULL!=head)
-    free(head);
+    FREE(head);
 
   priv_cleanup(&b);
 

@@ -1,25 +1,25 @@
 /*
  * ffsox_audio_player.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
+#if defined (_WIN32) // {
 #include <ffsox_priv.h>
 
-#if defined (WIN32) // {
 static audio_player_vmt_t vmt;
 
 int ffsox_audio_player_create(ffsox_audio_player_t *ap,
@@ -36,7 +36,7 @@ int ffsox_audio_player_create(ffsox_audio_player_t *ap,
 
   // initialize the base class.
   if (ffsox_frame_consumer_create(&ap->frame_consumer)<0) {
-    MESSAGE("creating frame consumer");
+    DMESSAGE("creating frame consumer");
     goto base;
   }
 
@@ -57,7 +57,7 @@ int ffsox_audio_player_create(ffsox_audio_player_t *ap,
   );
 
   if (NULL==ap->sync.hMutex) {
-    MESSAGE("creating mutex");
+    DMESSAGE("creating mutex");
     goto mutex;
   }
 
@@ -70,13 +70,13 @@ int ffsox_audio_player_create(ffsox_audio_player_t *ap,
   );
 
   if (NULL==ap->sync.hEvent) {
-    MESSAGE("creating play event");
+    DMESSAGE("creating play event");
     goto event;
   }
 
   // create the frame.
   if (ffsox_frame_create(&ap->fo)<0) {
-    MESSAGE("creating frame");
+    DMESSAGE("creating frame");
     goto frame;
   }
 
@@ -95,15 +95,12 @@ int ffsox_audio_player_create(ffsox_audio_player_t *ap,
   );
 
   if (FAILED(hr)) {
-    switch (hr) {
-      HR_ERROR_CASE(E_NOINTERFACE);
-      HR_ERROR_CASE(E_POINTER);
-      HR_ERROR_CASE(E_INVALIDARG);
-      HR_ERROR_CASE(E_OUTOFMEMORY);
-      HR_ERROR_CASE(AUDCLNT_E_DEVICE_INVALIDATED);
-    }
-
-    MESSAGE("activating audio client");
+    DERROR(E_NOINTERFACE,hr);
+    DERROR(E_POINTER,hr);
+    DERROR(E_INVALIDARG,hr);
+    DERROR(E_OUTOFMEMORY,hr);
+    DERROR(AUDCLNT_E_DEVICE_INVALIDATED,hr);
+    DMESSAGE("activating audio client");
     goto client;
   }
 
@@ -157,14 +154,14 @@ int ffsox_audio_player_create(ffsox_audio_player_t *ap,
     break;
 #endif // }
   default:
-    MESSAGE("format not supported");
+    DMESSAGE("format not supported");
     goto support;
   }
-#elif 0 // {
+#elif 0 // } {
   pwfx->wBitsPerSample=32;
   ap->wfx.SubFormat=KSDATAFORMAT_SUBTYPE_PCM;
   frame->format=AV_SAMPLE_FMT_S32;
-#elif 1 // {
+#elif 1 // } {
   pwfx->wBitsPerSample=16;
   ap->wfx.SubFormat=KSDATAFORMAT_SUBTYPE_PCM;
   frame->format=AV_SAMPLE_FMT_S16;
@@ -196,16 +193,13 @@ int ffsox_audio_player_create(ffsox_audio_player_t *ap,
       CoTaskMemFree(pwfx);
     }
 
-    switch (hr) {
-      HR_ERROR_CASE(S_FALSE);
-      HR_ERROR_CASE(AUDCLNT_E_UNSUPPORTED_FORMAT);
-      HR_ERROR_CASE(E_POINTER);
-      HR_ERROR_CASE(E_INVALIDARG);
-      HR_ERROR_CASE(AUDCLNT_E_DEVICE_INVALIDATED);
-      HR_ERROR_CASE(AUDCLNT_E_SERVICE_NOT_RUNNING);
-    }
-
-    MESSAGE("format not supported");
+    DERROR(S_FALSE,hr);
+    DERROR(AUDCLNT_E_UNSUPPORTED_FORMAT,hr);
+    DERROR(E_POINTER,hr);
+    DERROR(E_INVALIDARG,hr);
+    DERROR(AUDCLNT_E_DEVICE_INVALIDATED,hr);
+    DERROR(AUDCLNT_E_SERVICE_NOT_RUNNING,hr);
+    DMESSAGE("format not supported");
     goto support;
   }
 
@@ -224,13 +218,10 @@ int ffsox_audio_player_create(ffsox_audio_player_t *ap,
 #endif // }
 
   if (FAILED(hr)) {
-    switch (hr) {
-      HR_ERROR_CASE(AUDCLNT_E_DEVICE_INVALIDATED);
-      HR_ERROR_CASE(AUDCLNT_E_SERVICE_NOT_RUNNING);
-      HR_ERROR_CASE(E_POINTER);
-    }
-
-    MESSAGE("getting device period");
+    DERROR(AUDCLNT_E_DEVICE_INVALIDATED,hr);
+    DERROR(AUDCLNT_E_SERVICE_NOT_RUNNING,hr);
+    DERROR(E_POINTER,hr);
+    DMESSAGE("getting device period");
     goto period;
   }
 
@@ -247,26 +238,23 @@ int ffsox_audio_player_create(ffsox_audio_player_t *ap,
   );
 
   if (FAILED(hr)) {
-    switch (hr) {
-      HR_ERROR_CASE(AUDCLNT_E_ALREADY_INITIALIZED);
-      HR_ERROR_CASE(AUDCLNT_E_WRONG_ENDPOINT_TYPE);
-      HR_ERROR_CASE(AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED);
-      HR_ERROR_CASE(AUDCLNT_E_BUFFER_SIZE_ERROR);
-      HR_ERROR_CASE(AUDCLNT_E_CPUUSAGE_EXCEEDED);
-      HR_ERROR_CASE(AUDCLNT_E_DEVICE_INVALIDATED);
-      HR_ERROR_CASE(AUDCLNT_E_DEVICE_IN_USE);
-      HR_ERROR_CASE(AUDCLNT_E_ENDPOINT_CREATE_FAILED);
-      HR_ERROR_CASE(AUDCLNT_E_INVALID_DEVICE_PERIOD);
-      HR_ERROR_CASE(AUDCLNT_E_UNSUPPORTED_FORMAT);
-      HR_ERROR_CASE(AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED);
-      HR_ERROR_CASE(AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL);
-      HR_ERROR_CASE(AUDCLNT_E_SERVICE_NOT_RUNNING);
-      HR_ERROR_CASE(E_POINTER);
-      HR_ERROR_CASE(E_INVALIDARG);
-      HR_ERROR_CASE(E_OUTOFMEMORY);
-    }
-
-    MESSAGE("initializing audio client");
+    DERROR(AUDCLNT_E_ALREADY_INITIALIZED,hr);
+    DERROR(AUDCLNT_E_WRONG_ENDPOINT_TYPE,hr);
+    DERROR(AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED,hr);
+    DERROR(AUDCLNT_E_BUFFER_SIZE_ERROR,hr);
+    DERROR(AUDCLNT_E_CPUUSAGE_EXCEEDED,hr);
+    DERROR(AUDCLNT_E_DEVICE_INVALIDATED,hr);
+    DERROR(AUDCLNT_E_DEVICE_IN_USE,hr);
+    DERROR(AUDCLNT_E_ENDPOINT_CREATE_FAILED,hr);
+    DERROR(AUDCLNT_E_INVALID_DEVICE_PERIOD,hr);
+    DERROR(AUDCLNT_E_UNSUPPORTED_FORMAT,hr);
+    DERROR(AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED,hr);
+    DERROR(AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL,hr);
+    DERROR(AUDCLNT_E_SERVICE_NOT_RUNNING,hr);
+    DERROR(E_POINTER,hr);
+    DERROR(E_INVALIDARG,hr);
+    DERROR(E_OUTOFMEMORY,hr);
+    DMESSAGE("initializing audio client");
     goto initialize;
   }
 
@@ -284,14 +272,11 @@ int ffsox_audio_player_create(ffsox_audio_player_t *ap,
   );
 
   if (FAILED(hr)) {
-    switch (hr) {
-      HR_ERROR_CASE(AUDCLNT_E_NOT_INITIALIZED);
-      HR_ERROR_CASE(AUDCLNT_E_DEVICE_INVALIDATED);
-      HR_ERROR_CASE(AUDCLNT_E_SERVICE_NOT_RUNNING);
-      HR_ERROR_CASE(E_POINTER);
-    }
-
-    MESSAGE("getting buffer size");
+    DERROR(AUDCLNT_E_NOT_INITIALIZED,hr);
+    DERROR(AUDCLNT_E_DEVICE_INVALIDATED,hr);
+    DERROR(AUDCLNT_E_SERVICE_NOT_RUNNING,hr);
+    DERROR(E_POINTER,hr);
+    DMESSAGE("getting buffer size");
     goto size;
   }
 
@@ -304,16 +289,13 @@ int ffsox_audio_player_create(ffsox_audio_player_t *ap,
   );
 
   if (FAILED(hr)) {
-    switch (hr) {
-      HR_ERROR_CASE(E_POINTER);
-      HR_ERROR_CASE(E_NOINTERFACE);
-      HR_ERROR_CASE(AUDCLNT_E_NOT_INITIALIZED);
-      HR_ERROR_CASE(AUDCLNT_E_WRONG_ENDPOINT_TYPE);
-      HR_ERROR_CASE(AUDCLNT_E_DEVICE_INVALIDATED);
-      HR_ERROR_CASE(AUDCLNT_E_SERVICE_NOT_RUNNING);
-    }
-
-    MESSAGE("getting render client");
+    DERROR(E_POINTER,hr);
+    DERROR(E_NOINTERFACE,hr);
+    DERROR(AUDCLNT_E_NOT_INITIALIZED,hr);
+    DERROR(AUDCLNT_E_WRONG_ENDPOINT_TYPE,hr);
+    DERROR(AUDCLNT_E_DEVICE_INVALIDATED,hr);
+    DERROR(AUDCLNT_E_SERVICE_NOT_RUNNING,hr);
+    DMESSAGE("getting render client");
     goto render;
   }
 
@@ -323,14 +305,14 @@ int ffsox_audio_player_create(ffsox_audio_player_t *ap,
   ap->nb_samples=nFrames;
   frame->nb_samples=ap->nb_samples;
 
-  if (NULL==(frame->data[0]=malloc(nFrames*pwfx->nBlockAlign))) {
-    MESSAGE("allocatiing frame buffer");
+  if (NULL==(frame->data[0]=MALLOC(nFrames*pwfx->nBlockAlign))) {
+    DMESSAGE("allocatiing frame buffer");
     goto buffer;
   }
 
   return 0;
 // cleanup:
-  free(frame->data[0]);
+  FREE(frame->data[0]);
 buffer:
   ap->pRenderClient->lpVtbl->Release(ap->pRenderClient);
 render:
@@ -356,19 +338,19 @@ ffsox_audio_player_t *ffsox_audio_player_new(ffsox_frame_reader_t *fr,
 {
   audio_player_t *ap;
 
-  if (NULL==(ap=malloc(sizeof *ap))) {
-    MESSAGE("allocating audio player");
+  if (NULL==(ap=MALLOC(sizeof *ap))) {
+    DMESSAGE("allocating audio player");
     goto malloc;
   }
 
   if (ffsox_audio_player_create(ap,fr,q,pDevice,eShareMode)<0) {
-    MESSAGE("creating audio player");
+    DMESSAGE("creating audio player");
     goto create;
   }
 
   return ap;
 create:
-  free(ap);
+  FREE(ap);
 malloc:
   return NULL;
 }
@@ -391,14 +373,11 @@ static int audio_player_render(audio_player_t *ap)
   );
 
   if (FAILED(hr)) {
-    switch (hr) {
-      HR_ERROR_CASE(AUDCLNT_E_NOT_INITIALIZED);
-      HR_ERROR_CASE(AUDCLNT_E_DEVICE_INVALIDATED);
-      HR_ERROR_CASE(AUDCLNT_E_SERVICE_NOT_RUNNING);
-      HR_ERROR_CASE(E_POINTER);
-    }
-
-    MESSAGE("getting padding");
+    DERROR(AUDCLNT_E_NOT_INITIALIZED,hr);
+    DERROR(AUDCLNT_E_DEVICE_INVALIDATED,hr);
+    DERROR(AUDCLNT_E_SERVICE_NOT_RUNNING,hr);
+    DERROR(E_POINTER,hr);
+    DMESSAGE("getting padding");
     return -1;
   }
 
@@ -410,18 +389,15 @@ static int audio_player_render(audio_player_t *ap)
   );
 
   if (FAILED(hr)) {
-    switch (hr) {
-      HR_ERROR_CASE(AUDCLNT_E_BUFFER_ERROR);
-      HR_ERROR_CASE(AUDCLNT_E_BUFFER_TOO_LARGE);
-      HR_ERROR_CASE(AUDCLNT_E_BUFFER_SIZE_ERROR);
-      HR_ERROR_CASE(AUDCLNT_E_OUT_OF_ORDER);
-      HR_ERROR_CASE(AUDCLNT_E_DEVICE_INVALIDATED);
-      HR_ERROR_CASE(AUDCLNT_E_BUFFER_OPERATION_PENDING);
-      HR_ERROR_CASE(AUDCLNT_E_SERVICE_NOT_RUNNING);
-      HR_ERROR_CASE(E_POINTER);
-    }
-
-    MESSAGE("getting buffer");
+    DERROR(AUDCLNT_E_BUFFER_ERROR,hr);
+    DERROR(AUDCLNT_E_BUFFER_TOO_LARGE,hr);
+    DERROR(AUDCLNT_E_BUFFER_SIZE_ERROR,hr);
+    DERROR(AUDCLNT_E_OUT_OF_ORDER,hr);
+    DERROR(AUDCLNT_E_DEVICE_INVALIDATED,hr);
+    DERROR(AUDCLNT_E_BUFFER_OPERATION_PENDING,hr);
+    DERROR(AUDCLNT_E_SERVICE_NOT_RUNNING,hr);
+    DERROR(E_POINTER,hr);
+    DMESSAGE("getting buffer");
     return -1;
   }
 
@@ -434,16 +410,13 @@ static int audio_player_render(audio_player_t *ap)
   );
 
   if (FAILED(hr)) {
-    switch (hr) {
-      HR_ERROR_CASE(AUDCLNT_E_INVALID_SIZE);
-      HR_ERROR_CASE(AUDCLNT_E_BUFFER_SIZE_ERROR);
-      HR_ERROR_CASE(AUDCLNT_E_OUT_OF_ORDER);
-      HR_ERROR_CASE(AUDCLNT_E_DEVICE_INVALIDATED);
-      HR_ERROR_CASE(AUDCLNT_E_SERVICE_NOT_RUNNING);
-      HR_ERROR_CASE(E_INVALIDARG);
-    }
-
-    MESSAGE("releasing buffer");
+    DERROR(AUDCLNT_E_INVALID_SIZE,hr);
+    DERROR(AUDCLNT_E_BUFFER_SIZE_ERROR,hr);
+    DERROR(AUDCLNT_E_OUT_OF_ORDER,hr);
+    DERROR(AUDCLNT_E_DEVICE_INVALIDATED,hr);
+    DERROR(AUDCLNT_E_SERVICE_NOT_RUNNING,hr);
+    DERROR(E_INVALIDARG,hr);
+    DMESSAGE("releasing buffer");
     return -1;
   }
 
@@ -469,15 +442,12 @@ static DWORD WINAPI ffsox_audio_player_thread(LPVOID lpParameter)
   hr=pAudioClient->lpVtbl->Start(pAudioClient); 
 
   if (FAILED(hr)) {
-    switch (hr) {
-      HR_ERROR_CASE(AUDCLNT_E_NOT_INITIALIZED);
-      HR_ERROR_CASE(AUDCLNT_E_NOT_STOPPED);
-      HR_ERROR_CASE(AUDCLNT_E_EVENTHANDLE_NOT_SET);
-      HR_ERROR_CASE(AUDCLNT_E_DEVICE_INVALIDATED);
-      HR_ERROR_CASE(AUDCLNT_E_SERVICE_NOT_RUNNING);
-    }
-
-    MESSAGE("starting audio client");
+    DERROR(AUDCLNT_E_NOT_INITIALIZED,hr);
+    DERROR(AUDCLNT_E_NOT_STOPPED,hr);
+    DERROR(AUDCLNT_E_EVENTHANDLE_NOT_SET,hr);
+    DERROR(AUDCLNT_E_DEVICE_INVALIDATED,hr);
+    DERROR(AUDCLNT_E_SERVICE_NOT_RUNNING,hr);
+    DMESSAGE("starting audio client");
     goto start;
   }
 
@@ -493,7 +463,7 @@ static DWORD WINAPI ffsox_audio_player_thread(LPVOID lpParameter)
     switch (ap->sync.state) {
     case AUDIO_PLAYER_RENDER:
       if (audio_player_render(ap)<0) {
-        MESSAGE("rendering audio");
+        DMESSAGE("rendering audio");
         stop=1;
       }
 
@@ -502,7 +472,7 @@ static DWORD WINAPI ffsox_audio_player_thread(LPVOID lpParameter)
       stop=1;
       break;
     default:
-      MESSAGE("illeagl sync state");
+      DMESSAGE("illeagl sync state");
       stop=1;
       break;
     }
@@ -540,7 +510,7 @@ int ffsox_audio_player_play(audio_player_t *ap)
   machine_t m;
 
   if (ffsox_machine_run(&m,&ap->node)<0) {
-    MESSAGE("running machine");
+    DMESSAGE("running machine");
     goto pfx;
   }
 
@@ -555,13 +525,13 @@ int ffsox_audio_player_play(audio_player_t *ap)
   );
 
   if (NULL==hThread) {
-    MESSAGE("creating thread");
+    DMESSAGE("creating thread");
     goto thread;
   }
 
   while (STATE_END!=ap->state) {
     if (ffsox_machine_run(&m,&ap->node)<0) {
-      MESSAGE("running machine");
+      DMESSAGE("running machine");
       goto run;
     }
   }
@@ -588,7 +558,7 @@ void ffsox_audio_player_kill(audio_player_t *ap)
 ////////
 static void audio_player_cleanup(audio_player_t *ap)
 {
-  free(ap->fo.frame->data[0]);
+  FREE(ap->fo.frame->data[0]);
   ap->fo.frame->data[0]=NULL;
   ap->pRenderClient->lpVtbl->Release(ap->pRenderClient);
   ap->pAudioClient->lpVtbl->Release(ap->pAudioClient);
@@ -608,7 +578,7 @@ static int audio_player_run(audio_player_t *ap)
     if (NULL!=fi) {
       while (0==ffsox_frame_complete(fi)) {
         if (ffsox_frame_convert(fi,fo,ap->q)<0) {
-          MESSAGE("converting frame");
+          DMESSAGE("converting frame");
           return -1;
         }
 
@@ -635,7 +605,7 @@ static int audio_player_run(audio_player_t *ap)
   case STATE_END:
     return MACHINE_POP;
   default:
-    MESSAGE("illegal state");
+    DMESSAGE("illegal state");
     return -1;
   }
 }

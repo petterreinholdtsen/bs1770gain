@@ -1,18 +1,18 @@
 /*
  * ffsox_packet_writer.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -28,7 +28,7 @@ int ffsox_packet_writer_create(packet_writer_t *pw, source_t *si,
 
   // initialize the base calss.
   if (ffsox_packet_consumer_create(&pw->packet_consumer,si,stream_index)<0) {
-    MESSAGE("creating packet consumer");
+    DMESSAGE("creating packet consumer");
     goto base;
   }
 
@@ -37,13 +37,13 @@ int ffsox_packet_writer_create(packet_writer_t *pw, source_t *si,
 
   // create a new output stream.
   if (ffsox_stream_new(&pw->so,so,NULL)<0) {
-    MESSAGE("creating stream");
+    DMESSAGE("creating stream");
     goto ost;
   }
 
   // initialize the output stream form the input stream.
   if (avcodec_copy_context(pw->so.cc,pw->si.cc)<0) {
-    MESSAGE("copying context");
+    DMESSAGE("copying context");
     goto occ;
   }
 
@@ -68,7 +68,7 @@ int ffsox_packet_writer_create(packet_writer_t *pw, source_t *si,
     pw->so.cc->flags|=CODEC_FLAG_GLOBAL_HEADER;
 
   if (ffsox_sink_append(so,&pw->si,&pw->so)<0) {
-    MESSAGE("appending output stream");
+    DMESSAGE("appending output stream");
     goto append;
   }
 
@@ -86,19 +86,19 @@ ffsox_packet_writer_t *ffsox_packet_writer_new(ffsox_source_t *si,
 {
   packet_writer_t *pw;
 
-  if (NULL==(pw=malloc(sizeof *pw))) {
-    MESSAGE("allocating write copy node");
+  if (NULL==(pw=MALLOC(sizeof *pw))) {
+    DMESSAGE("allocating write copy node");
     goto malloc;
   }
 
   if (ffsox_packet_writer_create(pw,si,stream_index,so)<0) {
-    MESSAGE("creating write copy node");
+    DMESSAGE("creating write copy node");
     goto create;
   }
 
   return pw;
 create:
-  free(pw);
+  FREE(pw);
 malloc:
   return NULL;
 }
@@ -115,7 +115,7 @@ static int packet_writer_run(packet_writer_t *n)
   case STATE_END:
     return MACHINE_POP;
   default:
-    MESSAGE("illegal packet writer state");
+    DMESSAGE("illegal packet writer state");
     return -1;
   }
 }
@@ -137,7 +137,7 @@ static int packet_writer_set_packet(packet_writer_t *n, AVPacket *pkt)
     pkt->duration=av_rescale_q(pkt->duration,sti->time_base,sto->time_base);
 
     if (ffsox_stream_interleaved_write(&n->so,pkt)<0) {
-      MESSAGE("writing packet");
+      DMESSAGE("writing packet");
       return -1;
     }
   }

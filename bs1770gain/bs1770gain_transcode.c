@@ -1,18 +1,18 @@
 /*
  * bs1770gain_transcode.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -28,51 +28,73 @@ static void bs1770gain_tags_rg(tag_t *tags, const aggregate_t *track,
 
   while (NULL!=tags->key) {
     ///////////////////////////////////////////////////////////////////////////
-    if (0==strcasecmp("REPLAYGAIN_ALGORITHM",tags->key))
+    if (0==strcasecmp("REPLAYGAIN_ALGORITHM",tags->key)) {
       strcpy(tags->val,"ITU-R BS.1770");
-    else if (0==strcasecmp("REPLAYGAIN_REFERENCE_LOUDNESS",tags->key))
+      goto next;
+    }
+    else if (0==strcasecmp("REPLAYGAIN_REFERENCE_LOUDNESS",tags->key)) {
       sprintf(tags->val,"%.2f",level);
+      goto next;
+    }
+
     ///////////////////////////////////////////////////////////////////////////
-    else if (0==strcasecmp("REPLAYGAIN_TRACK_GAIN",tags->key)) {
-      db=bs1770gain_aggregate_get_loudness(track,options);
-      sprintf(tags->val,"%.2f LU",level-db);
-    }
-    else if (0==strcasecmp("REPLAYGAIN_TRACK_PEAK",tags->key)) {
-      if (0!=(track->flags&AGGREGATE_TRUEPEAK))
-        sprintf(tags->val,"%f",track->truepeak);
-      else if (0!=(track->flags&AGGREGATE_SAMPLEPEAK))
-        sprintf(tags->val,"%f",track->samplepeak);
-    }
-    else if (0==strcasecmp("REPLAYGAIN_TRACK_RANGE",tags->key)) {
-      if (0!=(track->flags&AGGREGATE_SHORTTERM_RANGE)) {
-        db=lib1770_stats_get_range(track->shortterm,
-            options->shortterm.range_gate,
-            options->shortterm.range_lower_bound,
-            options->shortterm.range_upper_bound);
-        sprintf(tags->val,"%.2f LU",db);
+    if (BS1770GAIN_IS_MODE_TRACK_TAGS(options->mode)) {
+      if (0==strcasecmp("REPLAYGAIN_TRACK_GAIN",tags->key)) {
+        db=bs1770gain_aggregate_get_loudness(track,options);
+        sprintf(tags->val,"%.2f %s",level-db,options->unit);
+        goto next;
       }
-    }
-    ///////////////////////////////////////////////////////////////////////////
-    else if (0==strcasecmp("REPLAYGAIN_ALBUM_GAIN",tags->key)) {
-      db=bs1770gain_aggregate_get_loudness(album,options);
-      sprintf(tags->val,"%.2f LU",level-db);
-    }
-    else if (0==strcasecmp("REPLAYGAIN_ALBUM_PEAK",tags->key)) {
-      if (0!=(album->flags&AGGREGATE_TRUEPEAK))
-        sprintf(tags->val,"%f",album->truepeak);
-      else if (0!=(album->flags&AGGREGATE_SAMPLEPEAK))
-        sprintf(tags->val,"%f",album->samplepeak);
-    }
-    else if (0==strcasecmp("REPLAYGAIN_ALBUM_RANGE",tags->key)) {
-      if (0!=(album->flags&AGGREGATE_SHORTTERM_RANGE)) {
-        db=lib1770_stats_get_range(album->shortterm,
-            options->shortterm.range_gate,
-            options->shortterm.range_lower_bound,
-            options->shortterm.range_upper_bound);
-        sprintf(tags->val,"%.2f LU",db);
+      else if (0==strcasecmp("REPLAYGAIN_TRACK_PEAK",tags->key)) {
+        if (0!=(track->flags&AGGREGATE_TRUEPEAK))
+          sprintf(tags->val,"%f",track->truepeak);
+        else if (0!=(track->flags&AGGREGATE_SAMPLEPEAK))
+          sprintf(tags->val,"%f",track->samplepeak);
+
+        goto next;
+      }
+      else if (0==strcasecmp("REPLAYGAIN_TRACK_RANGE",tags->key)) {
+        if (0!=(track->flags&AGGREGATE_SHORTTERM_RANGE)) {
+          db=lib1770_stats_get_range(track->shortterm,
+              options->shortterm.range_gate,
+              options->shortterm.range_lower_bound,
+              options->shortterm.range_upper_bound);
+          sprintf(tags->val,"%.2f %s",db,options->unit);
+        }
+
+        goto next;
       }
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    if (BS1770GAIN_IS_MODE_ALBUM_TAGS(options->mode)) {
+      if (0==strcasecmp("REPLAYGAIN_ALBUM_GAIN",tags->key)) {
+        db=bs1770gain_aggregate_get_loudness(album,options);
+        sprintf(tags->val,"%.2f %s",level-db,options->unit);
+        goto next;
+      }
+      else if (0==strcasecmp("REPLAYGAIN_ALBUM_PEAK",tags->key)) {
+        if (0!=(album->flags&AGGREGATE_TRUEPEAK))
+          sprintf(tags->val,"%f",album->truepeak);
+        else if (0!=(album->flags&AGGREGATE_SAMPLEPEAK))
+          sprintf(tags->val,"%f",album->samplepeak);
+
+        goto next;
+      }
+      else if (0==strcasecmp("REPLAYGAIN_ALBUM_RANGE",tags->key)) {
+        if (0!=(album->flags&AGGREGATE_SHORTTERM_RANGE)) {
+          db=lib1770_stats_get_range(album->shortterm,
+              options->shortterm.range_gate,
+              options->shortterm.range_lower_bound,
+              options->shortterm.range_upper_bound);
+          sprintf(tags->val,"%.2f %s",db,options->unit);
+        }
+
+        goto next;
+      }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+  next:
     ++tags;
   }
 }
@@ -160,7 +182,7 @@ static void bs1770gain_clone_dict(track_t *track, AVDictionary **ometadata,
   }
 }
 
-static void bs1770gain_write_dict(AVDictionary **ometadata,tag_t *tags)
+static void bs1770gain_write_dict(AVDictionary **ometadata, tag_t *tags)
 {
   tag_t *t;
 
@@ -180,17 +202,11 @@ static void bs1770gain_clone_tags(tag_t *tags, sink_t *so, source_t *si,
   stream_list_t *stream;
   AVStream *sti,*sto;
 
-  // initialize the RG/BWF tags.
-  switch (options->mode) {
-  case BS1770GAIN_MODE_RG_TAGS:
+  if (BS1770GAIN_IS_MODE_RG_TAGS(options->mode))
     bs1770gain_tags_rg(tags,&track->aggregate,&album->aggregate,options);
-    break;
-  case BS1770GAIN_MODE_BWF_TAGS:
+
+  if (BS1770GAIN_IS_MODE_BWF_TAGS(options->mode))
     bs1770gain_tags_bwf(tags,&track->aggregate,options);
-    break;
-  default:
-    break;
-  }
 
   // copy the format dictionary.
   bs1770gain_clone_dict(track,&so->f.fc->metadata,si->f.fc->metadata,tags,
@@ -213,20 +229,20 @@ int bs1770gain_transcode(track_t *t, const options_t *options)
 
   tag_t tags[]={
     ///////////////////////////////////////////////////////////////////////////
-    { .key="REPLAYGAIN_ALGORITHM",          .val="" },
-    { .key="REPLAYGAIN_REFERENCE_LOUDNESS", .val="" },
-    { .key="REPLAYGAIN_TRACK_GAIN",         .val="" },
-    { .key="REPLAYGAIN_TRACK_PEAK",         .val="" },
-    { .key="REPLAYGAIN_TRACK_RANGE",        .val="" },
-    { .key="REPLAYGAIN_ALBUM_GAIN",         .val="" },
-    { .key="REPLAYGAIN_ALBUM_RANGE",        .val="" },
-    { .key="REPLAYGAIN_ALBUM_PEAK",         .val="" },
+    { "REPLAYGAIN_ALGORITHM",          {0} },
+    { "REPLAYGAIN_REFERENCE_LOUDNESS", {0} },
+    { "REPLAYGAIN_TRACK_GAIN",         {0} },
+    { "REPLAYGAIN_TRACK_PEAK",         {0} },
+    { "REPLAYGAIN_TRACK_RANGE",        {0} },
+    { "REPLAYGAIN_ALBUM_GAIN",         {0} },
+    { "REPLAYGAIN_ALBUM_RANGE",        {0} },
+    { "REPLAYGAIN_ALBUM_PEAK",         {0} },
     ///////////////////////////////////////////////////////////////////////////
-    { .key="LoudnessValue" ,                .val=""},
-    { .key="MaxTruePeakLevel",              .val="" },
-    { .key="LoudnessRange",                 .val="" },
+    { "LoudnessValue",                 {0} },
+    { "MaxTruePeakLevel",              {0} },
+    { "LoudnessRange",                 {0} },
     ///////////////////////////////////////////////////////////////////////////
-    { .key=NULL,                            .val="" }
+    { NULL,                            {0} }
   };
 
   int code=-1;
@@ -242,8 +258,10 @@ int bs1770gain_transcode(track_t *t, const options_t *options)
   int sample_fmt;
   double q;
 
+  TRACE_PUSH();
+
   if (ffsox_source_create(&si,t->ipath,ai,vi,progress,f)<0) {
-    MESSAGE("creating source");
+    DMESSAGE("creating source");
     goto si;
   }
 
@@ -251,21 +269,21 @@ int bs1770gain_transcode(track_t *t, const options_t *options)
     ffsox_csv2avdict(si.f.path,'\t',&si.f.fc->metadata);
 
   if (bs1770gain_track_alloc_output(t,&si,options)<0) {
-    MESSAGE("allocating output path");
+    DMESSAGE("allocating output path");
     goto output;
   }
 
   if (0==pbu_same_file(t->ipath,t->opath)) {
-    MESSAGE("overwriting of input not supported");
+    DMESSAGE("overwriting of input not supported");
     goto output;
   }
 
   if (ffsox_sink_create(&so,t->opath)<0) {
-    MESSAGE("creating sink");
+    DMESSAGE("creating sink");
     goto so;
   }
 
-  if (BS1770GAIN_MODE_APPLY==options->mode) {
+  if (BS1770GAIN_IS_MODE_APPLY(options->mode)) {
     q=options->preamp+options->level;
     q-=(1.0-options->apply)*bs1770gain_aggregate_get_loudness(&a->aggregate,
         options);
@@ -280,25 +298,27 @@ int bs1770gain_transcode(track_t *t, const options_t *options)
   }
 
   if (ffsox_source_link_create(&si,&so,drc,CODEC_ID,sample_fmt,q)<0) {
-    MESSAGE("creating link");
+    DMESSAGE("creating link");
     goto link;
   }
 
+//code=0;
+#if 1 // {
   // copy all tags except the RG/BWF ones.
   bs1770gain_clone_tags(tags,&so,&si,t,options);
 
-  if (BS1770GAIN_MODE_APPLY!=options->mode) {
+  if (!BS1770GAIN_IS_MODE_APPLY(options->mode)) {
     // set the RG/BWF tags.
     bs1770gain_write_dict(&so.f.fc->metadata,tags);
   }
 
   if (ffsox_source_seek(&si,options->begin)<0) {
-    MESSAGE("seeking");
+    DMESSAGE("seeking");
     goto seek;
   }
 
   if (ffsox_sink_open(&so)<0) {
-    MESSAGE("opening sink");
+    DMESSAGE("opening sink");
     goto open;
   }
 
@@ -309,7 +329,7 @@ int bs1770gain_transcode(track_t *t, const options_t *options)
   }
 
   if (ffsox_machine_run(&m,&si.node)<0) {
-    MESSAGE("running machine");
+    DMESSAGE("running machine");
     goto machine;
   }
 
@@ -322,6 +342,7 @@ machine:
   ffsox_sink_close(&so);
 open:
 seek:
+#endif // }
   ffsox_source_link_cleanup(&si);
 link:
   ffsox_sink_cleanup(&so);
@@ -329,7 +350,9 @@ so:
 output:
   si.vmt->cleanup(&si);
 si:
-  code=0;
+  //code=0;
 //cleanup:
+  TRACE_POP();
+
   return code;
 }

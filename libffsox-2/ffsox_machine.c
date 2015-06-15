@@ -1,18 +1,18 @@
 /*
  * ffsox_machine.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -28,7 +28,7 @@ int ffsox_machine_run(machine_t *m, node_t *node)
   while (NULL!=(node=m->node)) {
 //fprintf(stderr,"%s: RUN\n",node->vmt->name);
     if ((op=node->vmt->run(node))<0) {
-      MESSAGE("running machine");
+      DMESSAGE("running machine");
       return op;
     }
 
@@ -42,7 +42,7 @@ int ffsox_machine_run(machine_t *m, node_t *node)
       m->node=node->vmt->prev(node);
       break;
     default:
-      MESSAGE("illegal instruction");
+      DMESSAGE("illegal instruction");
       return -1;
     }
   }

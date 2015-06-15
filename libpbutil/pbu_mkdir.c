@@ -1,24 +1,24 @@
 /*
  * pbu_mkdir.c
- * Copyright (C) 2015 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2015 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
 #include <pbutil_priv.h>
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
 #include <direct.h>
 #else // } {
 #include <sys/stat.h>
@@ -26,7 +26,7 @@
 
 void pbu_mkdir(char *path)
 {
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
   size_t size;
   wchar_t *wpath,*p1,*p2;
 #else // } {
@@ -34,7 +34,7 @@ void pbu_mkdir(char *path)
 #endif // }
   int ch;
 
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
   size=MultiByteToWideChar(
     CP_UTF8,      // __in       UINT CodePage,
     0,            // __in       DWORD dwFlags,
@@ -44,8 +44,8 @@ void pbu_mkdir(char *path)
     0             // __in       int cchWideChar
   );
 
-  if (NULL==(wpath=malloc(size*(sizeof *wpath)))) {
-  	MESSAGE("allocating wide path");
+  if (NULL==(wpath=MALLOC(size*(sizeof *wpath)))) {
+  	DMESSAGE("allocating wide path");
     goto wpath;
   }
 
@@ -71,7 +71,7 @@ void pbu_mkdir(char *path)
       ++p2;
 
     if (0==*p2) {
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
       _wmkdir(wpath);
 #else // } {
       mkdir(path,S_IRWXU|S_IRWXG|S_IRWXO);
@@ -81,7 +81,7 @@ void pbu_mkdir(char *path)
     else {
       ch=*p2;
       *p2=0;
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
       _wmkdir(wpath);
 #else // } {
       mkdir(path,S_IRWXU|S_IRWXG|S_IRWXO);
@@ -91,8 +91,8 @@ void pbu_mkdir(char *path)
     }
   }
 
-#if defined (WIN32) // {
-  free(wpath);
+#if defined (_WIN32) // {
+  FREE(wpath);
 wpath:
   return;
 #endif // }

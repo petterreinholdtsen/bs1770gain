@@ -1,23 +1,36 @@
 /*
  * lib1770_pre.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  * 
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  * 
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
 #include <lib1770.h>
+
+///////////////////////////////////////////////////////////////////////////////
+#if defined (_MSC_VER) // {
+#define lib1770_get(offs,i) \
+  ((offs)+(i)<0?LIB1770_BUF_SIZE+(offs)+(i):(offs)+(i))
+#else // } {
+inline int lib1770_get(int offs, int i)
+{
+  int j=offs+i;
+
+  return j<0?LIB1770_BUF_SIZE+j:j;
+}
+#endif // }
 
 #define LIB1770_GET(buf,offs,i) \
     ((buf)[lib1770_get(offs,i)])
@@ -28,6 +41,7 @@
 #define LIB1770_GETZ(buf,offs,i) \
     LIB1770_GET(buf,(offs)-3,i)
 
+///////////////////////////////////////////////////////////////////////////////
 static double lib1770_g[LIB1770_MAX_CHANNELS]={
   1.0,
   1.0,
@@ -36,49 +50,39 @@ static double lib1770_g[LIB1770_MAX_CHANNELS]={
   1.41
 };
 
-static lib1770_biquad_t lib1770_f1_48000={
-#if defined (_MSC_VER) // {
-  48000,
-  -1.69065929318241,
-  0.73248077421585,
-  1.53512485958697,
-  -2.69169618940638,
-  1.19839281085285
-#else // } {
-  .samplerate=48000,
-  .a1=-1.69065929318241,
-  .a2=0.73248077421585,
-  .b0=1.53512485958697,
-  .b1=-2.69169618940638,
-  .b2=1.19839281085285
-#endif // }
-};
-
-static lib1770_biquad_t lib1770_f2_48000={
-#if defined (_MSC_VER) // {
-  48000,
-  -1.99004745483398,
-  0.99007225036621,
-  1.0,
-  -2.0,
-  1.0
-#else // } {
-  .samplerate=48000,
-  .a1=-1.99004745483398,
-  .a2=0.99007225036621,
-  .b0=1.0,
-  .b1=-2.0,
-  .b2=1.0
-#endif // }
-};
-
-inline int lib1770_get(int offs, int i)
+static const lib1770_biquad_t *lib1770_f1_48000(void)
 {
-  int j=offs+i;
+  static lib1770_biquad_t biquad;
 
-  return j<0?LIB1770_BUF_SIZE+j:j;
+  if (0.0==biquad.samplerate) {
+    biquad.samplerate=48000;
+    biquad.a1=-1.69065929318241;
+    biquad.a2=0.73248077421585;
+    biquad.b0=1.53512485958697;
+    biquad.b1=-2.69169618940638;
+    biquad.b2=1.19839281085285;
+  }
+
+  return &biquad;
 }
 
+static const lib1770_biquad_t *lib1770_f2_48000(void)
+{
+  static lib1770_biquad_t biquad;
+
+  if (0.0==biquad.samplerate) {
+    biquad.samplerate=48000;
+    biquad.a1=-1.99004745483398;
+    biquad.a2=0.99007225036621;
+    biquad.b0=1.0;
+    biquad.b1=-2.0;
+    biquad.b2=1.0;
+  }
+
+  return &biquad;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 lib1770_pre_t *lib1770_pre_new(double samplerate, int channels)
 {
   lib1770_pre_t *pre;
@@ -96,11 +100,11 @@ lib1770_pre_t *lib1770_pre_new(double samplerate, int channels)
 
   // requantize the f1-filter according to the sample frequency.
   pre->f1.samplerate=samplerate;
-  lib1770_biquad_requantize(&pre->f1,&lib1770_f1_48000);
+  lib1770_biquad_requantize(&pre->f1,lib1770_f1_48000());
 
   // requantize the f2-filter according to the sample frequency.
   pre->f2.samplerate=samplerate;
-  lib1770_biquad_requantize(&pre->f2,&lib1770_f2_48000);
+  lib1770_biquad_requantize(&pre->f2,lib1770_f2_48000());
 
   // initialize the pre buffer.
   for (i=0;i<LIB1770_MIN(channels,LIB1770_MAX_CHANNELS);++i)

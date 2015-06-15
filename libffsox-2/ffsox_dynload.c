@@ -1,18 +1,18 @@
 /*
  * ffsox_dynload.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -20,18 +20,28 @@
 #define FFSOX_DYNLOAD_PRIV
 #include <ffsox_priv.h>
 #if defined (FFSOX_DYNLOAD) // {
-#if ! defined (WIN32) // {
+#if ! defined (_WIN32) // {
 #include <unistd.h>
 #include <dlfcn.h>
 #endif // }
 
 ///////////////////////////////////////////////////////////////////////////////
-#define FFSOX_AVUTIL_V "54"
-#define FFSOX_SWRESAMPLE_V "1"
-#define FFSOX_AVCODEC_V "56"
-#define FFSOX_AVFORMAT_V "56"
+#if ! defined (FFSOX_AVUTIL_V) // {
+  #define FFSOX_AVUTIL_V "54"
+#endif // }
+#if ! defined (FFSOX_SWRESAMPLE_V) // {
+  #define FFSOX_SWRESAMPLE_V "1"
+#endif // }
+#if ! defined (FFSOX_AVCODEC_V) // {
+  #define FFSOX_AVCODEC_V "56"
+#endif // }
+#if ! defined (FFSOX_AVFORMAT_V) // {
+  #define FFSOX_AVFORMAT_V "56"
+#endif // }
 
-#define FFSOX_LIBSOX_V "2"
+#if ! defined (FFSOX_LIBSOX_V) // {
+  #define FFSOX_LIBSOX_V "3"
+#endif // }
 
 ///////////////////////////////////////////////////////////////////////////////
 ffsox_avutil_t ffsox_avutil;
@@ -40,7 +50,7 @@ ffsox_avformat_t ffsox_avformat;
 ffsox_libsox_t ffsox_libsox;
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
 #define FFSOX_AVUTIL "avutil-" FFSOX_AVUTIL_V ".dll"
 #define FFSOX_SWRESAMPLE "swresample-" FFSOX_SWRESAMPLE_V  ".dll"
 #define FFSOX_AVCODEC "avcodec-" FFSOX_AVCODEC_V  ".dll"
@@ -64,14 +74,14 @@ static wchar_t *ffsox_root(void)
 
   size=MAX_PATH;
 
-  if (NULL==(buf=malloc(size*sizeof *buf)))
+  if (NULL==(buf=MALLOC(size*sizeof *buf)))
     goto malloc;
 
   for (;;) {
     len=GetModuleFileNameW(NULL,buf,size-1);
 
 	  if (ERROR_INSUFFICIENT_BUFFER==GetLastError()) {
-	    if (NULL==(bp=realloc(buf,(size*=2)*sizeof *buf)))
+	    if (NULL==(bp=REALLOC(buf,(size*=2)*sizeof *buf)))
 	      goto realloc;
 	    else
 	      buf=bp;
@@ -93,7 +103,7 @@ static wchar_t *ffsox_root(void)
 
   return buf;
 realloc:
-  free(buf);
+  FREE(buf);
 malloc:
   return NULL;
 }
@@ -108,7 +118,7 @@ static HMODULE ffsox_loadlib_try(const wchar_t *ws1, const char *s2,
     goto path;
 
   hLib=LoadLibraryW(path);
-  free(path);
+  FREE(path);
 path:
   return hLib;
 }
@@ -122,21 +132,21 @@ HMODULE ffsox_loadlib(const wchar_t *root, const char *dirname,
   hLib=NULL;
 
   if (NULL!=(path=_wgetenv(L"PATH"))) {
-    if (NULL==(path=_wcsdup(path)))
+    if (NULL==(path=_WCSDUP(path)))
       goto path;
 
     cur=wcstok_r(path,L";",&next);
 
     while (NULL!=cur) {
       if (NULL!=(hLib=ffsox_loadlib_try(cur,NULL,basename))) {
-        free(path);
+        FREE(path);
         goto found; 
       }
 
       cur=wcstok_r(NULL,L";",&next);
     }
 
-    free(path);
+    FREE(path);
   }
 path:
   hLib=ffsox_loadlib_try(root,dirname,basename);
@@ -169,13 +179,13 @@ static char *ffsox_root(void)
   sprintf(path,"/proc/%d/exe",getpid());
   size=PATH_MAX;
 
-  if (NULL==(buf=malloc(size*sizeof *buf)))
+  if (NULL==(buf=MALLOC(size*sizeof *buf)))
     goto malloc;
 
   while ((len=readlink(path,buf,size-1))<0) {
     if (ENAMETOOLONG!=errno)
 	    goto realloc;
-	  else if (NULL==(bp=realloc(buf,(size*=2)*sizeof *buf)))
+	  else if (NULL==(bp=REALLOC(buf,(size*=2)*sizeof *buf)))
 	    goto realloc;
 	  else
 	    buf=bp;
@@ -194,7 +204,7 @@ static char *ffsox_root(void)
 
   return buf;
 realloc:
-  free(buf);
+  FREE(buf);
 malloc:
   return NULL;
 }
@@ -209,7 +219,7 @@ static void *ffsox_loadlib_try(const char *s1, const char *s2,
     goto path;
 
   lib=dlopen(path,RTLD_LAZY);
-  free(path);
+  FREE(path);
 path:
   return lib;
 }
@@ -224,21 +234,21 @@ static void *ffsox_loadlib(const char *root, const char *dirname,
     goto found;
 
   if (NULL!=(path=getenv("LD_LIBRARY_PATH"))) {
-    if (NULL==(path=strdup(path)))
+    if (NULL==(path=STRDUP(path)))
       goto path;
 
     cur=strtok_r(path,":",&next);
 
     while (NULL!=cur) {
       if (NULL!=(lib=ffsox_loadlib_try(cur,NULL,basename))) {
-        free(path);
+        FREE(path);
         goto found;
       }
 
       cur=strtok_r(NULL,":",&next);
     }
 
-    free(path);
+    FREE(path);
   }
 path:
   lib=ffsox_loadlib_try(root,dirname,basename);
@@ -289,9 +299,17 @@ loadlib:
 
 static int ffsox_dynload_swresample(void *lib)
 {
+#if 0 // {
+  int code=-1;
+
+  code=0;
+loadlib:
+  return code;
+#else // } {
   (void)lib;
 
   return 0;
+#endif // }
 }
 
 static int ffsox_dynload_avcodec(void *lib)
@@ -387,7 +405,7 @@ static void *libsox;
 int ffsox_dynload(const char *dirname)
 {
   int code=-1;
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
   wchar_t *root;
 #else // } {
   char *root;
@@ -395,7 +413,7 @@ int ffsox_dynload(const char *dirname)
 
   if (NULL==dirname||'/'==dirname[0])
     root=NULL;
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
   else if ('\\'==dirname[0]||(dirname[0]!=0&&dirname[1]==':'))
     root=NULL;
 #endif // }
@@ -404,60 +422,69 @@ int ffsox_dynload(const char *dirname)
 
   /////////////////////////////////////////////////////////////////////////////
   if (NULL==(avutil=ffsox_loadlib(root,dirname,FFSOX_AVUTIL))) {
-    MESSAGE("loading avutil");
+    DMESSAGE("loading avutil");
     goto root;
   }
     
-  if (ffsox_dynload_avutil(avutil)<0)
+  if (ffsox_dynload_avutil(avutil)<0) {
+    DMESSAGE("loading avutil symbols");
     goto root;
+  }
   
   /////////////////////////////////////////////////////////////////////////////
   if (NULL==(swresample=ffsox_loadlib(root,dirname,FFSOX_SWRESAMPLE))) {
-    MESSAGE("loading swresample");
+    DMESSAGE("loading swresample");
     goto root;
   }
     
-  if (ffsox_dynload_swresample(swresample)<0)
+  if (ffsox_dynload_swresample(swresample)<0) {
+    DMESSAGE("loading swresample symbols");
     goto root;
+  }
   
   /////////////////////////////////////////////////////////////////////////////
   if (NULL==(avcodec=ffsox_loadlib(root,dirname,FFSOX_AVCODEC))) {
-    MESSAGE("loading avcodec");
+    DMESSAGE("loading avcodec");
     goto root;
   }
     
-  if (ffsox_dynload_avcodec(avcodec)<0)
+  if (ffsox_dynload_avcodec(avcodec)<0) {
+    DMESSAGE("loading avcodec symbols");
     goto root;
+  }
   
   /////////////////////////////////////////////////////////////////////////////
   if (NULL==(avformat=ffsox_loadlib(root,dirname,FFSOX_AVFORMAT))) {
-    MESSAGE("loading avformat");
+    DMESSAGE("loading avformat");
     goto root;
   }
     
-  if (ffsox_dynload_avformat(avformat)<0)
+  if (ffsox_dynload_avformat(avformat)<0) {
+    DMESSAGE("loading avformat symbols");
     goto root;
+  }
   
   /////////////////////////////////////////////////////////////////////////////
   if (NULL==(libsox=ffsox_loadlib(root,dirname,FFSOX_LIBSOX))) {
-    MESSAGE("loading libsox");
+    DMESSAGE("loading sox");
     goto root;
   }
     
-  if (ffsox_dynload_libsox(libsox)<0)
+  if (ffsox_dynload_libsox(libsox)<0) {
+    DMESSAGE("loading sox symbols");
     goto root;
+  }
   
   code=0;
 root:
   if (NULL!=root)
-    free(root);
+    FREE(root);
 exit:
   return code;
 }
 
 void ffsox_unload(void)
 {
-#if 0 // {
   if (NULL!=libsox) {
     memset(&ffsox_libsox,0,sizeof ffsox_libsox);
     FFSOX_UNLOAD(libsox);
@@ -487,6 +514,16 @@ void ffsox_unload(void)
     FFSOX_UNLOAD(avutil);
     avutil=NULL;
   }
-#endif // }
+}
+#else // } {
+int ffsox_dynload(const char *dirname)
+{
+  (void)dirname;
+
+  return 0;
+}
+
+void ffsox_unload(void)
+{
 }
 #endif // }

@@ -1,18 +1,18 @@
 /*
  * bs1770gain.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -93,6 +93,9 @@ void bs1770gain_usage(char **argv, int code)
       "   (-24.0 LUFS)\n");
   fprintf(stderr," --replaygain:  calculate replay gain according to\n"
       "   ReplayGain 2.0 (-18.0 LUFS)\n");
+  fprintf(stderr," --track-tags:  write track tags\n");
+  fprintf(stderr," --album-tags:  write album tags\n");
+  fprintf(stderr," --unit <unit>:  write tags with <unit>\n");
   fprintf(stderr," --apply <q>:  apply the EBU/ATSC/RG gain to the output\n"
       "   (in conjunction with the -o/--output option),\n"
       "   q=0.0 (album gain) ... 1.0 (track gain),\n"
@@ -171,6 +174,7 @@ void bs1770gain_usage(char **argv, int code)
 enum {
   ////////////////
   APPLY,
+  UNIT,
   DRC,
   FORMAT,
   LOGLEVEL,
@@ -187,6 +191,8 @@ enum {
   REPLAYGAIN,
   RG_TAGS,
   BWF_TAGS,
+  TRACK_TAGS,
+  ALBUM_TAGS,
   ////////////////
   MOMENTARY_RANGE,
   MOMENTARY_LENGTH,
@@ -204,79 +210,82 @@ enum {
   SHORTTERM_RANGE_UPPER_BOUND
 };
 
-static const const char *bs1770gain_flags="b:d:f:o:u:ahlimprstx";
+static const char *bs1770gain_flags="b:d:f:o:u:ahlimprstx";
 
 static struct option bs1770gain_opts[]={
   ////
-  { name:"begin",has_arg:required_argument,flag:NULL,val:'b' },
-  { name:"duration",has_arg:required_argument,flag:NULL,val:'d' },
-  { name:"file",has_arg:required_argument,flag:NULL,val:'f' },
-  { name:"output",has_arg:required_argument,flag:NULL,val:'o' },
-  { name:"use",has_arg:required_argument,flag:NULL,val:'u' },
+  { "begin",required_argument,NULL,'b' },
+  { "duration",required_argument,NULL,'d' },
+  { "file",required_argument,NULL,'f' },
+  { "output",required_argument,NULL,'o' },
+  { "use",required_argument,NULL,'u' },
   ////
-  { name:"help",has_arg:no_argument,flag:NULL,val:'h' },
-  { name:"integrated",has_arg:no_argument,flag:NULL,val:'i' },
-  { name:"list",has_arg:no_argument,flag:NULL,val:'l' },
-  { name:"momentary",has_arg:no_argument,flag:NULL,val:'m' },
-  { name:"range",has_arg:no_argument,flag:NULL,val:'r' },
-  { name:"samplepeak",has_arg:no_argument,flag:NULL,val:'p' },
-  { name:"shortterm",has_arg:no_argument,flag:NULL,val:'s' },
-  { name:"truepeak",has_arg:no_argument,flag:NULL,val:'t' },
-  { name:"extensions",has_arg:no_argument,flag:NULL,val:'x' },
+  { "help",no_argument,NULL,'h' },
+  { "integrated",no_argument,NULL,'i' },
+  { "list",no_argument,NULL,'l' },
+  { "momentary",no_argument,NULL,'m' },
+  { "range",no_argument,NULL,'r' },
+  { "samplepeak",no_argument,NULL,'p' },
+  { "shortterm",no_argument,NULL,'s' },
+  { "truepeak",no_argument,NULL,'t' },
+  { "extensions",no_argument,NULL,'x' },
   ////
-  { name:"apply",has_arg:required_argument,flag:NULL,val:APPLY },
-  { name:"audio",has_arg:required_argument,flag:NULL,val:AUDIO },
-  { name:"drc",has_arg:required_argument,flag:NULL,val:DRC },
-  { name:"extension",has_arg:required_argument,flag:NULL,val:EXTENSION },
-  { name:"format",has_arg:required_argument,flag:NULL,val:FORMAT },
-  { name:"loglevel",has_arg:required_argument,flag:NULL,val:LOGLEVEL },
-  { name:"level",has_arg:required_argument,flag:NULL,val:LEVEL },
-  { name:"preamp",has_arg:required_argument,flag:NULL,val:PREAMP },
-  { name:"video",has_arg:required_argument,flag:NULL,val:VIDEO },
+  { "apply",required_argument,NULL,APPLY },
+  { "unit",required_argument,NULL,UNIT },
+  { "audio",required_argument,NULL,AUDIO },
+  { "drc",required_argument,NULL,DRC },
+  { "extension",required_argument,NULL,EXTENSION },
+  { "format",required_argument,NULL,FORMAT },
+  { "loglevel",required_argument,NULL,LOGLEVEL },
+  { "level",required_argument,NULL,LEVEL },
+  { "preamp",required_argument,NULL,PREAMP },
+  { "video",required_argument,NULL,VIDEO },
   ////
-  { name:"time",has_arg:no_argument,flag:NULL,val:TIME },
-  { name:"ebu",has_arg:no_argument,flag:NULL,val:EBU },
-  { name:"atsc",has_arg:no_argument,flag:NULL,val:ATSC },
-  { name:"mono2stereo",has_arg:no_argument,flag:NULL,val:MONO2STEREO },
-  { name:"replaygain",has_arg:no_argument,flag:NULL,val:REPLAYGAIN },
-  { name:"rg-tags",has_arg:no_argument,flag:NULL,val:RG_TAGS },
-  { name:"bwf-tags",has_arg:no_argument,flag:NULL,val:BWF_TAGS },
+  { "time",no_argument,NULL,TIME },
+  { "ebu",no_argument,NULL,EBU },
+  { "atsc",no_argument,NULL,ATSC },
+  { "mono2stereo",no_argument,NULL,MONO2STEREO },
+  { "replaygain",no_argument,NULL,REPLAYGAIN },
+  { "rg-tags",no_argument,NULL,RG_TAGS },
+  { "bwf-tags",no_argument,NULL,BWF_TAGS },
+  { "track-tags",no_argument,NULL,TRACK_TAGS },
+  { "album-tags",no_argument,NULL,ALBUM_TAGS },
   ////
-  { name:"momentary-mean",has_arg:no_argument,flag:NULL,val:'i' },
-  { name:"momentary-maximum",has_arg:no_argument,flag:NULL,val:'m' },
-  { name:"momentary-range",has_arg:no_argument,flag:NULL,
-      val:MOMENTARY_RANGE },
-  { name:"momentary-length",has_arg:required_argument,flag:NULL,
-      val:MOMENTARY_LENGTH },
-  { name:"momentary-overlap",has_arg:required_argument,flag:NULL,
-      val:MOMENTARY_OVERLAP },
-  { name:"momentary-mean-gate",has_arg:required_argument,flag:NULL,
-      val:MOMENTARY_MEAN_GATE },
-  { name:"momentary-range-gate",has_arg:required_argument,flag:NULL,
-      val:MOMENTARY_RANGE_GATE },
-  { name:"momentary-range-lower-bound",has_arg:required_argument,flag:NULL,
-      val:MOMENTARY_RANGE_LOWER_BOUND },
-  { name:"momentary-range-upper-bound",has_arg:required_argument,flag:NULL,
-      val:MOMENTARY_RANGE_UPPER_BOUND },
+  { "momentary-mean",no_argument,NULL,'i' },
+  { "momentary-maximum",no_argument,NULL,'m' },
+  { "momentary-range",no_argument,NULL,
+      MOMENTARY_RANGE },
+  { "momentary-length",required_argument,NULL,
+      MOMENTARY_LENGTH },
+  { "momentary-overlap",required_argument,NULL,
+      MOMENTARY_OVERLAP },
+  { "momentary-mean-gate",required_argument,NULL,
+      MOMENTARY_MEAN_GATE },
+  { "momentary-range-gate",required_argument,NULL,
+      MOMENTARY_RANGE_GATE },
+  { "momentary-range-lower-bound",required_argument,NULL,
+      MOMENTARY_RANGE_LOWER_BOUND },
+  { "momentary-range-upper-bound",required_argument,NULL,
+      MOMENTARY_RANGE_UPPER_BOUND },
   ////
-  { name:"shortterm-mean",has_arg:no_argument,flag:NULL,
-      val:SHORTTERM_MEAN },
-  { name:"shortterm-maximum",has_arg:no_argument,flag:NULL,val:'s' },
-  { name:"shortterm-range",has_arg:no_argument,flag:NULL,val:'r' },
-  { name:"shortterm-length",has_arg:required_argument,flag:NULL,
-      val:SHORTTERM_LENGTH },
-  { name:"shortterm-overlap",has_arg:required_argument,flag:NULL,
-      val:SHORTTERM_OVERLAP },
-  { name:"shortterm-mean-gate",has_arg:required_argument,flag:NULL,
-      val:SHORTTERM_MEAN_GATE },
-  { name:"shortterm-range-gate",has_arg:required_argument,flag:NULL,
-      val:SHORTTERM_RANGE_GATE },
-  { name:"shortterm-range-lower-bound",has_arg:required_argument,flag:NULL,
-      val:SHORTTERM_RANGE_LOWER_BOUND },
-  { name:"shortterm-range-upper-bound",has_arg:required_argument,flag:NULL,
-      val:SHORTTERM_RANGE_UPPER_BOUND },
+  { "shortterm-mean",no_argument,NULL,
+      SHORTTERM_MEAN },
+  { "shortterm-maximum",no_argument,NULL,'s' },
+  { "shortterm-range",no_argument,NULL,'r' },
+  { "shortterm-length",required_argument,NULL,
+      SHORTTERM_LENGTH },
+  { "shortterm-overlap",required_argument,NULL,
+      SHORTTERM_OVERLAP },
+  { "shortterm-mean-gate",required_argument,NULL,
+      SHORTTERM_MEAN_GATE },
+  { "shortterm-range-gate",required_argument,NULL,
+      SHORTTERM_RANGE_GATE },
+  { "shortterm-range-lower-bound",required_argument,NULL,
+      SHORTTERM_RANGE_LOWER_BOUND },
+  { "shortterm-range-upper-bound",required_argument,NULL,
+      SHORTTERM_RANGE_UPPER_BOUND },
   ////
-  { name:NULL,has_arg:0,flag:NULL,val:0 }
+  { NULL,0,NULL,0 }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -294,9 +303,12 @@ int main(int argc, char **argv)
   if (1==argc)
     bs1770gain_usage(argv,-1);
 
+  TRACE_PUSH();
+
   //setlocale(LC_ALL,"C");
   memset(&options,0,sizeof options);
   options.f=stdout;
+  options.unit="LU";
   options.audio=-1;
   options.video=-1;
   options.level=-23.0;
@@ -369,7 +381,7 @@ int main(int argc, char **argv)
       break;
     /// without argument //////////////////////////////////////////////////////
     case 'a':
-      options.mode=BS1770GAIN_MODE_APPLY;
+      options.mode|=BS1770GAIN_MODE_APPLY;
       options.apply=0.0;
       break;
     case 'h':
@@ -407,8 +419,11 @@ int main(int argc, char **argv)
       options.video=atoi(optarg);
       break;
     case APPLY:
-      options.mode=BS1770GAIN_MODE_APPLY;
+      options.mode|=BS1770GAIN_MODE_APPLY;
       options.apply=atof(optarg);
+      break;
+    case UNIT:
+      options.unit=optarg;
       break;
     case DRC:
       options.drc=atof(optarg);
@@ -463,12 +478,19 @@ int main(int argc, char **argv)
       break;
     case REPLAYGAIN:
       options.level=-18.0;
+    options.unit="dB";
       break;
     case RG_TAGS:
-      options.mode=BS1770GAIN_MODE_RG_TAGS;
+      options.mode|=BS1770GAIN_MODE_RG_TAGS;
       break;
     case BWF_TAGS:
-      options.mode=BS1770GAIN_MODE_BWF_TAGS;
+      options.mode|=BS1770GAIN_MODE_BWF_TAGS;
+      break;
+    case TRACK_TAGS:
+      options.mode|=BS1770GAIN_MODE_TRACK_TAGS;
+      break;
+    case ALBUM_TAGS:
+      options.mode|=BS1770GAIN_MODE_ALBUM_TAGS;
       break;
     case TIME:
       options.time=1;
@@ -552,7 +574,7 @@ int main(int argc, char **argv)
     bs1770gain_usage(argv,-1);
   }
 
-  if (BS1770GAIN_MODE_APPLY==options.mode&&NULL!=options.format) {
+  if (BS1770GAIN_IS_MODE_APPLY(options.mode)&&NULL!=options.format) {
     fprintf(stderr,"Warning: Format \"%s\" potentially not available.\n",
         options.format);
     options.format=NULL;
@@ -575,6 +597,14 @@ int main(int argc, char **argv)
     bs1770gain_usage(argv,-1);
   }
 
+  if (!BS1770GAIN_IS_MODE_APPLY(options.mode)) {
+    if (!BS1770GAIN_IS_MODE_RG_BWF_TAGS(options.mode))
+      options.mode|=BS1770GAIN_MODE_RG_TAGS;
+
+    if (!BS1770GAIN_IS_MODE_TRACK_ALBUM_TAGS(options.mode))
+      options.mode|=BS1770GAIN_MODE_TRACK_ALBUM_TAGS;
+  }
+
   if (BS1770GAIN_OPTIONS_NO_METHOD(&options)) {
     if (NULL!=odirname||BS1770GAIN_OPTIONS_NO_RANGE_PEAK(&options))
       options.flags|=AGGREGATE_MOMENTARY_MEAN;
@@ -582,7 +612,7 @@ int main(int argc, char **argv)
 
   // load the FFmpeg and SoX libraries from "bs1770gain-tools".
   if (ffsox_dynload("bs1770gain-tools")<0) {
-    MESSAGE("loading shared libraries");
+    PBU_DMESSAGE("loading shared libraries");
     goto dynload;
   }
 
@@ -607,12 +637,16 @@ int main(int argc, char **argv)
 
   if (options.time)
     fprintf(stderr, "Duration: %ld ms.\n",(t2-t1)/CLOCKS_PER_MILLIS);
-
+// cleanup:
+  sox_quit();
+  // still reachable: 9,689 bytes in 51 blocks
+  // TODO: Cleanup FFmpeg. But how?
+dynload:
   if (NULL!=fpath)
     fclose(options.f);
 file:
-  sox_quit();
-  ffsox_unload();
-dynload:
+  TRACE_POP();
+  PBU_HEAP_PRINT();
+
   return 0;
 }

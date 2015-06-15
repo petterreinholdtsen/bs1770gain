@@ -1,0 +1,3 @@
+BS1770GAIN is a loudness scanner compliant with ITU-R BS.1770 and
+its flavors EBU R128, ATSC A/85, and ReplayGain 2.0. It helps
+normalizing the loudness of audio and video files to the same level.

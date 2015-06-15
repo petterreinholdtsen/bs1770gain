@@ -1,18 +1,18 @@
 /*
  * ffsox_frame_writer.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -24,9 +24,9 @@ static frame_writer_vmt_t vmt;
 int ffsox_frame_writer_create(frame_writer_t *fw, sink_t *so,
     frame_reader_t *fr, int codec_id, int sample_fmt, double q)
 {
-  // initialize the base calss.
+  // initialize the base class.
   if (ffsox_frame_consumer_create(&fw->frame_consumer)<0) {
-    MESSAGE("creating frame consumer");
+    DMESSAGE("creating frame consumer");
     goto base;
   }
 
@@ -36,7 +36,7 @@ int ffsox_frame_writer_create(frame_writer_t *fw, sink_t *so,
 
   // create a new output stream.
   if (ffsox_stream_new(&fw->so,so,NULL)<0) {
-    MESSAGE("creating stream");
+    DMESSAGE("creating stream");
     goto ost;
   }
 
@@ -54,7 +54,12 @@ int ffsox_frame_writer_create(frame_writer_t *fw, sink_t *so,
   fw->so.cc->sample_rate=fr->si.cc->sample_rate;
   fw->so.cc->channels=fr->si.cc->channels;
   fw->so.cc->channel_layout=fr->si.cc->channel_layout;
+#if 0 // {
   fw->so.cc->time_base=(AVRational){1,fw->so.cc->sample_rate};
+#else // } {
+  fw->so.cc->time_base.num=1;
+  fw->so.cc->time_base.den=fw->so.cc->sample_rate;
+#endif
   //fw->so.cc->time_base=fr->si.cc->time_base;
 
   if (avcodec_open2(fw->so.cc,fw->so.codec,NULL)<0)
@@ -68,7 +73,7 @@ int ffsox_frame_writer_create(frame_writer_t *fw, sink_t *so,
 
   // initializing frame.
   if (ffsox_frame_create_cc(&fw->fo,fw->so.cc)<0) {
-    MESSAGE("allocating frame");
+    DMESSAGE("allocating frame");
     goto frame;
   }
 
@@ -77,7 +82,7 @@ int ffsox_frame_writer_create(frame_writer_t *fw, sink_t *so,
   av_init_packet(&fw->pkt);
 
   if (ffsox_sink_append(so,&fr->si,&fw->so)<0) {
-    MESSAGE("appending output stream");
+    DMESSAGE("appending output stream");
     goto append;
   }
 
@@ -100,19 +105,19 @@ ffsox_frame_writer_t *ffsox_frame_writer_new(sink_t *so, frame_reader_t *fr,
 {
   frame_writer_t *fw;
 
-  if (NULL==(fw=malloc(sizeof *fw))) {
-    MESSAGE("allocating write encode node");
+  if (NULL==(fw=MALLOC(sizeof *fw))) {
+    DMESSAGE("allocating write encode node");
     goto malloc;
   }
 
   if (ffsox_frame_writer_create(fw,so,fr,codec_id,sample_fmt,q)<0) {
-    MESSAGE("creating write encode node");
+    DMESSAGE("creating write encode node");
     goto create;
   }
 
   return fw;
 create:
-  free(fw);
+  FREE(fw);
 malloc:
   return NULL;
 }
@@ -134,7 +139,7 @@ static int frame_writer_encode(frame_writer_t *fw, AVFrame *frame,
   AVPacket *pkt=&fw->pkt;
 
   if (avcodec_encode_audio2(cc,pkt,frame,got_packet)<0) {
-    MESSAGE("encoding audio");
+    DMESSAGE("encoding audio");
     goto encode;
   }
 
@@ -142,7 +147,7 @@ static int frame_writer_encode(frame_writer_t *fw, AVFrame *frame,
     av_packet_rescale_ts(pkt,cc->time_base,st->time_base);
 
     if (ffsox_stream_interleaved_write(so,pkt)<0) {
-      MESSAGE("writing packet");
+      DMESSAGE("writing packet");
       goto write;
     }
   }
@@ -164,7 +169,7 @@ static int frame_writer_convert(frame_writer_t *fw, int *got_packet)
 
   if (NULL!=fi) {
     if (ffsox_frame_convert(fi,fo,fw->q)<0) {
-      MESSAGE("converting frame");
+      DMESSAGE("converting frame");
       goto convert;
     }
   }
@@ -175,7 +180,7 @@ static int frame_writer_convert(frame_writer_t *fw, int *got_packet)
     fo->nb_samples.stream+=fo->nb_samples.frame;
 
     if (frame_writer_encode(fw,frame,got_packet)<0) {
-      MESSAGE("encoding");
+      DMESSAGE("encoding");
       goto encode;
     }
 
@@ -200,7 +205,7 @@ static int frame_writer_run(frame_writer_t *fw)
     if (NULL!=fi) {
       while (0==ffsox_frame_complete(fi)) {
         if (frame_writer_convert(fw,&got_packet)<0) {
-          MESSAGE("converting");
+          DMESSAGE("converting");
           return -1;
         }
       }
@@ -214,14 +219,14 @@ static int frame_writer_run(frame_writer_t *fw)
       fo->frame->nb_samples=fo->nb_samples.frame;
       
       if (frame_writer_convert(fw,&got_packet)<0) {
-        MESSAGE("converting");
+        DMESSAGE("converting");
         return -1;
       }
     }
 
     do {
       if (frame_writer_encode(fw,NULL,&got_packet)<0) {
-        MESSAGE("encoding");
+        DMESSAGE("encoding");
         return -1;
       }
     } while (0!=got_packet);
@@ -232,7 +237,7 @@ static int frame_writer_run(frame_writer_t *fw)
   case STATE_END:
     return MACHINE_POP;
   default:
-    MESSAGE("illegal encode state");
+    DMESSAGE("illegal encode state");
     return -1;
   }
 }

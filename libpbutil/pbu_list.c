@@ -1,18 +1,18 @@
 /*
  * pbu_list.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -36,7 +36,7 @@ int pbu_list_append(void *head, void *node, size_t size)
   list_t *h=*hp;
   list_t *n;
 
-  if (NULL==(n=malloc(size)))
+  if (NULL==(n=MALLOC(size)))
     goto malloc;
 
   memcpy(n,node,size);
@@ -93,5 +93,5 @@ void pbu_list_free_full(void *head, void *free_func)
 
 void pbu_list_free(void *head)
 {
-  pbu_list_free_full(head,free);
+  pbu_list_free_full(head,PBU_FREE_PTR);
 }
