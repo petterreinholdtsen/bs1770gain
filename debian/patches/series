@@ -1,2 +1,3 @@
-10-autotools.diff
-20-disable-dynload.diff
+#10-autotools.diff
+#20-disable-dynload.diff
+30-link-math-lib.diff

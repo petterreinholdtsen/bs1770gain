@@ -1,0 +1,27 @@
+Description: Link with math library.
+Author: Petter Reinholdtsen <pere@debian.org>
+Forwarded: yes
+Reviewed-By: Petter Reinholdtsen <pere@debian.org>
+Last-Update: 2015-06-15
+
+--- bs1770gain-0.4.3-beta2.orig/bs1770gain/Makefile.am
++++ bs1770gain-0.4.3-beta2/bs1770gain/Makefile.am
+@@ -31,6 +31,7 @@ bs1770gain_LDADD+=libbs1770gain.a
+ bs1770gain_LDADD+=$(top_builddir)/libffsox-2/libffsox_2.a
+ bs1770gain_LDADD+=$(top_builddir)/lib1770-2/lib1770_2.a
+ bs1770gain_LDADD+=$(top_builddir)/libpbutil/libpbutil.a
++bs1770gain_LDADD+=-lm
+ 
+ noinst_LIBRARIES=libbs1770gain.a
+ libbs1770gain_a_SOURCES=
+--- bs1770gain-0.4.3-beta2.orig/bs1770gain/Makefile.in
++++ bs1770gain-0.4.3-beta2/bs1770gain/Makefile.in
+@@ -202,7 +202,7 @@ bs1770gain_SOURCES = bs1770gain.c
+ bs1770gain_LDADD = libbs1770gain.a \
+ 	$(top_builddir)/libffsox-2/libffsox_2.a \
+ 	$(top_builddir)/lib1770-2/lib1770_2.a \
+-	$(top_builddir)/libpbutil/libpbutil.a
++	$(top_builddir)/libpbutil/libpbutil.a -lm
+ noinst_LIBRARIES = libbs1770gain.a
+ libbs1770gain_a_SOURCES = bs1770gain.h bs1770gain_priv.h \
+ 	bs1770gain_aggregate.c bs1770gain_album.c bs1770gain_opath.c \
