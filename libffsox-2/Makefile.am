@@ -1,6 +1,14 @@
-CFLAGS+=-Wall
-CFLAGS+=-Wextra
 CFLAGS+=-Werror
+CFLAGS+=-Wall
+CFLAGS+=-Wformat
+CFLAGS+=-Wpointer-arith
+CFLAGS+=-Wcast-align
+CFLAGS+=-Wcast-qual
+CFLAGS+=-Wreturn-type
+CFLAGS+=-Wextra
+CFLAGS+=-Wstrict-prototypes
+#CFLAGS+=-Wmissing-declarations
+#CFLAGS+=-Wmissing-prototypes
 
 CPPFLAGS+=-I$(top_srcdir)/libpbutil
 CPPFLAGS+=-I$(top_srcdir)/lib1770-2

@@ -1,6 +1,14 @@
-CFLAGS+=-Wall
-CFLAGS+=-Wextra
 CFLAGS+=-Werror
+CFLAGS+=-Wall
+CFLAGS+=-Wformat
+CFLAGS+=-Wpointer-arith
+CFLAGS+=-Wcast-align
+CFLAGS+=-Wcast-qual
+CFLAGS+=-Wreturn-type
+CFLAGS+=-Wextra
+CFLAGS+=-Wstrict-prototypes
+#CFLAGS+=-Wmissing-declarations
+#CFLAGS+=-Wmissing-prototypes
 
 CPPFLAGS+=-I$(top_srcdir)/libpbutil
 CPPFLAGS+=-I$(top_srcdir)/lib1770-2
@@ -31,6 +39,7 @@ bs1770gain_LDADD+=libbs1770gain.a
 bs1770gain_LDADD+=$(top_builddir)/libffsox-2/libffsox_2.a
 bs1770gain_LDADD+=$(top_builddir)/lib1770-2/lib1770_2.a
 bs1770gain_LDADD+=$(top_builddir)/libpbutil/libpbutil.a
+bs1770gain_LDADD+=-lm
 
 noinst_LIBRARIES=libbs1770gain.a
 libbs1770gain_a_SOURCES=

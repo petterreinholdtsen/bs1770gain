@@ -114,8 +114,11 @@ BS1770GAIN_TOOLS_INSTALL = @BS1770GAIN_TOOLS_INSTALL@
 BS1770GAIN_TOOLS_UNINSTALL = @BS1770GAIN_TOOLS_UNINSTALL@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
-CFLAGS = @CFLAGS@ -Wall -Wextra -Werror
+CFLAGS = @CFLAGS@ -Werror -Wall -Wformat -Wpointer-arith -Wcast-align \
+	-Wcast-qual -Wreturn-type -Wextra -Wstrict-prototypes
 CPP = @CPP@
+#CFLAGS+=-Wmissing-declarations
+#CFLAGS+=-Wmissing-prototypes
 CPPFLAGS = @CPPFLAGS@ -I$(top_srcdir)/libpbutil \
 	-I$(top_srcdir)/lib1770-2
 CYGPATH_W = @CYGPATH_W@

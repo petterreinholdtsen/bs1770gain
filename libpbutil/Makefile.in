@@ -101,7 +101,8 @@ BS1770GAIN_TOOLS_INSTALL = @BS1770GAIN_TOOLS_INSTALL@
 BS1770GAIN_TOOLS_UNINSTALL = @BS1770GAIN_TOOLS_UNINSTALL@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
-CFLAGS = @CFLAGS@ -Wall -Wextra -Werror
+CFLAGS = @CFLAGS@ -Werror -Wall -Wformat -Wpointer-arith -Wcast-align \
+	-Wcast-qual -Wreturn-type -Wextra -Wstrict-prototypes
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CYGPATH_W = @CYGPATH_W@
@@ -472,6 +473,8 @@ uninstall-am:
 	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
 	uninstall-am
 
+#CFLAGS+=-Wmissing-declarations
+#CFLAGS+=-Wmissing-prototypes
 
 $(libpbutil_a_OBJECTS): $(CONFIG_HEADER)
 
