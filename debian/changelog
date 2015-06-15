@@ -1,6 +1,16 @@
-bs1770gain (0.4.3~beta3-1) UNRELEASED; urgency=medium
+bs1770gain (0.4.3-1) unstable; urgency=low
 
-  * 
+  * New upstream release 0.4.3 using autotools build rules.
+    - Changed from LGPL 2.1+ to GPL 2+.  Updated copyright file to
+      reflect this.
+    - Drop no longer needed patches 10-autotools.diff and
+      20-disable-dynload.diff.
+    - Update debian copyright file to reflect the new GPL 2+ license.
+  * Adjust autopkg test, to accept messages on stderr.
+  * Adjust copyright format string to 1.0.  Thank you lintian for
+    noticing.
+  * Add watch file to track the upstream version.  Thank you Stuart
+    Prescott for helping me with the URL.
 
  -- Petter Reinholdtsen <pere@debian.org>  Thu, 11 Jun 2015 06:53:24 +0000
 
