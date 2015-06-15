@@ -1,18 +1,18 @@
 /*
  * ffsox_collect.c
- * Copyright (C) 2015 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2015 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -38,7 +38,7 @@ int ffsox_collect_create(collect_t *collect, collect_config_t *cc)
   collect->sp=collect->sample;
 
   if (NULL==(collect->pre=lib1770_pre_new(cc->samplerate,cc->channels))) {
-    MESSAGE("creating pre-filter");
+    DMESSAGE("creating pre-filter");
     goto pre;
   }
 
@@ -49,7 +49,7 @@ int ffsox_collect_create(collect_t *collect, collect_config_t *cc)
         cc->momentary.partition);
 
     if (NULL==collect->momentary) {
-      MESSAGE("creating momentary block");
+      DMESSAGE("creating momentary block");
       goto momentary;
     }
 
@@ -64,7 +64,7 @@ int ffsox_collect_create(collect_t *collect, collect_config_t *cc)
         cc->shortterm.partition);
 
     if (NULL==collect->shortterm) {
-      MESSAGE("creating shortterm block");
+      DMESSAGE("creating shortterm block");
       goto shortterm;
     }
 

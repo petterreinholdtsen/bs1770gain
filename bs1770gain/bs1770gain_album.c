@@ -1,18 +1,18 @@
 /*
  * bs1770gain_album.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -27,27 +27,27 @@ bs1770gain_album_t *bs1770gain_album_new(const char *ipath, const char *opath,
 {
   bs1770gain_album_t *album;
 
-  if (NULL==(album=malloc(sizeof *album))) {
-    MESSAGE("allocating album");
+  if (NULL==(album=MALLOC(sizeof *album))) {
+    DMESSAGE("allocating album");
     goto album;
   }
 
   if (NULL==ipath)
     album->ipath=NULL;
-  else if (NULL==(album->ipath=strdup(ipath))) {
-     MESSAGE("copying input path");
+  else if (NULL==(album->ipath=STRDUP(ipath))) {
+     DMESSAGE("copying input path");
      goto ipath;
   }
 
   if (NULL==opath)
     album->opath=NULL;
-  else if (NULL==(album->opath=strdup(opath))) {
-    MESSAGE("copying output path");
+  else if (NULL==(album->opath=STRDUP(opath))) {
+    DMESSAGE("copying output path");
     goto opath;
   }
 
   if (ffsox_aggregate_create(&album->aggregate,options->flags)<0) {
-    MESSAGE("creating album aggregator");
+    DMESSAGE("creating album aggregator");
     goto aggregate;
   }
   
@@ -60,12 +60,12 @@ bs1770gain_album_t *bs1770gain_album_new(const char *ipath, const char *opath,
   ffsox_aggregate_cleanup(&album->aggregate);
 aggregate:
   if (NULL!=album->opath)
-    free(album->opath);
+    FREE(album->opath);
 opath:
   if (NULL!=album->ipath)
-    free(album->ipath);
+    FREE(album->ipath);
 ipath:
-  free(album);
+  FREE(album);
 album:
   return NULL;
 }
@@ -87,12 +87,12 @@ void bs1770gain_album_close(bs1770gain_album_t *album)
   ffsox_aggregate_cleanup(&album->aggregate);
 
   if (NULL!=album->opath)
-    free(album->opath);
+    FREE(album->opath);
 
   if (NULL!=album->ipath)
-    free(album->ipath);
+    FREE(album->ipath);
 
-  free(album);
+  FREE(album);
 }
 
 void bs1770gain_album_renumber(const bs1770gain_album_t *album)
@@ -107,7 +107,7 @@ void bs1770gain_album_renumber(const bs1770gain_album_t *album)
 void bs1770gain_album_copy_file(const bs1770gain_album_t *album,
     const char *basename)
 {
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
   wchar_t *src,*dst;
   struct _stat buf;
 #else // } {
@@ -119,7 +119,7 @@ void bs1770gain_album_copy_file(const bs1770gain_album_t *album,
   if (NULL==(src=ffsox_path3(NULL,album->ipath,basename)))
     goto src;
 
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
   // if the file do not exist exit.
   if (_wstat(src,&buf)<0)
     goto stat;
@@ -134,10 +134,10 @@ void bs1770gain_album_copy_file(const bs1770gain_album_t *album,
 
   // copy the file.
   pbu_copy_file(src,dst);
-  free(dst);
+  FREE(dst);
 dst:
 stat:
-  free(src);
+  FREE(src);
 src:
   return;
 }
@@ -149,18 +149,18 @@ bs1770gain_track_t *bs1770gain_track_new(const char *ipath,
   bs1770gain_track_t *track;
   bs1770gain_track_t *prev,*cur;
 
-  if (NULL==(track=malloc(sizeof *track))) {
-    MESSAGE("allocation track");
+  if (NULL==(track=MALLOC(sizeof *track))) {
+    DMESSAGE("allocation track");
     goto track;
   }
 
-  if (NULL==(track->ipath=strdup(ipath))) {
-    MESSAGE("copying input path");
+  if (NULL==(track->ipath=STRDUP(ipath))) {
+    DMESSAGE("copying input path");
     goto ipath;
   }
 
   if (ffsox_aggregate_create(&track->aggregate,options->flags)<0) {
-    MESSAGE("creating album aggregator");
+    DMESSAGE("creating album aggregator");
     goto aggregate;
   }
   
@@ -192,9 +192,9 @@ bs1770gain_track_t *bs1770gain_track_new(const char *ipath,
 // cleanup:
   ffsox_aggregate_cleanup(&track->aggregate);
 aggregate:
-  free(track->ipath);
+  FREE(track->ipath);
 ipath:
-  free(track);
+  FREE(track);
 track:
   return NULL;
 }
@@ -204,10 +204,10 @@ void bs1770gain_track_close(bs1770gain_track_t *track)
   ffsox_aggregate_cleanup(&track->aggregate);
 
   if (NULL!=track->opath)
-    free(track->opath);
+    FREE(track->opath);
 
-  free(track->ipath);
-  free(track);
+  FREE(track->ipath);
+  FREE(track);
 }
 
 int bs1770gain_track_alloc_output(track_t *track, const source_t *si,
@@ -222,7 +222,7 @@ int bs1770gain_track_alloc_output(track_t *track, const source_t *si,
     ext=options->format;
   else if (0<=si->vi)
     ext=options->video_ext;
-  else if (BS1770GAIN_MODE_APPLY==options->mode)
+  else if (BS1770GAIN_IS_MODE_APPLY(options->mode))
     ext=options->audio_ext;
   else
     ext=pbu_ext(track->ipath);
@@ -232,7 +232,11 @@ int bs1770gain_track_alloc_output(track_t *track, const source_t *si,
   else
     track->opath=bs1770gain_opathx(track->n,de->value,odirname,ext);
 
-  BS1770GAIN_GOTO(NULL==track->opath,"allocating output path",path);
+  if (NULL==track->opath) {
+    DMESSAGE("allocating output path");
+    goto path;
+  }
+
   code=0;
 // cleanup:
 path:

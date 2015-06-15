@@ -1,18 +1,18 @@
 /*
  * ffsox.h
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -30,9 +30,7 @@ extern "C" {
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined (WIN32) // {
-#define FFSOX_HR_ERROR_CASE(x) \
-    case x: fputs(#x "\n",stderr); break
+#if defined (_WIN32) // {
 #define FFSOX_REFTIMES_PER_SEC \
     10000000
 #define FFSOX_REFTIMES_PER_MILLISEC \
@@ -110,6 +108,10 @@ int ffsox_csv2avdict(const char *file, char sep, AVDictionary **metadata);
 
 AVCodec *ffsox_find_decoder(enum AVCodecID id);
 int ffsox_audiostream(AVFormatContext *fci, int *aip, int *vip);
+
+#if defined (_MSC_VER) // {
+extern const AVRational AV_TIME_BASE_Q;
+#endif // }
 
 /// intercept /////////////////////////////////////////////////////////////////
 struct ffsox_intercept {
@@ -342,6 +344,14 @@ void ffsox_node_destroy(ffsox_node_t *n);
 const ffsox_node_vmt_t *ffsox_node_get_vmt(void);
 
 /// source ////////////////////////////////////////////////////////////////////
+/*
+ * A "source" represents a set of streams. Each stream is represened by
+ * a "packet consumer" held in the "consumer" list. The field "next" is
+ * updated from the "consumer" list as packets are read.
+ *
+ * Each entry in the "consumer" list is the head of a double linked list
+ * of nodes (states) which are linked by "prev" and "next" fields.
+ */
 typedef void (*ffsox_source_callback_t)(const ffsox_source_t *, void *);
 
 struct ffsox_source_vmt {
@@ -395,8 +405,8 @@ const ffsox_source_vmt_t *ffsox_source_get_vmt(void);
 int ffsox_source_append(ffsox_source_t *si, ffsox_packet_consumer_t *pc);
 int ffsox_source_seek(ffsox_source_t *n, int64_t ts);
 
-int ffsox_source_link_create(ffsox_source_t *si, ffsox_sink_t *so, double drc,
-    int codec_id, int sample_fmt, double q);
+int ffsox_source_link_create(ffsox_source_t *si, ffsox_sink_t *so,
+    double drc, int codec_id, int sample_fmt, double q);
 void ffsox_source_link_cleanup(ffsox_source_t *si);
 void ffsox_source_progress(const ffsox_source_t *si, /* FILE */void *data);
 

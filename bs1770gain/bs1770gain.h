@@ -1,18 +1,18 @@
 /*
  * bs1770gain.h
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -24,16 +24,6 @@
 #ifdef __cpluplus
 extern "C" {
 #endif
-
-//////////////////////////////////////////////////////////////////////////////
-#define BS1770GAIN_MESSAGE(m)   PBU_MESSAGE(m)
-
-#define BS1770GAIN_GOTO(condition,message,label) do { \
-  if (condition) { \
-    BS1770GAIN_MESSAGE(message); \
-    goto label; \
-  } \
-} while (0)
 
 ///////////////////////////////////////////////////////////////////////////////
 typedef struct bs1770gain_block_options bs1770gain_block_options_t;
@@ -61,10 +51,32 @@ double bs1770gain_aggregate_get_loudness(const ffsox_aggregate_t *aggregate,
     const bs1770gain_options_t *options);
 
 ///////////////////////////////////////////////////////////////////////////////
-// *must* begin with 0 (defines default)
-#define BS1770GAIN_MODE_RG_TAGS               0
-#define BS1770GAIN_MODE_BWF_TAGS              1
-#define BS1770GAIN_MODE_APPLY                 2
+#define BS1770GAIN_MODE_APPLY                 1
+#define BS1770GAIN_MODE_RG_TAGS               2
+#define BS1770GAIN_MODE_BWF_TAGS              4
+#define BS1770GAIN_MODE_TRACK_TAGS            8
+#define BS1770GAIN_MODE_ALBUM_TAGS            16
+
+#define BS1770GAIN_MODE_RG_BWF_TAGS \
+    (BS1770GAIN_MODE_RG_TAGS|BS1770GAIN_MODE_BWF_TAGS)
+#define BS1770GAIN_MODE_TRACK_ALBUM_TAGS \
+    (BS1770GAIN_MODE_TRACK_TAGS|BS1770GAIN_MODE_ALBUM_TAGS)
+
+#define BS1770GAIN_IS_MODE_RG_TAGS(mode) \
+	(0!=(BS1770GAIN_MODE_RG_TAGS&(mode)))
+#define BS1770GAIN_IS_MODE_BWF_TAGS(mode) \
+	(0!=(BS1770GAIN_MODE_BWF_TAGS&(mode)))
+#define BS1770GAIN_IS_MODE_APPLY(mode) \
+	(0!=(BS1770GAIN_MODE_APPLY&(mode)))
+#define BS1770GAIN_IS_MODE_TRACK_TAGS(mode) \
+	(0!=(BS1770GAIN_MODE_TRACK_TAGS&(mode)))
+#define BS1770GAIN_IS_MODE_ALBUM_TAGS(mode) \
+	(0!=(BS1770GAIN_MODE_ALBUM_TAGS&(mode)))
+
+#define BS1770GAIN_IS_MODE_RG_BWF_TAGS(mode) \
+	(0!=(BS1770GAIN_MODE_RG_BWF_TAGS&(mode)))
+#define BS1770GAIN_IS_MODE_TRACK_ALBUM_TAGS(mode) \
+	(0!=(BS1770GAIN_MODE_TRACK_ALBUM_TAGS&(mode)))
 
 // *must* begin with 0 (defines default)
 #define BS1770GAIN_METHOD_MOMENTARY_MEAN      0
@@ -95,6 +107,7 @@ struct bs1770gain_block_options {
 
 struct bs1770gain_options {
   FILE *f;
+  const char *unit;
   double level;
   double preamp;
   double drc;

@@ -1,18 +1,18 @@
 /*
  * ffsox_frame_reader.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -29,7 +29,7 @@ int ffsox_frame_reader_create(frame_reader_t *fr, source_t *si,
 
   // initialize the base calss.
   if (ffsox_packet_consumer_create(&fr->packet_consumer,si,stream_index)<0) {
-    MESSAGE("creating packet consumer");
+    DMESSAGE("creating packet consumer");
     goto base;
   }
 
@@ -38,7 +38,7 @@ int ffsox_frame_reader_create(frame_reader_t *fr, source_t *si,
 
   // find a decoder.
   if (NULL==(fr->si.codec=ffsox_find_decoder(fr->si.cc->codec_id))) {
-    MESSAGE("finding decoder");
+    DMESSAGE("finding decoder");
     goto find;
   }
 
@@ -54,7 +54,7 @@ int ffsox_frame_reader_create(frame_reader_t *fr, source_t *si,
 
   if (avcodec_open2(fr->si.cc,fr->si.codec,&opts)<0) {
     av_dict_free(&opts);
-    MESSAGE("opening decoder");
+    DMESSAGE("opening decoder");
     goto open;
   }
 
@@ -83,19 +83,19 @@ frame_reader_t *ffsox_frame_reader_new(source_t *si, int stream_index,
 {
   frame_reader_t *fr;
 
-  if (NULL==(fr=malloc(sizeof *fr))) {
-    MESSAGE("allocating frame reader");
+  if (NULL==(fr=MALLOC(sizeof *fr))) {
+    DMESSAGE("allocating frame reader");
     goto malloc;
   }
 
   if (ffsox_frame_reader_create(fr,si,stream_index,drc)<0) {
-    MESSAGE("creating frame reader");
+    DMESSAGE("creating frame reader");
     goto create;
   }
 
   return fr;
 create:
-  free(fr);
+  FREE(fr);
 malloc:
   return NULL;
 }
@@ -120,7 +120,7 @@ static int frame_reader_next_set_frame(frame_reader_t *n, frame_t *fo)
       n->next->state=STATE_FLUSH;
 
     if (n->next->vmt->set_frame(n->next,fo)<0) {
-      MESSAGE("setting frame");
+      DMESSAGE("setting frame");
       return -1;
     }
   }
@@ -140,12 +140,12 @@ static int frame_reader_run(frame_reader_t *n)
   case STATE_RUN:
     while (0<pkt->size) {
       if (0ll<fo->nb_samples.frame) {
-        MESSAGE("frame not consumed");
+        DMESSAGE("frame not consumed");
         return -1;
       }
 
       if ((size=avcodec_decode_audio4(cc,frame,&got_frame,pkt))<0) {
-        MESSAGE("decoding audio");
+        DMESSAGE("decoding audio");
         return -1;
       }
 
@@ -162,7 +162,7 @@ static int frame_reader_run(frame_reader_t *n)
     pkt->data=NULL;
 
     if (avcodec_decode_audio4(cc,frame,&got_frame,pkt)<0) {
-      MESSAGE("decoding audio");
+      DMESSAGE("decoding audio");
       return -1;
     }
 
@@ -176,7 +176,7 @@ static int frame_reader_run(frame_reader_t *n)
   case STATE_END:
     return MACHINE_POP;
   default:
-    MESSAGE("illegal read decode state");
+    DMESSAGE("illegal read decode state");
     return -1;
   }
 }

@@ -1,18 +1,18 @@
 /*
  * ffsox_sox_reader.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -29,7 +29,7 @@ int ffsox_sox_reader_create(sox_reader_t *sa, frame_reader_t *fr, double q,
 
   // initialize the base class.
   if (ffsox_frame_consumer_create(&sa->frame_consumer)<0) {
-    MESSAGE("creating frame consumer");
+    DMESSAGE("creating frame consumer");
     goto base;
   }
 
@@ -51,7 +51,7 @@ int ffsox_sox_reader_create(sox_reader_t *sa, frame_reader_t *fr, double q,
 
   // initializing frame.
   if (ffsox_frame_create(&sa->fo)<0) {
-    MESSAGE("allocating frame");
+    DMESSAGE("allocating frame");
     goto frame;
   }
 
@@ -84,19 +84,19 @@ sox_reader_t *ffsox_sox_reader_new(frame_reader_t *fr, double q,
 {
   sox_reader_t *sa;
 
-  if (NULL==(sa=malloc(sizeof *sa))) {
-    MESSAGE("allocating write encode node");
+  if (NULL==(sa=MALLOC(sizeof *sa))) {
+    DMESSAGE("allocating write encode node");
     goto malloc;
   }
 
   if (ffsox_sox_reader_create(sa,fr,q,intercept)<0) {
-    MESSAGE("creating write encode node");
+    DMESSAGE("creating write encode node");
     goto create;
   }
 
   return sa;
 create:
-  free(sa);
+  FREE(sa);
 malloc:
   return NULL;
 }
@@ -115,7 +115,7 @@ size_t ffsox_sox_reader_read(sox_reader_t *sa, sox_sample_t *buf, size_t len)
     frame->nb_samples=len/channels;
 
     if (ffsox_machine_run(&m,&sa->node)<0) {
-      MESSAGE("running machine");
+      DMESSAGE("running machine");
       goto machine;
     }
 
@@ -151,7 +151,7 @@ static int sox_reader_next_set_frame(sox_reader_t *sa, ffsox_frame_t *fo)
 	  sa->next->state=STATE_FLUSH;
 
     if (sa->next->vmt->set_frame(sa->next,fo)<0) {
-      MESSAGE("setting frame");
+      DMESSAGE("setting frame");
       return -1;
     }
   }
@@ -169,7 +169,7 @@ static int sox_reader_run(sox_reader_t *sa)
     if (NULL!=fi) {
       while (0==ffsox_frame_complete(fi)) {
         if (ffsox_frame_convert_sox(fi,fo,sa->q,sa->intercept,&sa->clips)<0) {
-          MESSAGE("converting");
+          DMESSAGE("converting");
           return -1;
         }
 
@@ -195,7 +195,7 @@ static int sox_reader_run(sox_reader_t *sa)
   case STATE_END:
     return MACHINE_POP;
   default:
-    MESSAGE("illegal read decode state");
+    DMESSAGE("illegal read decode state");
     return -1;
   }
 }

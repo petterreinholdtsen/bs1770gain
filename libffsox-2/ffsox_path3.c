@@ -1,25 +1,25 @@
 /*
  * ffsox_path3.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
-#include <ffsox.h>
+#include <ffsox_priv.h>
 
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
 wchar_t *ffsox_path3(const wchar_t *ws1, const char *s2, const char *s3)
 {
   wchar_t *path,*pp;
@@ -57,7 +57,7 @@ wchar_t *ffsox_path3(const wchar_t *ws1, const char *s2, const char *s3)
   if (0==(size=size1+size2+size3))
     goto empty;
 
-  if (NULL==(path=malloc(size*sizeof *path)))
+  if (NULL==(path=MALLOC(size*sizeof *path)))
     goto malloc;
 
   pp=path;
@@ -109,7 +109,7 @@ char *ffsox_path3(const char *s1, const char *s2, const char *s3)
   if (0==(size=size1+size2+size3))
     goto empty;
 
-  if (NULL==(path=malloc(size)))
+  if (NULL==(path=MALLOC(size)))
     goto path;
 
   pp=path;

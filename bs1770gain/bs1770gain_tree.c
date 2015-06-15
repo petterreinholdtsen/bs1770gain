@@ -1,24 +1,23 @@
 /*
  * bs1770gain_tree.c
- * Copyright (C) 2014, 2015 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014, 2015 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
 #include <bs1770gain_priv.h>
-//#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -71,18 +70,29 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
   const char *label;
   analyze_config_t ac;
 
+  TRACE_PUSH();
   album=bs1770gain_album_new(NULL==parent?NULL:parent->path,odirname,options);
-  BS1770GAIN_GOTO(NULL==album,"allocation album",album);
+
+  if (NULL==album) {
+    DMESSAGE("allocation album");
+    goto album;
+  }
 
   while (0<tree->vmt->next(tree,options)) {
     switch (tree->state) {
     case BS1770GAIN_TREE_STATE_REG:
-      BS1770GAIN_GOTO(bs1770gain_tree_track(tree,album,options)<0,
-          "initializing track",track);
+      if (bs1770gain_tree_track(tree,album,options)<0) {
+        DMESSAGE("initializing track");
+        goto track;
+      }
+
       break;
     case BS1770GAIN_TREE_STATE_DIR:
-      BS1770GAIN_GOTO(bs1770gain_tree_album(tree,odirname,options)<0,
-          "initializing album",track);
+      if (bs1770gain_tree_album(tree,odirname,options)<0) {
+        DMESSAGE("initializing album");
+        goto track;
+      }
+
       break;
     default:
       break;
@@ -125,11 +135,13 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
       }
     }
 
-    fprintf(f,"  [ALBUM]:\n");
-    bs1770gain_aggregate_print(&album->aggregate,options);
+    if (BS1770GAIN_IS_MODE_ALBUM_TAGS(options->mode)) {
+      fprintf(f,"  [ALBUM]:\n");
+      bs1770gain_aggregate_print(&album->aggregate,options);
+    }
 
     if (NULL!=odirname) {
-      label=BS1770GAIN_MODE_APPLY==options->mode?"transcoding":"remuxing";
+      label=BS1770GAIN_IS_MODE_APPLY(options->mode)?"transcoding":"remuxing";
 
       // print a massage.
       if (stdout==f) {
@@ -162,6 +174,8 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
 track:
   bs1770gain_album_close(album);
 album:
+  TRACE_POP();
+
   return code;
 }
 
@@ -170,11 +184,18 @@ int bs1770gain_tree_track(bs1770gain_tree_t *tree, bs1770gain_album_t *album,
 {
   int code =-1;
 
-  BS1770GAIN_GOTO(NULL==bs1770gain_track_new(tree->path,album,options),
-      "allocation album",track);
+  TRACE_PUSH();
+
+  if (NULL==bs1770gain_track_new(tree->path,album,options)) {
+    DMESSAGE("allocation album");
+    goto track;
+  }
+
   code=0;
 // cleanup:
 track:
+  TRACE_POP();
+
   return code;
 }
 
@@ -185,17 +206,23 @@ int bs1770gain_tree_album(const bs1770gain_tree_t *root, const char *odirname,
   char *path;
   bs1770gain_tree_t tree;
 
+  TRACE_PUSH();
   code =-1;
 
   if (NULL!=odirname) {
-    path=pbu_extend_path(odirname,root->basename);
-    BS1770GAIN_GOTO(NULL==path,"extending output path",path);
+    if (NULL==(path=pbu_extend_path(odirname,root->basename))) {
+      DMESSAGE("extending output path");
+      goto path;
+    }
   }
   else
     path=NULL;
 
-  BS1770GAIN_GOTO(NULL==bs1770gain_tree_dir_init(&tree,root->root,root,
-      root->path),"initilaizing directory",dir);
+  if (NULL==bs1770gain_tree_dir_init(&tree,root->root,root,root->path)) {
+    DMESSAGE("initilaizing directory");
+    goto dir;
+  }
+
   fprintf(options->f,"%s\n",root->path);
   bs1770gain_tree_analyze(&tree,path,options);
   code=0;
@@ -203,8 +230,10 @@ int bs1770gain_tree_album(const bs1770gain_tree_t *root, const char *odirname,
   tree.vmt->cleanup(&tree);
 dir:
   if (NULL!=path)
-    free(path);
+    FREE(path);
 path:
+  TRACE_POP();
+
   return code;
 }
 
@@ -248,7 +277,7 @@ static int bs1770gain_tree_multimedia(bs1770gain_tree_t *tree,
   tree->vi=options->video;
 
   if (ffsox_audiostream(ifc,&tree->ai,&tree->vi)<0) {
-    BS1770GAIN_MESSAGE("finding streams");
+    DMESSAGE("finding streams");
     goto find;
   }
 
@@ -263,7 +292,7 @@ ifc:
 int bs1770gain_tree_stat(bs1770gain_tree_t *tree, char *path,
     const bs1770gain_options_t *options)
 {
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
   struct _stat buf;
   wchar_t *wpath;
 #else // } {
@@ -281,7 +310,7 @@ int bs1770gain_tree_stat(bs1770gain_tree_t *tree, char *path,
 
   tree->path=path;
   tree->basename=pbu_basename(path);
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
   wpath=pbu_s2w(path);
 
   if (NULL==wpath)
@@ -307,9 +336,9 @@ int bs1770gain_tree_stat(bs1770gain_tree_t *tree, char *path,
   else
     tree->state=BS1770GAIN_TREE_STATE_INV;
 
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
   if (NULL!=wpath)
-    free(wpath);
+    FREE(wpath);
 #endif // }
 
   if (BS1770GAIN_TREE_STATE_REG==tree->state)
@@ -319,15 +348,22 @@ int bs1770gain_tree_stat(bs1770gain_tree_t *tree, char *path,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-bs1770gain_tree_vmt_t bs1770gain_tree_cli_vmt={
-  .cleanup=bs1770gain_tree_cli_cleanup,
-  .next=bs1770gain_tree_cli_next
+const bs1770gain_tree_vmt_t *bs1770gain_tree_cli_vmt(void)
+{
+  static bs1770gain_tree_vmt_t vmt;
+
+  if (NULL==vmt.cleanup) {
+    vmt.cleanup=bs1770gain_tree_cli_cleanup;
+    vmt.next=bs1770gain_tree_cli_next;
+  }
+
+  return &vmt;
 };
 
 bs1770gain_tree_t *bs1770gain_tree_cli_init(bs1770gain_tree_t *tree,
     int argc, char **argv, int optind)
 {
-  bs1770gain_tree_init(tree,&bs1770gain_tree_cli_vmt,tree,NULL);
+  bs1770gain_tree_init(tree,bs1770gain_tree_cli_vmt(),tree,NULL);
   tree->cli.argc=argc;
   tree->cli.argv=argv;
   tree->cli.optind=optind;
@@ -357,16 +393,23 @@ int bs1770gain_tree_cli_next(bs1770gain_tree_t *tree,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-bs1770gain_tree_vmt_t bs1770gain_tree_dir_vmt={
-  .cleanup=bs1770gain_tree_dir_cleanup,
-  .next=bs1770gain_tree_dir_next
+const bs1770gain_tree_vmt_t *bs1770gain_tree_dir_vmt(void)
+{
+  static bs1770gain_tree_vmt_t vmt;
+
+  if (NULL==vmt.cleanup) {
+    vmt.cleanup=bs1770gain_tree_dir_cleanup;
+    vmt.next=bs1770gain_tree_dir_next;
+  }
+
+  return &vmt;
 };
 
 bs1770gain_tree_t *bs1770gain_tree_dir_init(bs1770gain_tree_t *tree,
     bs1770gain_tree_t *cli, const bs1770gain_tree_t *parent,
     const char *root)
 {
-  bs1770gain_tree_init(tree,&bs1770gain_tree_dir_vmt,cli,parent);
+  bs1770gain_tree_init(tree,bs1770gain_tree_dir_vmt(),cli,parent);
   tree->dir.root=root;
   tree->dir.path=NULL;
 
@@ -394,8 +437,7 @@ int bs1770gain_tree_dir_next(bs1770gain_tree_t *tree,
   while (NULL!=(e=readdir(tree->dir.d))) {
     if (0==strcmp(".",e->d_name)||0==strcmp("..",e->d_name))
       continue;
-    else if (NULL==(tree->dir.path=pbu_extend_path(tree->dir.root,
-          e->d_name)))
+    else if (NULL==(tree->dir.path=pbu_extend_path(tree->dir.root,e->d_name)))
       continue;
     else if (0<bs1770gain_tree_stat(tree,tree->dir.path,options))
       return tree->state;
@@ -409,7 +451,7 @@ int bs1770gain_tree_dir_next(bs1770gain_tree_t *tree,
 void bs1770gain_tree_free_path(bs1770gain_tree_t *tree)
 {
   if (NULL!=tree->dir.path) {
-    free(tree->dir.path);
+    FREE(tree->dir.path);
     tree->dir.path=NULL;
     tree->basename=NULL;
     tree->path=NULL;

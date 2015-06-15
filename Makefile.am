@@ -1,0 +1,5 @@
+SUBDIRS=
+SUBDIRS+=libpbutil
+SUBDIRS+=lib1770-2
+SUBDIRS+=libffsox-2
+SUBDIRS+=bs1770gain

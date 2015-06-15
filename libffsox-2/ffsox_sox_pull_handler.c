@@ -1,18 +1,18 @@
 /*
  * ffsox_sox_pull_handler.c
- * Copyright (C) 2015 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2015 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -44,16 +44,16 @@ static int flow(sox_effect_t *e, sox_sample_t const *ibuf, sox_sample_t *obuf,
   priv_t *priv=e->priv;
   pull_cb_t cb=priv->cb;
   void *data;
-  double scale;
   sox_sample_t const *rp,*mp;
+  double scale;
 
   (void)obuf;
 
   if (NULL!=cb) {
     data=priv->data;
-    scale=1.0/MAXOF(*rp);
     rp=ibuf;
     mp=rp+*isamp;
+    scale=1.0/MAXOF(*rp);
 
     while (rp<mp)
       cb(data,scale*(*rp++));
@@ -68,18 +68,20 @@ static int flow(sox_effect_t *e, sox_sample_t const *ibuf, sox_sample_t *obuf,
 
 sox_effect_handler_t const *ffsox_sox_pull_handler(void)
 {
-  static sox_effect_handler_t handler={
-    .name="priv",
-    .usage=NULL,
-    .flags=SOX_EFF_MCHAN,
-    .getopts=getopts,
-    .start=NULL,
-    .flow=flow,
-    .drain=NULL,
-    .stop=NULL,
-    .kill=NULL,
-    .priv_size=sizeof (priv_t)
-  };
+  static sox_effect_handler_t handler;
+
+  if (NULL==handler.name) {
+    handler.name="priv";
+    handler.usage=NULL;
+    handler.flags=SOX_EFF_MCHAN;
+    handler.getopts=getopts;
+    handler.start=NULL;
+    handler.flow=flow;
+    handler.drain=NULL;
+    handler.stop=NULL;
+    handler.kill=NULL;
+    handler.priv_size=sizeof (priv_t);
+  }
 
   return &handler;
 }

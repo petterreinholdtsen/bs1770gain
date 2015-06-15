@@ -1,18 +1,18 @@
 /*
  * ffsox_aggregate.c
- * Copyright (C) 2015 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2015 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -28,14 +28,14 @@ int ffsox_aggregate_create(aggregate_t *aggregate, int flags)
   if (0==(AGGREGATE_MOMENTARY&flags))
     aggregate->momentary=NULL;
   else if (NULL==(aggregate->momentary=lib1770_stats_new())) {
-    MESSAGE("creating momentary statistics");
+    DMESSAGE("creating momentary statistics");
     goto momentary;
   }
 
   if (0==(AGGREGATE_SHORTTERM&flags))
     aggregate->shortterm=NULL;
   else if (NULL==(aggregate->shortterm=lib1770_stats_new())) {
-    MESSAGE("creating shortterm statistics");
+    DMESSAGE("creating shortterm statistics");
     goto shortterm;
   }
 
@@ -64,7 +64,7 @@ int ffsox_aggregate_merge(aggregate_t *lhs, aggregate_t *rhs)
   int flags;
 
   if ((flags=lhs->flags)!=rhs->flags) {
-    MESSAGE("trying to merge incompatible aggregators");
+    DMESSAGE("trying to merge incompatible aggregators");
     goto merge;
   }
 

@@ -1,18 +1,18 @@
 /*
  * ffsox_source_link.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -24,7 +24,7 @@ static int ffsox_source_link_copy(source_t *si, sink_t *so, int stream_index)
   packet_writer_t *pw=NULL;
 
   if (NULL==(pw=ffsox_packet_writer_new(si,stream_index,so))) {
-    MESSAGE("creating packet writer");
+    DMESSAGE("creating packet writer");
     goto pw;
   }
 
@@ -42,12 +42,12 @@ static int ffsox_source_link_codec(source_t *si, sink_t *so, int stream_index,
   frame_writer_t *fw=NULL;
 
   if (NULL==(fr=ffsox_frame_reader_new(si,stream_index,drc))) {
-    MESSAGE("creating frame reader");
+    DMESSAGE("creating frame reader");
     goto read;
   }
 
   if (NULL==(fw=ffsox_frame_writer_new(so,fr,codec_id,sample_fmt,q))) {
-    MESSAGE("creating frwiter");
+    DMESSAGE("creating frwiter");
     goto write;
   }
 
@@ -72,13 +72,13 @@ int ffsox_source_link_create(source_t *si, sink_t *so, double drc, int codec_id,
     if (si->ai==i||si->vi==i) {
       if (si->vi==i||q<0.0) {
         if (ffsox_source_link_copy(si,so,i)<0) {
-          MESSAGE("copy linking");
+          DMESSAGE("copy linking");
           goto link;
         }
       }
       else {
         if (ffsox_source_link_codec(si,so,i,drc,codec_id,sample_fmt,q)<0) {
-          MESSAGE("codec linking");
+          DMESSAGE("codec linking");
           goto link;
         }
       }

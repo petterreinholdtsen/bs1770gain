@@ -1,18 +1,18 @@
 /*
  * bs1770gain_opath.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -22,7 +22,7 @@
 
 static char *bs177gain_norm_title(char *tp)
 {
-  static const char tok[]=" -_()[]{}?'`´";
+  static const char tok[]=" /-_()[]{}?'`´";
   char *p,*saveptr;
 
   // TODO: unicode.
@@ -50,8 +50,8 @@ char *bs1770gain_opathx(int n, const char *title, const char *odirname,
   len3=strlen(title);
   len4=strlen(oext);
 
-  if (NULL==(opath=p=malloc((len1+1)+(len2+1)+(len3+1)+(len4+1)))) {
-    MESSAGE("allocating output path");
+  if (NULL==(opath=p=MALLOC((len1+1)+(len2+1)+(len3+1)+(len4+1)))) {
+    DMESSAGE("allocating output path");
     goto opath;
   }
 
@@ -79,7 +79,7 @@ opath:
 char *bs1770gain_opath(const char *ipath, const char *odirname,
     const char *oext)
 {
-  const char *p1,*p2;;
+  const char *p1,*p2;
   size_t len1,len2,len3;
   char *opath,*p;
 
@@ -101,7 +101,7 @@ char *bs1770gain_opath(const char *ipath, const char *odirname,
   ////////
   len3=strlen(oext);
 
-  if (NULL==(opath=malloc((len1+1)+(len2+1)+(len3+1))))
+  if (NULL==(opath=MALLOC((len1+1)+(len2+1)+(len3+1))))
     goto opath;
 
   p=opath;

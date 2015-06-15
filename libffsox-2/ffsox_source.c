@@ -1,18 +1,18 @@
 /*
  * ffsox_basename.c
- * Copyright (C) 2014 Peter Belkner <pbelkner@snafu.de>
+ * Copyright (C) 2014 Peter Belkner <pbelkner@users.sf.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2.0 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
@@ -25,7 +25,7 @@ int ffsox_source_create(source_t *n, const char *path, int ai, int vi,
     source_cb_t cb, void *data)
 {
   if (ffsox_node_create(&n->node)<0) {
-    MESSAGE("creating node");
+    DMESSAGE("creating node");
     goto base;
   }
 
@@ -34,14 +34,14 @@ int ffsox_source_create(source_t *n, const char *path, int ai, int vi,
   n->f.fc=NULL;
 
   if (avformat_open_input(&n->f.fc,path,0,0)<0) {
-    MESSAGE("opening input file");
+    DMESSAGE("opening input file");
     goto fc;
   }
 
   n->f.fc->flags|=AVFMT_FLAG_GENPTS;
 
   if (avformat_find_stream_info(n->f.fc,0)<0) {
-    MESSAGE("finding stream info");
+    DMESSAGE("finding stream info");
     goto find;
   }
 
@@ -50,7 +50,7 @@ int ffsox_source_create(source_t *n, const char *path, int ai, int vi,
   n->vi=vi;
 
   if (ffsox_audiostream(n->f.fc,&n->ai,&n->vi)<0) {
-    MESSAGE("missing audio");
+    DMESSAGE("missing audio");
     goto audio;
   }
   ////
@@ -71,6 +71,11 @@ int ffsox_source_create(source_t *n, const char *path, int ai, int vi,
   return 0;
 audio:
 find:
+  if (NULL!=n->f.fc->pb) {
+    avio_close(n->f.fc->pb);
+    n->f.fc->pb=NULL;
+  }
+
   avformat_close_input(&n->f.fc);
 fc:
   vmt.parent->cleanup(&n->node);
@@ -89,7 +94,7 @@ int ffsox_source_seek(source_t *n, int64_t ts)
     ts=av_rescale_q(ts,AV_TIME_BASE_Q,st->time_base);
 
     if (avformat_seek_file(n->f.fc,si,INT64_MIN,ts,INT64_MAX,0)<0) {
-      MESSAGE("seeking");
+      DMESSAGE("seeking");
       goto seek;
     }
 
@@ -108,7 +113,7 @@ int ffsox_source_append(source_t *si, packet_consumer_t *pc)
   consumer.consumer=pc;
 
   if (LIST_APPEND(si->consumer.h,consumer)<0) {
-    MESSAGE("appending chain");
+    DMESSAGE("appending chain");
     goto append;
   }
 
@@ -124,6 +129,11 @@ static void source_cleanup(source_t *n)
 {
   if (NULL!=n->consumer.h)
     ffsox_source_link_cleanup(n);
+
+  if (NULL!=n->f.fc->pb) {
+    avio_close(n->f.fc->pb);
+    n->f.fc->pb=NULL;
+  }
 
   avformat_close_input(&n->f.fc);
   vmt.parent->cleanup(&n->node);
@@ -197,7 +207,7 @@ static int source_run(source_t *n)
   case STATE_END:
     return MACHINE_POP;
   default:
-    MESSAGE("illegal source state");
+    DMESSAGE("illegal source state");
     return -1;
   }
 }
