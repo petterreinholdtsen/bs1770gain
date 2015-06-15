@@ -109,8 +109,11 @@ BS1770GAIN_TOOLS_INSTALL = @BS1770GAIN_TOOLS_INSTALL@
 BS1770GAIN_TOOLS_UNINSTALL = @BS1770GAIN_TOOLS_UNINSTALL@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
-CFLAGS = @CFLAGS@ -Wall -Wextra -Werror
+CFLAGS = @CFLAGS@ -Werror -Wall -Wformat -Wpointer-arith -Wcast-align \
+	-Wcast-qual -Wreturn-type -Wextra -Wstrict-prototypes
 CPP = @CPP@
+#CFLAGS+=-Wmissing-declarations
+#CFLAGS+=-Wmissing-prototypes
 CPPFLAGS = @CPPFLAGS@ -I$(top_srcdir)/libpbutil \
 	-I$(top_srcdir)/lib1770-2 -I$(top_srcdir)/libffsox-2
 CYGPATH_W = @CYGPATH_W@
@@ -202,7 +205,7 @@ bs1770gain_SOURCES = bs1770gain.c
 bs1770gain_LDADD = libbs1770gain.a \
 	$(top_builddir)/libffsox-2/libffsox_2.a \
 	$(top_builddir)/lib1770-2/lib1770_2.a \
-	$(top_builddir)/libpbutil/libpbutil.a
+	$(top_builddir)/libpbutil/libpbutil.a -lm
 noinst_LIBRARIES = libbs1770gain.a
 libbs1770gain_a_SOURCES = bs1770gain.h bs1770gain_priv.h \
 	bs1770gain_aggregate.c bs1770gain_album.c bs1770gain_opath.c \

@@ -26,7 +26,7 @@
 # AC_CHECK_HEADER (header-file, [action-if-found], [action-if-not-found], [includes = `default-includes'])
 # AC_CHECK_LIB (library, function, [action-if-found], [action-if-not-found], [other-libraries])
 
-AC_INIT([bs1770gain], [0.4.3-beta2], [pbelkner@users.sf.net])
+AC_INIT([bs1770gain], [0.4.3-beta3], [pbelkner@users.sf.net])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_PROG_CC
 AC_PROG_RANLIB
@@ -34,7 +34,7 @@ AC_PROG_RANLIB
 # test for win32 {
 AC_MSG_CHECKING([for win32])
 tmp=`mktemp`
-cat << EOF | gcc -xc -o "$tmp" -
+cat << _ACEOF | gcc -xc -o "$tmp" -
 #include <stdio.h>
 
 int main()
@@ -46,7 +46,7 @@ int main()
 #endif // }
   return 0;
 }
-EOF
+_ACEOF
 
 win32="`$tmp`"
 rm -f "$tmp"
@@ -157,12 +157,12 @@ if test "x$dynload" = "xyes"; then # {
 # define avutil major version {
 tmp=`mktemp`
 
-cat << EOF | gcc -xc ${CPPFLAGS} -o "$tmp" - ${LDFLAGS} ${LIBS}
+cat << _ACEOF | gcc -xc ${CPPFLAGS} -o "$tmp" - ${LDFLAGS} ${LIBS}
 #include <stdio.h>
 #include <libavutil/avutil.h>
 
 int main() { printf("%u",avutil_version()>>16); return 0; }
-EOF
+_ACEOF
 
 FFSOX_AVUTIL_V="`$tmp`"
 AC_SUBST(FFSOX_AVUTIL_V)
@@ -173,12 +173,12 @@ rm -f "$tmp"
 # define swresample major version {
 tmp=`mktemp`
 
-cat << EOF | gcc -xc ${CPPFLAGS} -o "$tmp" - ${LDFLAGS} ${LIBS}
+cat << _ACEOF | gcc -xc ${CPPFLAGS} -o "$tmp" - ${LDFLAGS} ${LIBS}
 #include <stdio.h>
 #include <libswresample/swresample.h>
 
 int main() { printf("%u",swresample_version()>>16); return 0; }
-EOF
+_ACEOF
 
 FFSOX_SWRESAMPLE_V="`$tmp`"
 AC_SUBST(FFSOX_SWRESAMPLE_V)
@@ -189,12 +189,12 @@ rm -f "$tmp"
 # define avcodec major version {
 tmp=`mktemp`
 
-cat << EOF | gcc -xc ${CPPFLAGS} -o "$tmp" - ${LDFLAGS} ${LIBS}
+cat << _ACEOF | gcc -xc ${CPPFLAGS} -o "$tmp" - ${LDFLAGS} ${LIBS}
 #include <stdio.h>
 #include <libavcodec/avcodec.h>
 
 int main() { printf("%u",avcodec_version()>>16); return 0; }
-EOF
+_ACEOF
 
 FFSOX_AVCODEC_V="`$tmp`"
 AC_SUBST(FFSOX_AVCODEC_V)
@@ -205,12 +205,12 @@ rm -f "$tmp"
 # define avformat major version {
 tmp=`mktemp`
 
-cat << EOF | gcc -xc ${CPPFLAGS} -o "$tmp" - ${LDFLAGS} ${LIBS}
+cat << _ACEOF | gcc -xc ${CPPFLAGS} -o "$tmp" - ${LDFLAGS} ${LIBS}
 #include <stdio.h>
 #include <libavformat/avformat.h>
 
 int main() { printf("%u",avformat_version()>>16); return 0; }
-EOF
+_ACEOF
 
 FFSOX_AVFORMAT_V="`$tmp`"
 AC_SUBST(FFSOX_AVFORMAT_V)
@@ -220,7 +220,7 @@ rm -f "$tmp"
 
 # define sox major version {
 tmp=`mktemp`
-cat << EOF | gcc -xc ${CPPFLAGS} -o "$tmp" - ${LDFLAGS} ${LIBS}
+cat << _ACEOF | gcc -xc ${CPPFLAGS} -o "$tmp" - ${LDFLAGS} ${LIBS}
 #include <stdio.h>
 #include <string.h>
 #include <sox.h>
@@ -230,7 +230,7 @@ int main()
   puts(strcmp(sox_version(),"14.4.2")<0?"2":"3");
   return 0;
 }
-EOF
+_ACEOF
 
 FFSOX_LIBSOX_V="`$tmp`"
 AC_SUBST(FFSOX_LIBSOX_V)
@@ -255,7 +255,7 @@ if test "x$dl" != "xno"; then
 fi
 if test "x$dl" != "xno"; then
   AC_CHECK_HEADER(dlfcn.h,
-    AC_CHECK_LIB(dl, dlopen, [dl=yes LIBS="${LIBS} -lm -ldl"], dl=no),
+    AC_CHECK_LIB(dl, dlopen, [dl=yes LIBS="${LIBS} -ldl"], dl=no),
     dl=no)
 fi
 if test "x$dl" == "xno" ; then
