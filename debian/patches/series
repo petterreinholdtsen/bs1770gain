@@ -1,3 +1,4 @@
 #10-autotools.diff
 #20-disable-dynload.diff
 #30-link-math-lib.diff
+10-unsigned-char-archs.diff
