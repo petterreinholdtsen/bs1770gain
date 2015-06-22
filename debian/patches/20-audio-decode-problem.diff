@@ -1,0 +1,41 @@
+Description: Skip package when audio decoding fail.
+ Patch from upstream to keep processing when hitting
+ audio packages that fail to decode.
+Author: Peter Belkner <pbelkner@snafu.de>
+Origin: upstream
+Bug-Debian: https://bugs.debian.org/789254
+Forwarded: not-needed
+Reviewed-By: Petter Reinholdtsen <pere@hungry.com>
+Last-Update: 2015-06-22
+
+Index: bs1770gain-git/libffsox-2/ffsox_frame_reader.c
+===================================================================
+--- bs1770gain-git.orig/libffsox-2/ffsox_frame_reader.c	2015-06-22 07:37:56.678454678 +0000
++++ bs1770gain-git/libffsox-2/ffsox_frame_reader.c	2015-06-22 07:37:56.678454678 +0000
+@@ -145,8 +145,10 @@
+       }
+ 
+       if ((size=avcodec_decode_audio4(cc,frame,&got_frame,pkt))<0) {
+-        DMESSAGE("decoding audio");
+-        return -1;
++        DMESSAGE("decoding audio, skipping audio package");
++        // skip the package.
++        pkt->size=0;
++        return 0;
+       }
+ 
+       pkt->size-=size;
+--- bs1770gain-0.4.3.orig/libffsox-2/ffsox_frame_writer.c
++++ bs1770gain-0.4.3/libffsox-2/ffsox_frame_writer.c
+@@ -146,6 +146,11 @@ static int frame_writer_encode(frame_wri
+   if (0!=*got_packet) {
+     av_packet_rescale_ts(pkt,cc->time_base,st->time_base);
+ 
++    // where do the "magic" factor 0.5 come from?
++    pkt->dts>>=1;
++    pkt->pts>>=1;
++    pkt->duration>>=1;
++
+     if (ffsox_stream_interleaved_write(so,pkt)<0) {
+       DMESSAGE("writing packet");
+       goto write;
