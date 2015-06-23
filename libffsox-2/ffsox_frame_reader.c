@@ -145,8 +145,9 @@ static int frame_reader_run(frame_reader_t *n)
       }
 
       if ((size=avcodec_decode_audio4(cc,frame,&got_frame,pkt))<0) {
-        DMESSAGE("decoding audio");
-        return -1;
+        // skip the package.
+        pkt->size=0;
+        return 0;
       }
 
       pkt->size-=size;

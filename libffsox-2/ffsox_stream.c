@@ -41,5 +41,9 @@ int ffsox_stream_interleaved_write(stream_t *s, AVPacket *pkt)
 {
   pkt->stream_index=s->stream_index;
 
+#if 0 // {
+  fprintf(stderr,"%d: %I64d, %I64d\n",pkt->stream_index,pkt->pts,pkt->dts);
+#endif // }
+
   return av_interleaved_write_frame(s->fc,pkt);
 }

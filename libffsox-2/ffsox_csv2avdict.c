@@ -256,10 +256,13 @@ static int priv_get_utf8(priv_t *b)
 
   char *wp=b->ch;
   size_t n; 
+  int i;
 
   // read first byte into buffer
-  if (EOF==(*wp=getc(b->f)))
+  if (EOF==(i=getc(b->f)))
     goto error;
+
+  *wp=(char)i;
 
   // check how many more bytes need to be read for character
   n = 0;

@@ -114,8 +114,9 @@ BS1770GAIN_TOOLS_INSTALL = @BS1770GAIN_TOOLS_INSTALL@
 BS1770GAIN_TOOLS_UNINSTALL = @BS1770GAIN_TOOLS_UNINSTALL@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
-CFLAGS = @CFLAGS@ -Werror -Wall -Wformat -Wpointer-arith -Wcast-align \
-	-Wcast-qual -Wreturn-type -Wextra -Wstrict-prototypes
+#CFLAGS+=-Wcast-align
+CFLAGS = @CFLAGS@ -Werror -Wall -Wformat -Wpointer-arith -Wcast-qual \
+	-Wreturn-type -Wextra -Wstrict-prototypes
 CPP = @CPP@
 #CFLAGS+=-Wmissing-declarations
 #CFLAGS+=-Wmissing-prototypes
