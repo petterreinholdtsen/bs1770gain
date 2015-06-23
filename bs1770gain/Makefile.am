@@ -9,6 +9,7 @@ CFLAGS+=-Wextra
 CFLAGS+=-Wstrict-prototypes
 #CFLAGS+=-Wmissing-declarations
 #CFLAGS+=-Wmissing-prototypes
+CFLAGS+=-Wno-unused-variable
 
 CPPFLAGS+=-I$(top_srcdir)/libpbutil
 CPPFLAGS+=-I$(top_srcdir)/lib1770-2
@@ -31,7 +32,8 @@ BS1770GAIN_TOOLS_ALL=@BS1770GAIN_TOOLS_ALL@
 BS1770GAIN_TOOLS_INSTALL=@BS1770GAIN_TOOLS_INSTALL@
 BS1770GAIN_TOOLS_UNINSTALL=@BS1770GAIN_TOOLS_UNINSTALL@
 
-bin_PROGRAMS=bs1770gain
+bin_PROGRAMS=
+bin_PROGRAMS+=bs1770gain
 bs1770gain_SOURCES=
 bs1770gain_SOURCES+=bs1770gain.c
 bs1770gain_LDADD=
@@ -40,6 +42,15 @@ bs1770gain_LDADD+=$(top_builddir)/libffsox-2/libffsox_2.a
 bs1770gain_LDADD+=$(top_builddir)/lib1770-2/lib1770_2.a
 bs1770gain_LDADD+=$(top_builddir)/libpbutil/libpbutil.a
 bs1770gain_LDADD+=-lm
+#bin_PROGRAMS+=bs1770hello
+#bs1770hello_SOURCES=
+#bs1770hello_SOURCES+=bs1770hello.c
+#bs1770hello_LDADD=
+#bs1770hello_LDADD+=libbs1770gain.a
+#bs1770hello_LDADD+=$(top_builddir)/libffsox-2/libffsox_2.a
+#bs1770hello_LDADD+=$(top_builddir)/lib1770-2/lib1770_2.a
+#bs1770hello_LDADD+=$(top_builddir)/libpbutil/libpbutil.a
+#bs1770hello_LDADD+=-lm
 
 noinst_LIBRARIES=libbs1770gain.a
 libbs1770gain_a_SOURCES=

@@ -145,6 +145,10 @@ static int frame_writer_encode(frame_writer_t *fw, AVFrame *frame,
 
   if (0!=*got_packet) {
     av_packet_rescale_ts(pkt,cc->time_base,st->time_base);
+    // where do the "magic" factor 0.5 come from?
+    pkt->dts>>=1;
+    pkt->pts>>=1;
+    pkt->duration>>=1;
 
     if (ffsox_stream_interleaved_write(so,pkt)<0) {
       DMESSAGE("writing packet");
