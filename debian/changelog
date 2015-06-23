@@ -1,3 +1,14 @@
+bs1770gain (0.4.4-1) UNRELEASED; urgency=medium
+
+  * New upstream release 0.4.4.
+    - Dropped 10-unsigned-char-archs.diff and refreshed
+      20-audio-decode-problem.diff now included upstream.
+    - Added 30-strict-cast-align.diff to ensure the build fail
+      on architectures where misaligned pointers cause runtime
+      failure.
+
+ -- Petter Reinholdtsen <pere@debian.org>  Tue, 23 Jun 2015 14:42:54 +0000
+
 bs1770gain (0.4.3-1) unstable; urgency=low
 
   * New upstream release 0.4.3 using autotools build rules.
