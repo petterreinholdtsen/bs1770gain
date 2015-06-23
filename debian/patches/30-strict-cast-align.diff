@@ -1,0 +1,22 @@
+Description: Enforce strict cast alignment check
+ Make sure the source fail to build on archs where casting break
+ alignment rules.
+
+Author: Petter Reinholdtsen <pere@hungry.com>
+Forwarded: no
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+diff --git a/libffsox-2/Makefile.in b/libffsox-2/Makefile.in
+index 3d0f98a..4488291 100755
+--- a/libffsox-2/Makefile.in
++++ b/libffsox-2/Makefile.in
+@@ -115,7 +115,7 @@ BS1770GAIN_TOOLS_UNINSTALL = @BS1770GAIN_TOOLS_UNINSTALL@
+ CC = @CC@
+ CCDEPMODE = @CCDEPMODE@
+ #CFLAGS+=-Wcast-align
+-CFLAGS = @CFLAGS@ -Werror -Wall -Wformat -Wpointer-arith -Wcast-qual \
++CFLAGS = @CFLAGS@ -Werror -Wall -Wformat -Wpointer-arith -Wcast-qual -Wcast-align \
+ 	-Wreturn-type -Wextra -Wstrict-prototypes
+ CPP = @CPP@
+ #CFLAGS+=-Wmissing-declarations
