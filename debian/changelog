@@ -1,8 +1,8 @@
 bs1770gain (0.4.4-1) unstable; urgency=medium
 
   * New upstream release 0.4.4.
-    - Fixes problem with stuttering sound after transcoding (Closes:
-      #789254).
+    - Fixes problem with stuttering sound after transcoding
+      (Closes: #789254).
     - Fixes build problem when char is unsigned (Closes: #789248).
     - Dropped 10-unsigned-char-archs.diff and refreshed
       20-audio-decode-problem.diff now included upstream.
