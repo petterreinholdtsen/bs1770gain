@@ -2,6 +2,10 @@
 
 set -e
 
+if [ -z "$BS1770GAIN" ] ; then
+    BS1770GAIN=bs1770gain
+fi
+
 at_exit() {
     echo "info: test exiting, removing $WORKDIR"
     rm -rf $WORKDIR
@@ -12,12 +16,28 @@ trap at_exit INT TERM EXIT
 
 set -x
 
-bs1770gain -h
+$BS1770GAIN -h
 
-bs1770gain debian/tests/yell.wav
+test_on_file() {
+    file="$1"
 
-bs1770gain debian/tests/yell.wav -o $WORKDIR/test1
-for f in $WORKDIR/test1/*; do bs1770gain $f; done
+    bs1770gain $file
+    mkdir $WORKDIR/tmp
 
-bs1770gain debian/tests/yell.wav -a -o $WORKDIR/test2 
-for f in $WORKDIR/test2/*; do bs1770gain $f; done
+    $BS1770GAIN $file -o $WORKDIR/tmp/test1
+    for f in $WORKDIR/tmp/test1/*; do bs1770gain $f; done
+
+    $BS1770GAIN $file -a -o $WORKDIR/tmp/test2 
+    for f in $WORKDIR/tmp/test2/*; do bs1770gain $f; done
+
+    rm -rf $WORKDIR/tmp
+}
+
+test_on_file debian/tests/yell.wav
+
+# Test using 64 bit samples to check alignment
+for bits in 16 32 64 ; do
+    file=$WORKDIR/sine-${bits}bit.wav
+    sox -b $bits -n $file synth 3 sine 300-3300
+    test_on_file $file
+done
