@@ -1,11 +1,17 @@
-Description: Enforce strict cast alignment check
+Description: Enforce strict cast alignment check.
+
  Make sure the source fail to build on archs where casting break
  alignment rules.
 
+ Upstream believe the compiler is confused and the pointers are
+ properly aligned.  This should be verified before the warning
+ is hidden.
+
 Author: Petter Reinholdtsen <pere@hungry.com>
 Forwarded: no
-Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: <YYYY-MM-DD>
+Debian-Bug: https://bugs.debian.org/789250
+Reviewed-By: Petter Reinholdtsen <pere@hungry.com>
+Last-Update: 2015-06-24
 
 diff --git a/libffsox-2/Makefile.in b/libffsox-2/Makefile.in
 index 3d0f98a..4488291 100755
