@@ -36,7 +36,7 @@ static int getopts(sox_effect_t *e, int argc, char *argv[])
     goto argc;
   }
 
-  priv->read=(sox_reader_t *)argv[1];
+  priv->read=(void *)argv[1];
 
   return SOX_SUCCESS;
 argc:
