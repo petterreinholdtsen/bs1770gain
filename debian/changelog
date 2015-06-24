@@ -1,4 +1,4 @@
-bs1770gain (0.4.4-1) UNRELEASED; urgency=medium
+bs1770gain (0.4.4-1) unstable; urgency=medium
 
   * New upstream release 0.4.4.
     - Fixes problem with stuttering sound after transcoding (Closes:
@@ -7,10 +7,10 @@ bs1770gain (0.4.4-1) UNRELEASED; urgency=medium
     - Dropped 10-unsigned-char-archs.diff and refreshed
       20-audio-decode-problem.diff now included upstream.
     - Added 30-strict-cast-align.diff to ensure the build fail
-      on architectures where misaligned pointers cause runtime
-      failure.
+      on architectures where -Wstrict-align give warning until
+      it is verified to work there (see #789250).
 
- -- Petter Reinholdtsen <pere@debian.org>  Tue, 23 Jun 2015 14:42:54 +0000
+ -- Petter Reinholdtsen <pere@debian.org>  Wed, 24 Jun 2015 08:13:04 +0000
 
 bs1770gain (0.4.3-1) unstable; urgency=low
 
