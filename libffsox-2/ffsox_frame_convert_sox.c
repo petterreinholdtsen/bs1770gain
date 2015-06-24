@@ -98,10 +98,10 @@ static void convert_##sfx##i(convert_t *p, sox_uint64_t *clipsp) \
  \
   (void)ch; \
  \
-  rp=(T *)p->fr->frame->data[0]; \
+  rp=(void *)p->fr->frame->data[0]; \
   rp+=channels*p->fr->nb_samples.frame; \
  \
-  wp=(sox_sample_t *)p->fw->frame->data[0]; \
+  wp=(void *)p->fw->frame->data[0]; \
   wp+=channels*p->fw->nb_samples.frame; \
   mp=wp+channels*p->nb_samples; \
  \
@@ -184,11 +184,11 @@ static void convert_##sfx##p(convert_t *p, sox_uint64_t *clipsp) \
   SOX_SAMPLE_LOCALS; \
  \
   for (ch=0;ch<channels;++ch) { \
-    rp[ch]=(T *)p->fr->frame->data[ch]; \
+    rp[ch]=(void *)p->fr->frame->data[ch]; \
     rp[ch]+=p->fr->nb_samples.frame; \
   } \
  \
-  wp=(sox_sample_t *)p->fw->frame->data[0]; \
+  wp=(void *)p->fw->frame->data[0]; \
   wp+=channels*p->fw->nb_samples.frame; \
   mp=wp+channels*p->nb_samples; \
  \
