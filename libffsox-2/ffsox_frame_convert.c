@@ -140,10 +140,10 @@ static int convert_##r##i##_##w##i(convert_t *p) \
   R *rp; \
   W *wp,*mp; \
  \
-  rp=(R *)p->fr->frame->data[0]; \
+  rp=(void *)p->fr->frame->data[0]; \
   rp+=channels*p->fr->nb_samples.frame; \
  \
-  wp=(W *)p->fw->frame->data[0]; \
+  wp=(void *)p->fw->frame->data[0]; \
   wp+=channels*p->fw->nb_samples.frame; \
   mp=wp+channels*p->nb_samples; \
  \
@@ -281,11 +281,11 @@ static int convert_##r##p##_##w##i(convert_t *p) \
   W *wp,*mp; \
  \
   for (ch=0;ch<channels;++ch) { \
-    rp[ch]=(R *)p->fr->frame->data[ch]; \
+    rp[ch]=(void *)p->fr->frame->data[ch]; \
     rp[ch]+=p->fr->nb_samples.frame; \
   } \
  \
-  wp=(W *)p->fw->frame->data[0]; \
+  wp=(void *)p->fw->frame->data[0]; \
   wp+=channels*p->fw->nb_samples.frame; \
   mp=wp+channels*p->nb_samples; \
  \

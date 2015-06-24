@@ -32,7 +32,7 @@ static int getopts(sox_effect_t *e, int argc, char *argv[])
 {
   priv_t *priv=e->priv;
 
-  priv->cb=1<argc?(pull_cb_t)argv[1]:NULL;
+  priv->cb=1<argc?(void *)argv[1]:NULL;
   priv->data=2<argc?(void *)argv[2]:NULL;
 
   return SOX_SUCCESS;
