@@ -1,3 +1,9 @@
+bs1770gain (0.4.5~beta2-1) UNRELEASED; urgency=medium
+
+  * 
+
+ -- Petter Reinholdtsen <pere@debian.org>  Wed, 24 Jun 2015 14:46:51 +0000
+
 bs1770gain (0.4.4-1) unstable; urgency=medium
 
   * New upstream release 0.4.4.
