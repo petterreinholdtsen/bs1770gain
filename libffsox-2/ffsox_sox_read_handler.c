@@ -63,7 +63,7 @@ static int drain(sox_effect_t *e, sox_sample_t *obuf, size_t *osamp)
     DMESSAGE("reading");
 #endif // }
 
-  return 0!=read->sox_errno?SOX_ENOTSUP:0==*osamp?SOX_EOF:SOX_SUCCESS;
+  return 0==*osamp?SOX_EOF:SOX_SUCCESS;
 }
 
 sox_effect_handler_t const *ffsox_sox_read_handler(void)
