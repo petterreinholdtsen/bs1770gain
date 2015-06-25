@@ -7,6 +7,7 @@ Build-depends: debhelper (>> 9)
  , dh-autoreconf
  , libsox-dev
  , libavformat-ffmpeg-dev
+ , sox
 Standards-Version: 3.9.6
 Homepage: http://bs1770gain.sourceforge.net/
 Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-multimedia/bs1770gain.git
