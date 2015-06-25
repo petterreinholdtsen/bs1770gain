@@ -59,11 +59,11 @@ static int drain(sox_effect_t *e, sox_sample_t *obuf, size_t *osamp)
   /* sox_read may return a number that is less than was requested; only if
    * 0 samples is returned does it indicate that end-of-file has been reached
    * or an error has occurred */
-  if (0==*osamp&&0!=read->sox_errno)
+  if (0!=read->sox_errno)
     DMESSAGE("reading");
 #endif // }
 
-  return 0==*osamp?SOX_EOF:SOX_SUCCESS;
+  return 0!=read->sox_errno?SOX_ENOTSUP:0==*osamp?SOX_EOF:SOX_SUCCESS;
 }
 
 sox_effect_handler_t const *ffsox_sox_read_handler(void)
@@ -71,7 +71,7 @@ sox_effect_handler_t const *ffsox_sox_read_handler(void)
   static sox_effect_handler_t handler;
 
   if (NULL==handler.name) {
-    handler.name="priv";
+    handler.name="ffsox_sox_read";
     handler.usage=NULL;
     handler.flags=SOX_EFF_MCHAN;
     handler.getopts=getopts;

@@ -126,8 +126,10 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
       ac.f=stdout==f?f:NULL;
       ac.dump=0;
 
-      if (ffsox_analyze(&ac)<0)
+      if (ffsox_analyze(&ac)<0) {
         fprintf(f,"Error gathering track statistics.\n");
+        goto analyze;
+      }
       else {
         fprintf(f,stdout==f?"        \n":"\n");
         bs1770gain_aggregate_print(&track->aggregate,options);
@@ -171,6 +173,7 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
   }
 
   code=0;
+analyze:
 track:
   bs1770gain_album_close(album);
 album:

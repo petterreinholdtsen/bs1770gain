@@ -128,6 +128,7 @@ static int frame_reader_next_set_frame(frame_reader_t *n, frame_t *fo)
   return MACHINE_PUSH;
 }
 
+#define FRAME_READER_SKIP_ERROR
 static int frame_reader_run(frame_reader_t *n)
 {
   AVCodecContext *cc=n->si.cc;
@@ -145,10 +146,15 @@ static int frame_reader_run(frame_reader_t *n)
       }
 
       if ((size=avcodec_decode_audio4(cc,frame,&got_frame,pkt))<0) {
+#if defined (FRAME_READER_SKIP_ERROR) // {
         // skip the package.
         DMESSAGE("decoding audio, skipping audio package");
         pkt->size=0;
         return 0;
+#else // } {
+        DMESSAGE("decoding audio");
+        return -1;
+#endif // }
       }
 
       pkt->size-=size;
