@@ -3,6 +3,7 @@ bs1770gain (0.4.5~beta3-1) UNRELEASED; urgency=medium
   * New upstream release 0.4.5.
     - Removed obsolete 20-audio-decode-problem.diff and
       30-strict-cast-align.diff now included upstream.
+  * Improve autopkg tests and run them at build time.
 
  -- Petter Reinholdtsen <pere@debian.org>  Wed, 24 Jun 2015 14:46:51 +0000
 
