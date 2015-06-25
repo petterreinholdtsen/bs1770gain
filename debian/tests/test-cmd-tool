@@ -6,7 +6,12 @@ if [ -z "$BS1770GAIN" ] ; then
     BS1770GAIN=bs1770gain
 fi
 
+if type valgrind > /dev/null 2>&1 ; then
+    BS1770GAIN="valgrind $BS1770GAIN"
+fi
+
 at_exit() {
+    set +x
     echo "info: test exiting, removing $WORKDIR"
     rm -rf $WORKDIR
 }
