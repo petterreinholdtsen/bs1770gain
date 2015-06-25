@@ -26,14 +26,14 @@ $BS1770GAIN -h
 test_on_file() {
     file="$1"
 
-    bs1770gain $file
+    $BS1770GAIN $file
     mkdir $WORKDIR/tmp
 
     $BS1770GAIN $file -o $WORKDIR/tmp/test1
-    for f in $WORKDIR/tmp/test1/*; do bs1770gain $f; done
+    for f in $WORKDIR/tmp/test1/*; do $BS1770GAIN $f; done
 
     $BS1770GAIN $file -a -o $WORKDIR/tmp/test2 
-    for f in $WORKDIR/tmp/test2/*; do bs1770gain $f; done
+    for f in $WORKDIR/tmp/test2/*; do $BS1770GAIN $f; done
 
     rm -rf $WORKDIR/tmp
 }
