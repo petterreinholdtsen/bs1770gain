@@ -144,7 +144,9 @@ int ffsox_analyze(analyze_config_t *ac)
   }
 
   // run the SoX chain.
-  if (SOX_SUCCESS!=sox_flow_effects(chain,NULL,NULL)) {
+  if (SOX_SUCCESS!=sox_flow_effects(chain,NULL,NULL)
+      ||0!=read->sox_errno) {
+
     DMESSAGE("running SoX effects chain");
     goto flow;
   }

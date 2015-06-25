@@ -71,7 +71,7 @@ sox_effect_handler_t const *ffsox_sox_pull_handler(void)
   static sox_effect_handler_t handler;
 
   if (NULL==handler.name) {
-    handler.name="priv";
+    handler.name="ffsox_sox_pull";
     handler.usage=NULL;
     handler.flags=SOX_EFF_MCHAN;
     handler.getopts=getopts;
