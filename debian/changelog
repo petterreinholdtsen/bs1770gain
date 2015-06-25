@@ -1,4 +1,4 @@
-bs1770gain (0.4.5~beta3-1) UNRELEASED; urgency=medium
+bs1770gain (0.4.5-1) UNRELEASED; urgency=medium
 
   * New upstream release 0.4.5.
     - Removed obsolete 20-audio-decode-problem.diff and
