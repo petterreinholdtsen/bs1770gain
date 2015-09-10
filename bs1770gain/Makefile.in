@@ -66,10 +66,11 @@ AR = ar
 ARFLAGS = cru
 libbs1770gain_a_AR = $(AR) $(ARFLAGS)
 libbs1770gain_a_LIBADD =
-am_libbs1770gain_a_OBJECTS = bs1770gain_aggregate.$(OBJEXT) \
-	bs1770gain_album.$(OBJEXT) bs1770gain_opath.$(OBJEXT) \
-	bs1770gain_parse_time.$(OBJEXT) bs1770gain_transcode.$(OBJEXT) \
-	bs1770gain_tree.$(OBJEXT)
+am_libbs1770gain_a_OBJECTS = bs1770gain_print_xml.$(OBJEXT) \
+	bs1770gain_print_classic.$(OBJEXT) \
+	bs1770gain_aggregate.$(OBJEXT) bs1770gain_album.$(OBJEXT) \
+	bs1770gain_opath.$(OBJEXT) bs1770gain_parse_time.$(OBJEXT) \
+	bs1770gain_transcode.$(OBJEXT) bs1770gain_tree.$(OBJEXT)
 libbs1770gain_a_OBJECTS = $(am_libbs1770gain_a_OBJECTS)
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
@@ -109,12 +110,13 @@ BS1770GAIN_TOOLS_INSTALL = @BS1770GAIN_TOOLS_INSTALL@
 BS1770GAIN_TOOLS_UNINSTALL = @BS1770GAIN_TOOLS_UNINSTALL@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
-#CFLAGS+=-Wmissing-declarations
-#CFLAGS+=-Wmissing-prototypes
 CFLAGS = @CFLAGS@ -Werror -Wall -Wformat -Wpointer-arith -Wcast-align \
 	-Wcast-qual -Wreturn-type -Wextra -Wstrict-prototypes \
-	-Wno-unused-variable
+	-Wno-unused-parameter
 CPP = @CPP@
+#CFLAGS+=-Wmissing-declarations
+#CFLAGS+=-Wmissing-prototypes
+#CFLAGS+=-Wno-unused-variable
 CPPFLAGS = @CPPFLAGS@ -I$(top_srcdir)/libpbutil \
 	-I$(top_srcdir)/lib1770-2 -I$(top_srcdir)/libffsox-2
 CYGPATH_W = @CYGPATH_W@
@@ -218,6 +220,7 @@ bs1770gain_LDADD = libbs1770gain.a \
 #bs1770hello_LDADD+=-lm
 noinst_LIBRARIES = libbs1770gain.a
 libbs1770gain_a_SOURCES = bs1770gain.h bs1770gain_priv.h \
+	bs1770gain_print_xml.c bs1770gain_print_classic.c \
 	bs1770gain_aggregate.c bs1770gain_album.c bs1770gain_opath.c \
 	bs1770gain_parse_time.c bs1770gain_transcode.c \
 	bs1770gain_tree.c
@@ -318,6 +321,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bs1770gain_album.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bs1770gain_opath.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bs1770gain_parse_time.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bs1770gain_print_classic.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bs1770gain_print_xml.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bs1770gain_transcode.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bs1770gain_tree.Po@am__quote@
 

@@ -218,14 +218,14 @@ void ffsox_sink_close(ffsox_sink_t *s);
 
 ///////////////////////////////////////////////////////////////////////////////
 enum {
-  FFSOX_AGGREGATE_MOMENTARY_MAXIMUM=1<<1,
-  FFSOX_AGGREGATE_MOMENTARY_MEAN=1<<2,
-  FFSOX_AGGREGATE_MOMENTARY_RANGE=1<<3,
-  FFSOX_AGGREGATE_SHORTTERM_MAXIMUM=1<<4,
-  FFSOX_AGGREGATE_SHORTTERM_MEAN=1<<5,
-  FFSOX_AGGREGATE_SHORTTERM_RANGE=1<<6,
-  FFSOX_AGGREGATE_SAMPLEPEAK=1<<7,
-  FFSOX_AGGREGATE_TRUEPEAK=1<<8,
+  FFSOX_AGGREGATE_MOMENTARY_MAXIMUM=1<<0,
+  FFSOX_AGGREGATE_MOMENTARY_MEAN=1<<1,
+  FFSOX_AGGREGATE_MOMENTARY_RANGE=1<<2,
+  FFSOX_AGGREGATE_SHORTTERM_MAXIMUM=1<<3,
+  FFSOX_AGGREGATE_SHORTTERM_MEAN=1<<4,
+  FFSOX_AGGREGATE_SHORTTERM_RANGE=1<<5,
+  FFSOX_AGGREGATE_SAMPLEPEAK=1<<6,
+  FFSOX_AGGREGATE_TRUEPEAK=1<<7,
   FFSOX_AGGREGATE_MOMENTARY
       =FFSOX_AGGREGATE_MOMENTARY_MAXIMUM
       |FFSOX_AGGREGATE_MOMENTARY_MEAN
@@ -293,6 +293,7 @@ void ffsox_collect_truepeak(void *data, double x);
 struct ffsox_analyze_config {
   const char *path;
   ffsox_aggregate_t *aggregate;
+  int stereo;
   double drc;
   ffsox_block_config_t momentary;
   ffsox_block_config_t shortterm;
@@ -406,7 +407,7 @@ int ffsox_source_append(ffsox_source_t *si, ffsox_packet_consumer_t *pc);
 int ffsox_source_seek(ffsox_source_t *n, int64_t ts);
 
 int ffsox_source_link_create(ffsox_source_t *si, ffsox_sink_t *so,
-    double drc, int codec_id, int sample_fmt, double q);
+    int stereo, double drc, int codec_id, int sample_fmt, double q);
 void ffsox_source_link_cleanup(ffsox_source_t *si);
 void ffsox_source_progress(const ffsox_source_t *si, /* FILE */void *data);
 
@@ -523,9 +524,9 @@ struct ffsox_frame_reader {
 };
 
 int ffsox_frame_reader_create(ffsox_frame_reader_t *fr, ffsox_source_t *si,
-    int stream_index, double drc);
+    int stream_index, int stereo, double drc);
 ffsox_frame_reader_t *ffsox_frame_reader_new(ffsox_source_t *si,
-    int stream_index, double drc);
+    int stream_index, int stereo, double drc);
 const ffsox_frame_reader_vmt_t *ffsox_frame_reader_get_vmt(void);
 
 /// frame_consumer ////////////////////////////////////////////////////////////

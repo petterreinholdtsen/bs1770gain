@@ -52,7 +52,7 @@ int ffsox_analyze(analyze_config_t *ac)
     av_dump_format(si.f.fc,0,si.f.path,0);
 
   // create a frame reader.
-  if (NULL==(fr=ffsox_frame_reader_new(&si,si.ai,ac->drc))) {
+  if (NULL==(fr=ffsox_frame_reader_new(&si,si.ai,ac->stereo,ac->drc))) {
     DMESSAGE("creating frame reader");
     goto fr;
   }

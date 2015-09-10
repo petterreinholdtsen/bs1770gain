@@ -46,7 +46,7 @@ bs1770gain_album_t *bs1770gain_album_new(const char *ipath, const char *opath,
     goto opath;
   }
 
-  if (ffsox_aggregate_create(&album->aggregate,options->flags)<0) {
+  if (ffsox_aggregate_create(&album->aggregate,options->aggregate)<0) {
     DMESSAGE("creating album aggregator");
     goto aggregate;
   }
@@ -159,7 +159,7 @@ bs1770gain_track_t *bs1770gain_track_new(const char *ipath,
     goto ipath;
   }
 
-  if (ffsox_aggregate_create(&track->aggregate,options->flags)<0) {
+  if (ffsox_aggregate_create(&track->aggregate,options->aggregate)<0) {
     DMESSAGE("creating album aggregator");
     goto aggregate;
   }

@@ -22,7 +22,7 @@
 
 static char *bs177gain_norm_title(char *tp)
 {
-  static const char tok[]=" /-_()[]{}?'`´";
+  static const char tok[]=" /-_()[]{}?'`´.";
   char *p,*saveptr;
 
   // TODO: unicode.

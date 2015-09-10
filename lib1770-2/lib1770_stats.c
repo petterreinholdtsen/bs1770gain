@@ -130,8 +130,27 @@ void lib1770_stats_add_sqs(lib1770_stats_t *stats, double wmsq)
 
   if (NULL!=bin) {
     // cumulative moving average.
+    // https://en.wikipedia.org/wiki/Moving_average#Cumulative_moving_average
+#if 1 // {
+	//                       x (n) - CMA (n)
+	// CMA (n+1) = CMA (n) + ---------------
+	//                          n + 1
     stats->hist.pass1.wmsq+=(wmsq-stats->hist.pass1.wmsq)
         /(double)(++stats->hist.pass1.count);
+#else // } {
+	//             x + n * CMA (n)
+    // CMA (n+1) = ---------------
+	//                n + 1
+	//
+	//           = x / (n + 1) + CMA (n) * n / (n+1)
+	//
+	double n=stats->hist.pass1.count;
+	double m=n+1;
+
+    stats->hist.pass1.wmsq*=n/m;
+    stats->hist.pass1.wmsq+=wmsq/m;
+	++stats->hist.pass1.count;
+#endif // }
     ++bin->count;
   }
 }
