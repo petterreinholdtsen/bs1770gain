@@ -22,7 +22,7 @@
 static frame_reader_vmt_t vmt;
 
 int ffsox_frame_reader_create(frame_reader_t *fr, source_t *si,
-    int stream_index, double drc)
+    int stream_index, int stereo, double drc)
 {
   AVDictionary *opts=NULL;
   char buf[32];
@@ -42,9 +42,9 @@ int ffsox_frame_reader_create(frame_reader_t *fr, source_t *si,
     goto find;
   }
 
-  // we want to have stereo.
-  // TODO: should be an option.
-  fr->si.cc->request_channel_layout=AV_CH_LAYOUT_STEREO;
+  // if we want to have stereo:
+  if (stereo)
+    fr->si.cc->request_channel_layout=AV_CH_LAYOUT_STEREO;
 
   if (AV_CODEC_ID_AC3==fr->si.cc->codec_id) {
     // avoid dynamic range compression.
@@ -79,7 +79,7 @@ base:
 }
 
 frame_reader_t *ffsox_frame_reader_new(source_t *si, int stream_index,
-    double drc)
+    int stereo, double drc)
 {
   frame_reader_t *fr;
 
@@ -88,7 +88,7 @@ frame_reader_t *ffsox_frame_reader_new(source_t *si, int stream_index,
     goto malloc;
   }
 
-  if (ffsox_frame_reader_create(fr,si,stream_index,drc)<0) {
+  if (ffsox_frame_reader_create(fr,si,stream_index,stereo,drc)<0) {
     DMESSAGE("creating frame reader");
     goto create;
   }

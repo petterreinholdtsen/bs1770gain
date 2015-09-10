@@ -36,12 +36,12 @@ pw:
 }
 
 static int ffsox_source_link_codec(source_t *si, sink_t *so, int stream_index,
-    double drc, int codec_id, int sample_fmt, double q)
+    int stereo, double drc, int codec_id, int sample_fmt, double q)
 {
   frame_reader_t *fr=NULL;
   frame_writer_t *fw=NULL;
 
-  if (NULL==(fr=ffsox_frame_reader_new(si,stream_index,drc))) {
+  if (NULL==(fr=ffsox_frame_reader_new(si,stream_index,stereo,drc))) {
     DMESSAGE("creating frame reader");
     goto read;
   }
@@ -63,8 +63,8 @@ read:
   return -1;
 }
 
-int ffsox_source_link_create(source_t *si, sink_t *so, double drc, int codec_id,
-    int sample_fmt, double q)
+int ffsox_source_link_create(source_t *si, sink_t *so, int stereo, double drc,
+    int codec_id, int sample_fmt, double q)
 {
   int i;
 
@@ -77,7 +77,7 @@ int ffsox_source_link_create(source_t *si, sink_t *so, double drc, int codec_id,
         }
       }
       else {
-        if (ffsox_source_link_codec(si,so,i,drc,codec_id,sample_fmt,q)<0) {
+        if (ffsox_source_link_codec(si,so,i,stereo,drc,codec_id,sample_fmt,q)<0) {
           DMESSAGE("codec linking");
           goto link;
         }

@@ -20,17 +20,17 @@
 #include <lib1770.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined (_MSC_VER) // {
+//#if defined (_MSC_VER) // {
 #define lib1770_get(offs,i) \
   ((offs)+(i)<0?LIB1770_BUF_SIZE+(offs)+(i):(offs)+(i))
-#else // } {
-inline int lib1770_get(int offs, int i)
-{
-  int j=offs+i;
-
-  return j<0?LIB1770_BUF_SIZE+j:j;
-}
-#endif // }
+//#else // } {
+//inline int lib1770_get(int offs, int i)
+//{
+//  int j=offs+i;
+//
+//  return j<0?LIB1770_BUF_SIZE+j:j;
+//}
+//#endif // }
 
 #define LIB1770_GET(buf,offs,i) \
     ((buf)[lib1770_get(offs,i)])

@@ -59,12 +59,13 @@ ifc:
 }
 
 int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
-    const options_t *options)
+    options_t *options)
 {
   int code=-1;
   const bs1770gain_tree_t *parent=tree->parent;
   const char *ibasename=NULL==parent?NULL:parent->basename;
-  FILE *f=options->f;
+  bs1770gain_print_t *p=&options->p;
+  FILE *f=p->vmt->session.file(p);
   bs1770gain_album_t *album;
   bs1770gain_track_t *track;
   const char *label;
@@ -104,26 +105,20 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
   if (NULL==album->head)
     ;
   else if (0==options->dump) {
-    if (NULL==ibasename||0==*ibasename)
-      fprintf(f,"analyzing ...\n");
-    else
-      fprintf(f,"analyzing \"%s\" ...\n",ibasename);
+    p->vmt->album.head(p,album,ibasename);
 
     for (track=album->head;NULL!=track;track=track->next) {
-      fprintf(f,"  [%d/%d] \"%s\"",track->n,album->n,
-          pbu_basename(track->ipath));
-      fprintf(f,": ");
-      fflush(f);
+      p->vmt->track.head(p,track);
 
       memset(&ac,0,sizeof ac);
       ac.path=track->ipath;
       ac.aggregate=&track->aggregate;
+      ac.stereo=options->stereo;
       ac.drc=options->drc;
       ac.momentary.ms=options->momentary.ms;
       ac.momentary.partition=options->momentary.partition;
       ac.shortterm.ms=options->shortterm.ms;
-      ac.shortterm.partition=options->shortterm.partition;
-      ac.f=stdout==f?f:NULL;
+      ac.f=f;
       ac.dump=0;
 
       if (ffsox_analyze(&ac)<0) {
@@ -131,22 +126,24 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
         goto analyze;
       }
       else {
-        fprintf(f,stdout==f?"        \n":"\n");
-        bs1770gain_aggregate_print(&track->aggregate,options);
+        p->vmt->track.body(p,&track->aggregate,options);
         ffsox_aggregate_merge(&album->aggregate,&track->aggregate);
       }
+
+      p->vmt->track.tail(p);
     }
 
     if (BS1770GAIN_IS_MODE_ALBUM_TAGS(options->mode)) {
-      fprintf(f,"  [ALBUM]:\n");
-      bs1770gain_aggregate_print(&album->aggregate,options);
+      p->vmt->track.head(p,NULL);
+      p->vmt->track.body(p,&album->aggregate,options);
+      p->vmt->track.tail(p);
     }
 
     if (NULL!=odirname) {
       label=BS1770GAIN_IS_MODE_APPLY(options->mode)?"transcoding":"remuxing";
 
       // print a massage.
-      if (stdout==f) {
+      if (f) {
         if (NULL==ibasename||0==*ibasename)
           fprintf(f,"%s ...\n",label);
         else
@@ -165,7 +162,7 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
         bs1770gain_album_copy_file(album,"folder.jpg");
     }
 
-    fprintf(f,"done.\n");
+    p->vmt->album.tail(p);
   }
   else {
     for (track=album->head;NULL!=track;track=track->next)
@@ -183,7 +180,7 @@ album:
 }
 
 int bs1770gain_tree_track(bs1770gain_tree_t *tree, bs1770gain_album_t *album,
-    const bs1770gain_options_t *options)
+    bs1770gain_options_t *options)
 {
   int code =-1;
 
@@ -203,14 +200,16 @@ track:
 }
 
 int bs1770gain_tree_album(const bs1770gain_tree_t *root, const char *odirname,
-    const bs1770gain_options_t *options)
+    bs1770gain_options_t *options)
 {
   int code;
   char *path;
   bs1770gain_tree_t tree;
+  FILE *f;
 
   TRACE_PUSH();
   code =-1;
+  f=options->p.vmt->session.file(&options->p);
 
   if (NULL!=odirname) {
     if (NULL==(path=pbu_extend_path(odirname,root->basename))) {
@@ -226,7 +225,9 @@ int bs1770gain_tree_album(const bs1770gain_tree_t *root, const char *odirname,
     goto dir;
   }
 
-  fprintf(options->f,"%s\n",root->path);
+  if (f)
+    fprintf(f,"%s\n",root->path);
+
   bs1770gain_tree_analyze(&tree,path,options);
   code=0;
 // cleanp:

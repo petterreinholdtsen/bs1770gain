@@ -25,23 +25,23 @@
 #define CLOCKS_PER_MILLIS (CLOCKS_PER_SEC/1000)
 
 #define BS1770GAIN_AGGREGATE_METHOD ( \
-  AGGREGATE_MOMENTARY_MAXIMUM \
-  &AGGREGATE_MOMENTARY_MEAN \
-  &AGGREGATE_SHORTTERM_MAXIMUM \
-  &AGGREGATE_SHORTTERM_MEAN \
+  FFSOX_AGGREGATE_MOMENTARY_MAXIMUM \
+  &FFSOX_AGGREGATE_MOMENTARY_MEAN \
+  &FFSOX_AGGREGATE_SHORTTERM_MAXIMUM \
+  &FFSOX_AGGREGATE_SHORTTERM_MEAN \
 )
 
 #define BS1770GAIN_AGGREGATE_RANGE_PEAK ( \
-  AGGREGATE_MOMENTARY_RANGE \
-  &AGGREGATE_SHORTTERM_RANGE \
-  &AGGREGATE_SAMPLEPEAK \
-  &AGGREGATE_TRUEPEAK \
+  FFSOX_AGGREGATE_MOMENTARY_RANGE \
+  &FFSOX_AGGREGATE_SHORTTERM_RANGE \
+  &FFSOX_AGGREGATE_SAMPLEPEAK \
+  &FFSOX_AGGREGATE_TRUEPEAK \
 )
 
 #define BS1770GAIN_OPTIONS_NO_METHOD(o) \
-  (0==((o)->flags&BS1770GAIN_AGGREGATE_METHOD))
+  (0==((o)->aggregate&BS1770GAIN_AGGREGATE_METHOD))
 #define BS1770GAIN_OPTIONS_NO_RANGE_PEAK(o) \
-  (0==((o)->flags&BS1770GAIN_AGGREGATE_RANGE_PEAK))
+  (0==((o)->aggregate&BS1770GAIN_AGGREGATE_RANGE_PEAK))
 
 ///////////////////////////////////////////////////////////////////////////////
 void bs1770gain_usage(char **argv, int code)
@@ -87,12 +87,14 @@ void bs1770gain_usage(char **argv, int code)
       "   or apply the EBU/ATSC/RG gain, respectively,\n"
       "   and output to folder\n");
   fprintf(stderr," -f <file>,--file <file>:  write analysis to file\n");
-  fprintf(stderr," -x,--extensions:  enable following extensions\n"
+  fprintf(stderr," -x,--extensions:  enable following extensions/defaults:\n"
       "   1) rename files according to TITLE tag\n"
       "   2) read metadata from per-folder CSV file \"folder.csv\"\n"
       "   3) copy file \"folder.jpg\" from source to destination\n"
       "      folder\n"
-      "   4) automatically add the TRACK and DISC tags\n");
+      "   4) automatically add the TRACK and DISC tags\n"
+      "   5) calculate maximum true peak\n"
+      "   6) convert to stereo\n");
   fprintf(stderr," -l,--list:  print FFmpeg format/stream information\n");
   /////////////////////////////////////////////////////////////////////////////
   fprintf(stderr," --ebu:  calculate replay gain according to EBU R128\n"
@@ -103,6 +105,15 @@ void bs1770gain_usage(char **argv, int code)
       "   ReplayGain 2.0 (-18.0 LUFS)\n");
   fprintf(stderr," --track-tags:  write track tags\n");
   fprintf(stderr," --album-tags:  write album tags\n");
+#if defined (BS1770GAIN_TAG_PREFIX) // {
+#if 0 // {
+  fprintf(stderr," --tag-prefix <prefix>:  use <prefix> as tag prefix\n"
+      "   instead of \"REPLAYGAIN\"\n");
+#else // } {
+  fprintf(stderr," --tag-prefix <prefix>:  instead of \"REPLAYGAIN\",\n"
+      "   use <prefix> as RG tag prefix\n");
+#endif // }
+#endif // }
   fprintf(stderr," --unit <unit>:  write tags with <unit>\n");
   fprintf(stderr," --apply <q>:  apply the EBU/ATSC/RG gain to the output\n"
       "   (in conjunction with the -o/--output option),\n"
@@ -112,6 +123,7 @@ void bs1770gain_usage(char **argv, int code)
       "   [0:<index>] in FFmpeg listing, cf. -l/--list option)\n");
   fprintf(stderr," --video <index>:  select video index (corresponds to\n"
       "   [0:<index>] in FFmpeg listing, cf. -l/--list option)\n");
+  fprintf(stderr," --stereo:  convert to stereo\n");
   fprintf(stderr," --drc <drc>:  set AC3 dynamic range compression (DRC)\n");
   fprintf(stderr," --extension <extension>:  enable extension out of\n"
       "   \"rename\":  rename files according to TITLE tag\n"
@@ -123,10 +135,11 @@ void bs1770gain_usage(char **argv, int code)
   fprintf(stderr," --loglevel <level>:  set loglevel,\n"
       "   level:  \"quiet\", \"panic\", \"fatal\", \"error\", \"warning\",\n"
       "   \"info\", \"verbose\", \"debug\"\n");
+  fprintf(stderr," --xml:  print results in xml format\n");
   fprintf(stderr," --time:  print out duration of program invocation\n");
   //fprintf(stderr," --level:\n");
   //fprintf(stderr," --preamp <preamp>:\n");
-  //fprintf(stderr," --mono2stero:\n");
+  //fprintf(stderr," --stero:\n");
   //fprintf(stderr," --rg-tags:\n");
   //fprintf(stderr," --bwf-tags:\n");
   /////////////////////////////////////////////////////////////////////////////
@@ -195,12 +208,16 @@ enum {
   ATSC,
   AUDIO,
   VIDEO,
-  MONO2STEREO,
+  STEREO,
   REPLAYGAIN,
   RG_TAGS,
   BWF_TAGS,
   TRACK_TAGS,
   ALBUM_TAGS,
+  XML,
+#if defined (BS1770GAIN_TAG_PREFIX) // {
+  TAG_PREFIX,
+#endif // }
   ////////////////
   MOMENTARY_RANGE,
   MOMENTARY_LENGTH,
@@ -252,12 +269,16 @@ static struct option bs1770gain_opts[]={
   { "time",no_argument,NULL,TIME },
   { "ebu",no_argument,NULL,EBU },
   { "atsc",no_argument,NULL,ATSC },
-  { "mono2stereo",no_argument,NULL,MONO2STEREO },
+  { "stereo",no_argument,NULL,STEREO },
   { "replaygain",no_argument,NULL,REPLAYGAIN },
   { "rg-tags",no_argument,NULL,RG_TAGS },
   { "bwf-tags",no_argument,NULL,BWF_TAGS },
   { "track-tags",no_argument,NULL,TRACK_TAGS },
   { "album-tags",no_argument,NULL,ALBUM_TAGS },
+  { "xml",no_argument,NULL,XML },
+#if defined (BS1770GAIN_TAG_PREFIX) // {
+  { "tag-prefix",required_argument,NULL,TAG_PREFIX },
+#endif // }
   ////
   { "momentary-mean",no_argument,NULL,'i' },
   { "momentary-maximum",no_argument,NULL,'m' },
@@ -300,12 +321,13 @@ static struct option bs1770gain_opts[]={
 int main(int argc, char **argv)
 {
   options_t options;
+  FILE *f=stdout;
   tree_t root;
   char *fpath=NULL;
   char *odirname=NULL;
   int loglevel=AV_LOG_QUIET;
   double overlap;
-  clock_t t1,t2;
+  double t1,t2;
   int c;
 
   if (1==argc)
@@ -315,13 +337,15 @@ int main(int argc, char **argv)
 
   //setlocale(LC_ALL,"C");
   memset(&options,0,sizeof options);
-  options.f=stdout;
   options.unit="LU";
   options.audio=-1;
   options.video=-1;
   options.level=-23.0;
   options.audio_ext="flac";
   options.video_ext="mkv";
+#if defined (BS1770GAIN_TAG_PREFIX) // {
+  options.tag_prefix="REPLAYGAIN";
+#endif // }
 
   options.momentary.ms=400.0;
   options.momentary.partition=4;
@@ -363,21 +387,21 @@ int main(int argc, char **argv)
     case 'u':
       if (0==strcasecmp("integrated",optarg)
           ||0==strcasecmp("momentary-mean",optarg)) {
-        options.flags|=AGGREGATE_MOMENTARY_MEAN;
+        options.aggregate|=FFSOX_AGGREGATE_MOMENTARY_MEAN;
         options.method=BS1770GAIN_METHOD_MOMENTARY_MEAN;
       }
       else if (0==strcasecmp("momentary",optarg)
           ||0==strcasecmp("momentary-maximum",optarg)) {
-        options.flags|=AGGREGATE_MOMENTARY_MAXIMUM;
+        options.aggregate|=FFSOX_AGGREGATE_MOMENTARY_MAXIMUM;
         options.method=BS1770GAIN_METHOD_MOMENTARY_MAXIMUM;
       }
       else if (0==strcasecmp("shortterm-mean",optarg)) {
-        options.flags|=AGGREGATE_SHORTTERM_MEAN;
+        options.aggregate|=FFSOX_AGGREGATE_SHORTTERM_MEAN;
         options.method=BS1770GAIN_METHOD_SHORTTERM_MEAN;
       }
       else if (0==strcasecmp("shortterm",optarg)
           ||0==strcasecmp("shortterm-maximum",optarg)) {
-        options.flags|=AGGREGATE_SHORTTERM_MAXIMUM;
+        options.aggregate|=FFSOX_AGGREGATE_SHORTTERM_MAXIMUM;
         options.method=BS1770GAIN_METHOD_SHORTTERM_MAXIMUM;
       }
       else {
@@ -399,25 +423,27 @@ int main(int argc, char **argv)
       options.dump=1;
       break;
     case 'i':
-      options.flags|=AGGREGATE_MOMENTARY_MEAN;
+      options.aggregate|=FFSOX_AGGREGATE_MOMENTARY_MEAN;
       break;
     case 's':
-      options.flags|=AGGREGATE_SHORTTERM_MAXIMUM;
+      options.aggregate|=FFSOX_AGGREGATE_SHORTTERM_MAXIMUM;
       break;
     case 'm':
-      options.flags|=AGGREGATE_MOMENTARY_MAXIMUM;
+      options.aggregate|=FFSOX_AGGREGATE_MOMENTARY_MAXIMUM;
       break;
     case 'r':
-      options.flags|=AGGREGATE_SHORTTERM_RANGE;
+      options.aggregate|=FFSOX_AGGREGATE_SHORTTERM_RANGE;
       break;
     case 'p':
-      options.flags|=AGGREGATE_SAMPLEPEAK;
+      options.aggregate|=FFSOX_AGGREGATE_SAMPLEPEAK;
       break;
     case 't':
-      options.flags|=AGGREGATE_TRUEPEAK;
+      options.aggregate|=FFSOX_AGGREGATE_TRUEPEAK;
       break;
     case 'x':
       options.extensions=BS1770GAIN_EXTENSION_ALL;
+      options.aggregate|=FFSOX_AGGREGATE_TRUEPEAK;
+      options.stereo=1;
       break;
     /// without flag //////////////////////////////////////////////////////////
     case AUDIO:
@@ -448,6 +474,11 @@ int main(int argc, char **argv)
       else
         bs1770gain_usage(argv,-1);
       break;
+#if defined (BS1770GAIN_TAG_PREFIX) // {
+    case TAG_PREFIX:
+      options.tag_prefix=optarg;
+      break;
+#endif // }
     case FORMAT:
       options.format=optarg;
       break;
@@ -486,7 +517,7 @@ int main(int argc, char **argv)
       break;
     case REPLAYGAIN:
       options.level=-18.0;
-    options.unit="dB";
+      options.unit="dB";
       break;
     case RG_TAGS:
       options.mode|=BS1770GAIN_MODE_RG_TAGS;
@@ -500,15 +531,18 @@ int main(int argc, char **argv)
     case ALBUM_TAGS:
       options.mode|=BS1770GAIN_MODE_ALBUM_TAGS;
       break;
+    case XML:
+      options.xml=1;
+      break;
     case TIME:
       options.time=1;
       break;
-    case MONO2STEREO:
-      options.mono2stereo=1;
+    case STEREO:
+      options.stereo=1;
       break;
     ///////////////////////////////////////////////////////////////////////////
     case MOMENTARY_RANGE:
-      options.flags|=AGGREGATE_MOMENTARY_RANGE;
+      options.aggregate|=FFSOX_AGGREGATE_MOMENTARY_RANGE;
       break;
     ////////
     case MOMENTARY_LENGTH:
@@ -540,7 +574,7 @@ int main(int argc, char **argv)
       break;
     ////////
     case SHORTTERM_MEAN:
-      options.flags|=AGGREGATE_SHORTTERM_MEAN;
+      options.aggregate|=FFSOX_AGGREGATE_SHORTTERM_MEAN;
       break;
     ////////
     case SHORTTERM_LENGTH:
@@ -615,7 +649,7 @@ int main(int argc, char **argv)
 
   if (BS1770GAIN_OPTIONS_NO_METHOD(&options)) {
     if (NULL!=odirname||BS1770GAIN_OPTIONS_NO_RANGE_PEAK(&options))
-      options.flags|=AGGREGATE_MOMENTARY_MEAN;
+      options.aggregate|=FFSOX_AGGREGATE_MOMENTARY_MEAN;
   }
 
   // load the FFmpeg and SoX libraries from "bs1770gain-tools".
@@ -630,10 +664,17 @@ int main(int argc, char **argv)
   if (0==options.dump||av_log_get_level()<loglevel)
     av_log_set_level(loglevel);
 
-  if (NULL!=fpath&&NULL==(options.f=fopen(fpath,"w")))
+  if (fpath&&NULL==(f=fopen(fpath,"w")))
     goto file;
 
   bs1770gain_tree_cli_init(&root,argc,argv,optind);
+
+  if (options.xml)
+    bs1770gain_print_xml(&options.p,f);
+  else
+    bs1770gain_print_classic(&options.p,f);
+
+  options.p.vmt->session.head(&options.p);
   t1=clock();
   bs1770gain_tree_analyze(&root,odirname,&options);
   t2=clock();
@@ -641,17 +682,18 @@ int main(int argc, char **argv)
   if (0==root.cli.count)
     fprintf(stderr,"Warning: No valid input files/folders given.\n");
 
+  options.p.vmt->session.tail(&options.p);
   root.vmt->cleanup(&root);
 
   if (options.time)
-    fprintf(stderr, "Duration: %ld ms.\n",(t2-t1)/CLOCKS_PER_MILLIS);
+    fprintf(stderr, "Duration: %.0f ms.\n",(t2-t1)/CLOCKS_PER_MILLIS);
 // cleanup:
   sox_quit();
   // still reachable: 9,689 bytes in 51 blocks
   // TODO: Cleanup FFmpeg. But how?
 dynload:
   if (NULL!=fpath)
-    fclose(options.f);
+    fclose(f);
 file:
   TRACE_POP();
   PBU_HEAP_PRINT();

@@ -18,6 +18,7 @@
  * MA  02110-1301  USA
  */
 #include <bs1770gain_priv.h>
+#include <ctype.h>
 
 static void bs1770gain_tags_rg(tag_t *tags, const aggregate_t *track,
     const aggregate_t *album, const options_t *options)
@@ -130,6 +131,113 @@ static void bs1770gain_tags_bwf(tag_t *tags, const aggregate_t *aggregate,
   }
 }
 
+#if defined (BS1770GAIN_TAG_PREFIX) // {
+static const char *bs1770gain_convert_key(tag_t *t, char *key, size_t size,
+    const options_t *options)
+{
+  const char *p1,*p2,*rp;
+  char *wp;
+
+    p1=t->key;
+    p2="REPLAYGAIN";
+
+    while (*p2) {
+      if (*p1++!=*p2++) {
+        // no RG tag, copy it into the fresh dictionanry.
+        return t->key;
+      }
+    }
+
+    if (size<strlen(options->tag_prefix)+strlen(p1))
+      return NULL;
+
+    wp=key;
+
+    for (rp=options->tag_prefix;*rp;++rp)
+      *wp++=toupper(*rp);
+
+    for (rp=p1;*rp;++rp)
+      *wp++=*rp;
+
+    *wp=0;
+
+    // RG tag, copy it into the fresh dictionanry.
+    return key;
+}
+
+static void bs1770gain_clone_dict(track_t *track, AVDictionary **ometadata,
+    AVDictionary *imetadata, tag_t *tags, const options_t *options)
+{
+  enum {
+    TRACK=1<<1,
+    DISC=1<<2
+  };
+
+#if 0 // {
+  album_t *album=track->album;
+#endif // }
+  AVDictionaryEntry *de=NULL;
+  tag_t *t;
+  int flags=0;
+  char value[32];
+  char buf[128];
+  const char *key;
+
+  // for each tag ...
+  while (NULL!=(de=av_dict_get(imetadata,"",de,AV_DICT_IGNORE_SUFFIX))) {
+    // ... filter out RG/BWF tags
+    for (t=tags;NULL!=t->key;++t) {
+      if (NULL==(key=bs1770gain_convert_key(t,buf,sizeof buf,options)))
+        goto next_de;
+      else if (0==strcasecmp(key,de->key))
+        goto next_de;
+    }
+
+    // ... copy it into the fresh dictionary.
+    if (0==strcasecmp("TRACK",de->key))
+      flags|=TRACK;
+    else if (0==strcasecmp("DISC",de->key))
+      flags|=DISC;
+
+    av_dict_set(ometadata,de->key,de->value,0);
+  next_de:
+    continue;
+  }
+
+  if (0!=(EXTENSION_TAGS&options->extensions)) {
+    if (0==(TRACK&flags)) {
+#if 0 // {
+      sprintf(value,"%d/%d",track->n,album->n);
+#else // } {
+      sprintf(value,"%d",track->n);
+#endif // }
+      av_dict_set(ometadata,"TRACK",value,0);
+    }
+
+    if (0==(DISC&flags)) {
+      sprintf(value,"%d",1);
+      av_dict_set(ometadata,"DISC",value,0);
+    }
+  }
+}
+
+static void bs1770gain_write_dict(AVDictionary **ometadata, tag_t *tags,
+    const options_t *options)
+{
+  tag_t *t;
+  char buf[128];
+  const char *key;
+
+  // for each RG/BWF tag ...
+  for (t=tags;NULL!=t->key;++t) {
+    if (0==*t->val)
+      continue;
+
+    if (NULL!=(key=bs1770gain_convert_key(t,buf,sizeof buf,options)))
+      av_dict_set(ometadata,key,t->val,0);
+  }
+}
+#else // } {
 static void bs1770gain_clone_dict(track_t *track, AVDictionary **ometadata,
     AVDictionary *imetadata, tag_t *tags, const options_t *options)
 {
@@ -193,6 +301,7 @@ static void bs1770gain_write_dict(AVDictionary **ometadata, tag_t *tags)
       av_dict_set(ometadata,t->key,t->val,0);
   }
 }
+#endif // }
 
 // copy all tags into the fresh dictionary except the RG/BWF ones.
 static void bs1770gain_clone_tags(tag_t *tags, sink_t *so, source_t *si,
@@ -223,7 +332,7 @@ static void bs1770gain_clone_tags(tag_t *tags, sink_t *so, source_t *si,
   }
 }
 
-int bs1770gain_transcode(track_t *t, const options_t *options)
+int bs1770gain_transcode(track_t *t, options_t *options)
 {
   enum { CODEC_ID=AV_CODEC_ID_FLAC,SAMPLE_FMT=AV_SAMPLE_FMT_S32 };
 
@@ -246,8 +355,10 @@ int bs1770gain_transcode(track_t *t, const options_t *options)
   };
 
   int code=-1;
-  FILE *f=options->f;
-  source_cb_t progress=stdout==f?ffsox_source_progress:NULL;
+  bs1770gain_print_t *p=&options->p;
+  FILE *f=p->vmt->session.file(p);
+  source_cb_t progress=f?ffsox_source_progress:NULL;
+  int stereo=options->stereo;
   double drc=options->drc;
   int ai=options->audio;
   int vi=options->video;
@@ -297,7 +408,7 @@ int bs1770gain_transcode(track_t *t, const options_t *options)
     sample_fmt=-1;
   }
 
-  if (ffsox_source_link_create(&si,&so,drc,CODEC_ID,sample_fmt,q)<0) {
+  if (ffsox_source_link_create(&si,&so,stereo,drc,CODEC_ID,sample_fmt,q)<0) {
     DMESSAGE("creating link");
     goto link;
   }
@@ -309,7 +420,11 @@ int bs1770gain_transcode(track_t *t, const options_t *options)
 
   if (!BS1770GAIN_IS_MODE_APPLY(options->mode)) {
     // set the RG/BWF tags.
+#if defined (BS1770GAIN_TAG_PREFIX) // {
+    bs1770gain_write_dict(&so.f.fc->metadata,tags,options);
+#else // } {
     bs1770gain_write_dict(&so.f.fc->metadata,tags);
+#endif // }
   }
 
   if (ffsox_source_seek(&si,options->begin)<0) {

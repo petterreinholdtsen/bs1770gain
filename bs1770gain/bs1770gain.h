@@ -17,13 +17,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301  USA
  */
-#ifndef __BS1770GAIN_H__
-#define __BS1770GAIN_H__ // {
+#ifndef __BS1770GAIN_H__ // {
+#define __BS1770GAIN_H__
 #include <ffsox.h>
 #include <dirent.h>
 #ifdef __cpluplus
 extern "C" {
 #endif
+
+///////////////////////////////////////////////////////////////////////////////
+//#define BS1770GAIN_TAG_PREFIX
 
 ///////////////////////////////////////////////////////////////////////////////
 typedef struct bs1770gain_block_options bs1770gain_block_options_t;
@@ -33,6 +36,8 @@ typedef struct bs1770gain_tree_vmt bs1770gain_tree_vmt_t;
 typedef struct bs1770gain_tree bs1770gain_tree_t;
 typedef struct bs1770gain_album bs1770gain_album_t;
 typedef struct bs1770gain_track bs1770gain_track_t;
+typedef struct bs1770gain_print_vmt bs1770gain_print_vmt_t;
+typedef struct bs1770gain_print bs1770gain_print_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 char *bs1770gain_opath(const char *ipath, const char *odirname,
@@ -41,7 +46,7 @@ char *bs1770gain_opathx(int n, const char *title, const char *odirname,
     const char *oext);
 
 int bs1770gain_transcode(bs1770gain_track_t *track,
-    const bs1770gain_options_t *options);
+    bs1770gain_options_t *options);
 // parse time in microseconds.
 int64_t bs1770gain_parse_time(const char *s);
 
@@ -51,11 +56,45 @@ double bs1770gain_aggregate_get_loudness(const ffsox_aggregate_t *aggregate,
     const bs1770gain_options_t *options);
 
 ///////////////////////////////////////////////////////////////////////////////
-#define BS1770GAIN_MODE_APPLY                 1
-#define BS1770GAIN_MODE_RG_TAGS               2
-#define BS1770GAIN_MODE_BWF_TAGS              4
-#define BS1770GAIN_MODE_TRACK_TAGS            8
-#define BS1770GAIN_MODE_ALBUM_TAGS            16
+struct bs1770gain_print_vmt {
+  const char *name;
+
+  struct {
+    void (*head)(bs1770gain_print_t *p);
+    FILE *(*file)(bs1770gain_print_t *p);
+    void (*tail)(bs1770gain_print_t *p);
+  } session;
+
+  struct {
+    void (*head)(bs1770gain_print_t *p, bs1770gain_album_t *a,
+        const char *ibasename);
+    void (*tail)(bs1770gain_print_t *p);
+  } album;
+
+  struct {
+    void (*head)(bs1770gain_print_t *p, bs1770gain_track_t *t);
+    void (*body)(bs1770gain_print_t *p, ffsox_aggregate_t *aggregate,
+        const bs1770gain_options_t *options);
+    void (*tail)(bs1770gain_print_t *p);
+  } track;
+};
+
+struct bs1770gain_print {
+  const bs1770gain_print_vmt_t *vmt;
+  FILE *f;
+  bs1770gain_album_t *a;
+  bs1770gain_track_t *t;
+};
+
+void bs1770gain_print_classic(bs1770gain_print_t *p, FILE *f);
+void bs1770gain_print_xml(bs1770gain_print_t *p, FILE *f);
+
+///////////////////////////////////////////////////////////////////////////////
+#define BS1770GAIN_MODE_APPLY                 (1<<0)
+#define BS1770GAIN_MODE_RG_TAGS               (1<<1)
+#define BS1770GAIN_MODE_BWF_TAGS              (1<<2)
+#define BS1770GAIN_MODE_TRACK_TAGS            (1<<3)
+#define BS1770GAIN_MODE_ALBUM_TAGS            (1<<4)
 
 #define BS1770GAIN_MODE_RG_BWF_TAGS \
     (BS1770GAIN_MODE_RG_TAGS|BS1770GAIN_MODE_BWF_TAGS)
@@ -63,20 +102,20 @@ double bs1770gain_aggregate_get_loudness(const ffsox_aggregate_t *aggregate,
     (BS1770GAIN_MODE_TRACK_TAGS|BS1770GAIN_MODE_ALBUM_TAGS)
 
 #define BS1770GAIN_IS_MODE_RG_TAGS(mode) \
-	(0!=(BS1770GAIN_MODE_RG_TAGS&(mode)))
+    (0!=(BS1770GAIN_MODE_RG_TAGS&(mode)))
 #define BS1770GAIN_IS_MODE_BWF_TAGS(mode) \
-	(0!=(BS1770GAIN_MODE_BWF_TAGS&(mode)))
+    (0!=(BS1770GAIN_MODE_BWF_TAGS&(mode)))
 #define BS1770GAIN_IS_MODE_APPLY(mode) \
-	(0!=(BS1770GAIN_MODE_APPLY&(mode)))
+    (0!=(BS1770GAIN_MODE_APPLY&(mode)))
 #define BS1770GAIN_IS_MODE_TRACK_TAGS(mode) \
-	(0!=(BS1770GAIN_MODE_TRACK_TAGS&(mode)))
+    (0!=(BS1770GAIN_MODE_TRACK_TAGS&(mode)))
 #define BS1770GAIN_IS_MODE_ALBUM_TAGS(mode) \
-	(0!=(BS1770GAIN_MODE_ALBUM_TAGS&(mode)))
+    (0!=(BS1770GAIN_MODE_ALBUM_TAGS&(mode)))
 
 #define BS1770GAIN_IS_MODE_RG_BWF_TAGS(mode) \
-	(0!=(BS1770GAIN_MODE_RG_BWF_TAGS&(mode)))
+    (0!=(BS1770GAIN_MODE_RG_BWF_TAGS&(mode)))
 #define BS1770GAIN_IS_MODE_TRACK_ALBUM_TAGS(mode) \
-	(0!=(BS1770GAIN_MODE_TRACK_ALBUM_TAGS&(mode)))
+    (0!=(BS1770GAIN_MODE_TRACK_ALBUM_TAGS&(mode)))
 
 // *must* begin with 0 (defines default)
 #define BS1770GAIN_METHOD_MOMENTARY_MEAN      0
@@ -106,7 +145,8 @@ struct bs1770gain_block_options {
 };
 
 struct bs1770gain_options {
-  FILE *f;
+  bs1770gain_print_t p;
+  int xml;
   const char *unit;
   double level;
   double preamp;
@@ -115,12 +155,10 @@ struct bs1770gain_options {
   int64_t duration;
   int audio;
   int video;
-  int flags;
+  int aggregate;
   bs1770gain_block_options_t momentary;
   bs1770gain_block_options_t shortterm;
-  int truepeak;
-  int samplepeak;
-  int mono2stereo;
+  int stereo;
   int mode;
   int method;
   int extensions;
@@ -130,6 +168,9 @@ struct bs1770gain_options {
   const char *format;
   const char *video_ext;
   const char *audio_ext;
+#if defined (BS1770GAIN_TAG_PREFIX) // {
+  const char *tag_prefix;
+#endif // }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -138,7 +179,7 @@ struct bs1770gain_tag {
   char val[32];
 };
 
-extern bs1770gain_tag_t bs1770gain_tags[];
+//extern bs1770gain_tag_t bs1770gain_tags[];
 
 ///////////////////////////////////////////////////////////////////////////////
 #define BS1770GAIN_TREE_STATE_INV   0
@@ -180,11 +221,11 @@ bs1770gain_tree_t *bs1770gain_tree_init(bs1770gain_tree_t *tree,
     const bs1770gain_tree_t *parent);
 
 int bs1770gain_tree_analyze(bs1770gain_tree_t *tree, const char *odirname,
-    const bs1770gain_options_t *options);
+    bs1770gain_options_t *options);
 int bs1770gain_tree_track(bs1770gain_tree_t *tree, bs1770gain_album_t *album,
-    const bs1770gain_options_t *options);
+    bs1770gain_options_t *options);
 int bs1770gain_tree_album(const bs1770gain_tree_t *root, const char *odirname,
-    const bs1770gain_options_t *options);
+    bs1770gain_options_t *options);
 
 int bs1770gain_tree_stat(bs1770gain_tree_t *tree, char *path,
     const bs1770gain_options_t *options);
