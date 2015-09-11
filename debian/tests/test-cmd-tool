@@ -35,6 +35,9 @@ test_on_file() {
     $BS1770GAIN $file -a -o $WORKDIR/tmp/test2 
     for f in $WORKDIR/tmp/test2/*; do $BS1770GAIN $f; done
 
+    $BS1770GAIN $file -a -o $WORKDIR/tmp/test3 
+    for f in $WORKDIR/tmp/test3/*; do $BS1770GAIN --xml $f; done
+
     rm -rf $WORKDIR/tmp
 }
 
