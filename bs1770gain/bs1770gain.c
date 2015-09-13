@@ -47,10 +47,10 @@
 void bs1770gain_usage(char **argv, int code)
 {
 #if defined (PACKAGE_VERSION) // {
-  fprintf(stderr,"BS1770GAIN %s, Copyright (C) Peter Belkner 2014, 2015.\n",
+  fprintf(stderr,"BS1770GAIN %s, Copyright (C) Peter Belkner 2014-2015.\n",
       PACKAGE_VERSION);
 #else // } {
-  fprintf(stderr,"BS1770GAIN, Copyright (C) Peter Belkner 2014, 2015.\n");
+  fprintf(stderr,"BS1770GAIN, Copyright (C) Peter Belkner 2014-2015.\n");
 #endif // }
 #if defined (PACKAGE_URL) // {
   fprintf(stderr,"%s\n",PACKAGE_URL);
@@ -124,7 +124,7 @@ void bs1770gain_usage(char **argv, int code)
   fprintf(stderr," --video <index>:  select video index (corresponds to\n"
       "   [0:<index>] in FFmpeg listing, cf. -l/--list option)\n");
   fprintf(stderr," --stereo:  convert to stereo\n");
-  fprintf(stderr," --drc <drc>:  set AC3 dynamic range compression (DRC)\n");
+  fprintf(stderr," --drc <float>:  set AC3 dynamic range compression (DRC)\n");
   fprintf(stderr," --extension <extension>:  enable extension out of\n"
       "   \"rename\":  rename files according to TITLE tag\n"
       "   \"csv\":  read metadata from per-folder CSV file \"folder.csv\"\n"

@@ -35,6 +35,7 @@ void bs1770gain_print_xml(bs1770gain_print_t *p, FILE *f)
 static void session_head(bs1770gain_print_t *p)
 {
   fprintf(p->f,"<bs1770gain>\n");
+  fflush(p->f);
 }
 
 static FILE *session_file(bs1770gain_print_t *p)
@@ -45,6 +46,7 @@ static FILE *session_file(bs1770gain_print_t *p)
 static void session_tail(bs1770gain_print_t *p)
 {
   fprintf(p->f,"</bs1770gain>\n");
+  fflush(p->f);
 }
 
 ////////
@@ -57,12 +59,15 @@ static void album_head(bs1770gain_print_t *p, bs1770gain_album_t *a,
     fprintf(p->f,"  <album>\n");
   else
     fprintf(p->f,"  <album folder=\"%s\">\n",ibasename);
+
+  fflush(p->f);
 }
 
 static void album_tail(bs1770gain_print_t *p)
 {
   p->a=NULL;
   fprintf(p->f,"  </album>\n");
+  fflush(p->f);
 }
 
 ////////
@@ -76,6 +81,8 @@ static void track_head(bs1770gain_print_t *p, bs1770gain_track_t *t)
     fprintf(p->f,"    <track total=\"%d\" number=\"%d\" file=\"%s\">\n",
         p->a->n,t->n,pbu_basename(t->ipath));
   }
+
+  fflush(p->f);
 }
 
 static void track_body(bs1770gain_print_t *p, aggregate_t *aggregate,
@@ -138,13 +145,16 @@ static void track_body(bs1770gain_print_t *p, aggregate_t *aggregate,
   if (0!=(flags&AGGREGATE_TRUEPEAK)) {
     q=aggregate->truepeak;
     db=LIB1770_Q2DB(q);
-    fprintf(f,"      <true-peak tpfs=\"%.1f\" factor=\" %f\" />\n",db,q);
+    fprintf(f,"      <true-peak tpfs=\"%.1f\" factor=\"%f\" />\n",db,q);
   }
+
+  fflush(p->f);
 }
 
 static void track_tail(bs1770gain_print_t *p)
 {
   fprintf(p->f,p->t?"    </track>\n":"    </summary>\n");
+  fflush(p->f);
   p->t=NULL;
 }
 
