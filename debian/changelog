@@ -1,4 +1,4 @@
-bs1770gain (0.4.6~beta2-1) UNRELEASED; urgency=medium
+bs1770gain (0.4.6-1) UNRELEASED; urgency=medium
 
   * New upstream version.
     - Fixes incorrect output on archs where clock_t is not
