@@ -120,6 +120,7 @@ static void album_head(bs1770gain_print_t *p, bs1770gain_album_t *a,
 
 static void album_tail(bs1770gain_print_t *p)
 {
+  fprintf(p->f,"done.\n");
   p->a=NULL;
 }
 

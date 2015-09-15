@@ -10,6 +10,11 @@ CFLAGS+=-Wstrict-prototypes
 #CFLAGS+=-Wmissing-declarations
 #CFLAGS+=-Wmissing-prototypes
 
+#CFLAGS+=-g
+#CFLAGS+=-ggdb
+#LDFLAGS+=-static-libgcc
+#LDFLAGS+=-static-libstdc++
+
 $(libpbutil_a_OBJECTS): $(CONFIG_HEADER)
 
 noinst_LIBRARIES=libpbutil.a

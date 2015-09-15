@@ -12,6 +12,11 @@ CFLAGS+=-Wstrict-prototypes
 
 CPPFLAGS+=-I$(top_srcdir)/libpbutil
 
+#CFLAGS+=-g
+#CFLAGS+=-ggdb
+#LDFLAGS+=-static-libgcc
+#LDFLAGS+=-static-libstdc++
+
 $(libffsox_2_a_OBJECTS): $(CONFIG_HEADER)
 $(libffsox_2_a_OBJECTS): $(top_srcdir)/libpbutil/pbutil.h
 $(libffsox_2_a_OBJECTS): $(top_srcdir)/libpbutil/pbutil_priv.h

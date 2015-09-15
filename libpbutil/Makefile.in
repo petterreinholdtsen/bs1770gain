@@ -476,6 +476,11 @@ uninstall-am:
 #CFLAGS+=-Wmissing-declarations
 #CFLAGS+=-Wmissing-prototypes
 
+#CFLAGS+=-g
+#CFLAGS+=-ggdb
+#LDFLAGS+=-static-libgcc
+#LDFLAGS+=-static-libstdc++
+
 $(libpbutil_a_OBJECTS): $(CONFIG_HEADER)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

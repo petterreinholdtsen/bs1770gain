@@ -26,7 +26,7 @@
 # AC_CHECK_HEADER (header-file, [action-if-found], [action-if-not-found], [includes = `default-includes'])
 # AC_CHECK_LIB (library, function, [action-if-found], [action-if-not-found], [other-libraries])
 
-AC_INIT([bs1770gain], [0.4.6], [pbelkner@users.sf.net], [], [http://bs1770gain.sourceforge.net/])
+AC_INIT([bs1770gain], [0.4.7], [pbelkner@users.sf.net], [], [http://bs1770gain.sourceforge.net/])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_PROG_CC
 AC_PROG_RANLIB

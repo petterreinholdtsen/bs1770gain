@@ -118,6 +118,7 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
       ac.momentary.ms=options->momentary.ms;
       ac.momentary.partition=options->momentary.partition;
       ac.shortterm.ms=options->shortterm.ms;
+      ac.shortterm.partition=options->shortterm.partition;
       ac.f=f;
       ac.dump=0;
 
@@ -125,11 +126,9 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
         fprintf(f,"Error gathering track statistics.\n");
         goto analyze;
       }
-      else {
-        p->vmt->track.body(p,&track->aggregate,options);
-        ffsox_aggregate_merge(&album->aggregate,&track->aggregate);
-      }
 
+      p->vmt->track.body(p,&track->aggregate,options);
+      ffsox_aggregate_merge(&album->aggregate,&track->aggregate);
       p->vmt->track.tail(p);
     }
 
