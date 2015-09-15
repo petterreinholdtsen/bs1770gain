@@ -24,8 +24,9 @@ lib1770_block_t *lib1770_block_new(double samplerate, double ms,
 {
   lib1770_block_t *block;
 
+  LIB1770_GOTO(0==partition,"missing partition",partition);
   block=LIB1770_CALLOC(1,(sizeof *block)+LIB1770_AGG_BLOCK_SIZE(partition));
-  LIB1770_GOTO(NULL==block,"allocation bs.1770 block",block);
+  LIB1770_GOTO(NULL==block,"allocating bs.1770 block",block);
   block->next=NULL;
   block->stats=NULL;
 
@@ -49,6 +50,7 @@ lib1770_block_t *lib1770_block_new(double samplerate, double ms,
   return block;
   //LIB1770_FREE(block);
 block:
+partition:
   return NULL;
 }
 

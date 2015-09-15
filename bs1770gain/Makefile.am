@@ -16,6 +16,11 @@ CPPFLAGS+=-I$(top_srcdir)/libpbutil
 CPPFLAGS+=-I$(top_srcdir)/lib1770-2
 CPPFLAGS+=-I$(top_srcdir)/libffsox-2
 
+#CFLAGS+=-g
+#CFLAGS+=-ggdb
+#LDFLAGS+=-static-libgcc
+#LDFLAGS+=-static-libstdc++
+
 FFMPEG_PREFIX=@FFMPEG_PREFIX@
 SOX_PREFIX=@SOX_PREFIX@
 
