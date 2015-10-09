@@ -1,4 +1,4 @@
-bs1770gain (0.4.7-2) UNRELEASED; urgency=medium
+bs1770gain (0.4.7-2) unstable; urgency=medium
 
   * Fix build problem with the current ffmpeg dev packages.
     The libavformat-ffmpeg-dev package is gone, replaced by
@@ -6,7 +6,7 @@ bs1770gain (0.4.7-2) UNRELEASED; urgency=medium
     a version newer than the old non-ffmpeg libavformat-dev.
     (Closes: #801286)
 
- -- Petter Reinholdtsen <pere@debian.org>  Fri, 09 Oct 2015 13:58:33 +0200
+ -- Petter Reinholdtsen <pere@debian.org>  Fri, 09 Oct 2015 13:59:32 +0200
 
 bs1770gain (0.4.7-1) unstable; urgency=low
 
