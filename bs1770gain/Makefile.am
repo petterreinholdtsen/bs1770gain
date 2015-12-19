@@ -20,6 +20,9 @@ CPPFLAGS+=-I$(top_srcdir)/libffsox-2
 #CFLAGS+=-ggdb
 #LDFLAGS+=-static-libgcc
 #LDFLAGS+=-static-libstdc++
+if WIN32
+LDFLAGS+=-municode
+endif
 
 FFMPEG_PREFIX=@FFMPEG_PREFIX@
 SOX_PREFIX=@SOX_PREFIX@

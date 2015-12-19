@@ -19,6 +19,8 @@
  */
 #include <bs1770gain_priv.h>
 
+#define DBFMT "%.2f"
+
 ///////////////////////////////////////////////////////////////////////////////
 static const bs1770gain_print_vmt_t *get_vmt(void);
 
@@ -90,19 +92,29 @@ static void track_body(bs1770gain_print_t *p, aggregate_t *aggregate,
 {
   int flags=aggregate->flags;
   FILE *f=p->f;
-  double level=options->preamp+options->level;
+  double norm=options->preamp+options->norm;
   double q,db;
 
   ////////
   if (0!=(flags&AGGREGATE_MOMENTARY_MEAN)) {
     db=lib1770_stats_get_mean(aggregate->momentary,
         options->momentary.mean_gate);
-    fprintf(f,"      <integrated lufs=\"%.1f\" lu=\"%.1f\" />\n",db,level-db);
+#if defined (DBFMT) // {
+    fprintf(f,"      <integrated lufs=\"" DBFMT "\" lu=\"" DBFMT "\" />\n",
+        db,norm-db);
+#else // } {
+    fprintf(f,"      <integrated lufs=\"%.1f\" lu=\"%.1f\" />\n",db,norm-db);
+#endif // }
   }
 
   if (0!=(flags&AGGREGATE_MOMENTARY_MAXIMUM)) {
     db=lib1770_stats_get_max(aggregate->momentary);
-    fprintf(f,"      <momentary lufs=\"%.1f\" lu=\"%.1f\" />\n",db,level-db);
+#if defined (DBFMT) // {
+    fprintf(f,"      <momentary lufs=\"" DBFMT "\" lu=\"" DBFMT "\" />\n",
+        db,norm-db);
+#else // } {
+    fprintf(f,"      <momentary lufs=\"%.1f\" lu=\"%.1f\" />\n",db,norm-db);
+#endif // }
   }
 
   if (0!=(flags&AGGREGATE_MOMENTARY_RANGE)) {
@@ -110,21 +122,35 @@ static void track_body(bs1770gain_print_t *p, aggregate_t *aggregate,
         options->momentary.range_gate,
         options->momentary.range_lower_bound,
         options->momentary.range_upper_bound);
+#if defined (DBFMT) // {
+    fprintf(f,"      <momentary-range lufs=\"" DBFMT "\" />\n",db);
+#else // } {
     fprintf(f,"      <momentary-range lufs=\"%.1f\" />\n",db);
+#endif // }
   }
 
   ////////
   if (0!=(flags&AGGREGATE_SHORTTERM_MEAN)) {
     db=lib1770_stats_get_mean(aggregate->shortterm,
         options->shortterm.mean_gate);
+#if defined (DBFMT) // {
+    fprintf(f,"      <shortterm-mean lufs=\"" DBFMT "\" lu=\"" DBFMT "\" />\n",
+        db,norm-db);
+#else // } {
     fprintf(f,"      <shortterm-mean lufs=\"%.1f\" lu=\"%.1f\" />\n",
-        db,level-db);
+        db,norm-db);
+#endif // }
   }
 
   if (0!=(flags&AGGREGATE_SHORTTERM_MAXIMUM)) {
     db=lib1770_stats_get_max(aggregate->shortterm);
+#if defined (DBFMT) // {
+    fprintf(f,"      <shortterm-maximum lufs=\"" DBFMT "\""
+        " lu=\"" DBFMT "\" />\n",db,norm-db);
+#else // } {
     fprintf(f,"      <shortterm-maximum lufs=\"%.1f\" lu=\"%.1f\" />\n",
-        db,level-db);
+        db,norm-db);
+#endif // }
   }
 
   if (0!=(flags&AGGREGATE_SHORTTERM_RANGE)) {
@@ -132,20 +158,32 @@ static void track_body(bs1770gain_print_t *p, aggregate_t *aggregate,
         options->shortterm.range_gate,
         options->shortterm.range_lower_bound,
         options->shortterm.range_upper_bound);
+#if defined (DBFMT) // {
+    fprintf(f,"      <range lufs=\"" DBFMT "\" />\n",db);
+#else // } {
     fprintf(f,"      <range lufs=\"%.1f\" />\n",db);
+#endif // }
   }
 
   ////////
   if (0!=(flags&AGGREGATE_SAMPLEPEAK)) {
     q=aggregate->samplepeak;
     db=LIB1770_Q2DB(q);
+#if defined (DBFMT) // {
+    fprintf(f,"      <sample-peak spfs=\"" DBFMT "\" factor=\"%f\" />\n",db,q);
+#else // } {
     fprintf(f,"      <sample-peak spfs=\"%.1f\" factor=\"%f\" />\n",db,q);
+#endif // }
   }
 
   if (0!=(flags&AGGREGATE_TRUEPEAK)) {
     q=aggregate->truepeak;
     db=LIB1770_Q2DB(q);
+#if defined (DBFMT) // {
+    fprintf(f,"      <true-peak tpfs=\"" DBFMT "\" factor=\"%f\" />\n",db,q);
+#else // } {
     fprintf(f,"      <true-peak tpfs=\"%.1f\" factor=\"%f\" />\n",db,q);
+#endif // }
   }
 
   fflush(p->f);

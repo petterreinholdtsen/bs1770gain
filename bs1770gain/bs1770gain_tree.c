@@ -21,6 +21,14 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#if defined (_WIN32) // {
+#define CLOSEDIR(d)   _wclosedir(d)
+#define READDIR(d)    _wreaddir(d)
+#else // } {
+#define CLOSEDIR(d)   closedir(d)
+#define READDIR(d)    readdir(d)
+#endif // }
+
 ///////////////////////////////////////////////////////////////////////////////
 bs1770gain_tree_t *bs1770gain_tree_init(bs1770gain_tree_t *tree,
     const bs1770gain_tree_vmt_t *vmt, bs1770gain_tree_t *root,
@@ -412,42 +420,92 @@ bs1770gain_tree_t *bs1770gain_tree_dir_init(bs1770gain_tree_t *tree,
     bs1770gain_tree_t *cli, const bs1770gain_tree_t *parent,
     const char *root)
 {
+#if defined (_WIN32) // {
+  wchar_t *wroot;
+#endif // }
+
   bs1770gain_tree_init(tree,bs1770gain_tree_dir_vmt(),cli,parent);
   tree->dir.root=root;
   tree->dir.path=NULL;
 
-  if (NULL==(tree->dir.d=opendir(root)))
+#if defined (_WIN32) // {
+  if (NULL==(wroot=pbu_s2w(root))) {
+    DMESSAGE("converting string");
+    goto s2w;
+  }
+
+  if (NULL==(tree->dir.d=_wopendir(wroot))) {
+    DMESSAGE("opening directory");
     goto dir;
+  }
+
+  free(wroot);
+#else // } {
+  if (NULL==(tree->dir.d=opendir(root))) {
+    DMESSAGE("opening directory");
+    goto dir;
+  }
+#endif // }
 
   return tree;
 dir:
+#if defined (_WIN32) // {
+  free(wroot);
+s2w:
+#endif // }
   return NULL;
 }
 
 void bs1770gain_tree_dir_cleanup(bs1770gain_tree_t *tree)
 {
   bs1770gain_tree_free_path(tree);
-  closedir(tree->dir.d);
+  CLOSEDIR(tree->dir.d);
 }
 
 int bs1770gain_tree_dir_next(bs1770gain_tree_t *tree,
     const bs1770gain_options_t *options)
 {
+#if defined (_WIN32) // {
+  struct _wdirent *e;
+#else // } {
   struct dirent *e;
+#endif // }
+  char *d_name;
 
   bs1770gain_tree_free_path(tree);
 
-  while (NULL!=(e=readdir(tree->dir.d))) {
-    if (0==strcmp(".",e->d_name)||0==strcmp("..",e->d_name))
-      continue;
-    else if (NULL==(tree->dir.path=pbu_extend_path(tree->dir.root,e->d_name)))
-      continue;
-    else if (0<bs1770gain_tree_stat(tree,tree->dir.path,options))
+  while (NULL!=(e=READDIR(tree->dir.d))) {
+#if defined (_WIN32) // {
+    if (NULL==(d_name=pbu_w2s(e->d_name))) {
+      DMESSAGE("converting string");
+      goto invalid;
+    }
+#else // } {
+    d_name=e->d_name;
+#endif // }
+    if (0==strcmp(".",d_name)||0==strcmp("..",d_name))
+      goto next;
+    else if (NULL==(tree->dir.path=pbu_extend_path(tree->dir.root,d_name)))
+      goto next;
+    else if (0<bs1770gain_tree_stat(tree,tree->dir.path,options)) {
+#if defined (_WIN32) // {
+      free(d_name);
+#endif // }
       return tree->state;
+    }
 
     bs1770gain_tree_free_path(tree);
+  next:
+#if defined (_WIN32) // {
+    free(d_name);
+#else // } {
+    ;
+#endif // }
   }
 
+#if defined (_WIN32) // {
+invalid:
+#endif // }
   return BS1770GAIN_TREE_STATE_INV;
 }
 

@@ -188,6 +188,7 @@ wchar_t *pbu_wcstok_r(wchar_t *str, const wchar_t *delim, wchar_t **saveptr);
 char *pbu_strtok_r(char *str, const char *delim, char **saveptr);
 int pbu_copy_file(const wchar_t *src, const wchar_t *dst);
 wchar_t *pbu_s2w(const char *s);
+char *pbu_w2s(const wchar_t *w);
 const char *pbu_message(const char *format, ...);
 #else // } {
 int pbu_copy_file(const char *src, const char *dst);

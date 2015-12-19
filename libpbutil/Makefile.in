@@ -68,8 +68,8 @@ am_libpbutil_a_OBJECTS = pbu_basename.$(OBJEXT) \
 	pbu_copy_file.$(OBJEXT) pbu_ext.$(OBJEXT) \
 	pbu_extend_path.$(OBJEXT) pbu_list.$(OBJEXT) \
 	pbu_malloc.$(OBJEXT) pbu_mkdir.$(OBJEXT) pbu_msvcrt.$(OBJEXT) \
-	pbu_s2w.$(OBJEXT) pbu_same_file.$(OBJEXT) pbu_strtok.$(OBJEXT) \
-	pbu_trace.$(OBJEXT) pbu_wcstok.$(OBJEXT)
+	pbu_s2w.$(OBJEXT) pbu_w2s.$(OBJEXT) pbu_same_file.$(OBJEXT) \
+	pbu_strtok.$(OBJEXT) pbu_trace.$(OBJEXT) pbu_wcstok.$(OBJEXT)
 libpbutil_a_OBJECTS = $(am_libpbutil_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -195,7 +195,7 @@ noinst_LIBRARIES = libpbutil.a
 #libpbutil_a_SOURCES+=pbu_dirent.c
 libpbutil_a_SOURCES = pbutil.h pbutil_priv.h pbu_basename.c \
 	pbu_copy_file.c pbu_ext.c pbu_extend_path.c pbu_list.c \
-	pbu_malloc.c pbu_mkdir.c pbu_msvcrt.c pbu_s2w.c \
+	pbu_malloc.c pbu_mkdir.c pbu_msvcrt.c pbu_s2w.c pbu_w2s.c \
 	pbu_same_file.c pbu_strtok.c pbu_trace.c pbu_wcstok.c
 all: all-am
 
@@ -257,6 +257,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pbu_same_file.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pbu_strtok.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pbu_trace.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pbu_w2s.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pbu_wcstok.Po@am__quote@
 
 .c.o:
