@@ -137,7 +137,7 @@ void bs1770gain_usage(char **argv, int code)
       "   \"info\", \"verbose\", \"debug\"\n");
   fprintf(stderr," --xml:  print results in xml format\n");
   fprintf(stderr," --time:  print out duration of program invocation\n");
-  //fprintf(stderr," --level:\n");
+  fprintf(stderr," --norm <float>:  norm loudness to float.\n");
   //fprintf(stderr," --preamp <preamp>:\n");
   //fprintf(stderr," --stero:\n");
   //fprintf(stderr," --rg-tags:\n");
@@ -188,6 +188,9 @@ void bs1770gain_usage(char **argv, int code)
   /////////////////////////////////////////////////////////////////////////////
   fprintf(stderr,"\n");
   fprintf(stderr,"Command line arguments can appear in any order.\n");
+#if defined (_WIN32) // {
+  free(argv);
+#endif // }
   exit(code);
 }
 
@@ -199,7 +202,7 @@ enum {
   DRC,
   FORMAT,
   LOGLEVEL,
-  LEVEL,
+  NORM,
   PREAMP,
   ////////////////
   TIME,
@@ -262,7 +265,7 @@ static struct option bs1770gain_opts[]={
   { "extension",required_argument,NULL,EXTENSION },
   { "format",required_argument,NULL,FORMAT },
   { "loglevel",required_argument,NULL,LOGLEVEL },
-  { "level",required_argument,NULL,LEVEL },
+  { "norm",required_argument,NULL,NORM },
   { "preamp",required_argument,NULL,PREAMP },
   { "video",required_argument,NULL,VIDEO },
   ////
@@ -318,8 +321,67 @@ static struct option bs1770gain_opts[]={
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-int main(int argc, char **argv)
+#if defined (_WIN32) // {
+static char **bs1770gain_wargv2argv(int argc, wchar_t **wargv)
 {
+  size_t size;
+  wchar_t **rp,**mp1;
+  char **argv,**wp1,*wp2,*mp2;
+
+  mp1=wargv+argc;
+  size=0;
+
+  for (rp=wargv;rp<mp1;++rp) {
+    size+=WideCharToMultiByte(
+      CP_UTF8,    // _In_      UINT    CodePage,
+      0,          // _In_      DWORD   dwFlags,
+      *rp,        // _In_      LPCWSTR lpWideCharStr,
+      -1,         // _In_      int     cchWideChar,
+      NULL,       // _Out_opt_ LPSTR   lpMultiByteStr,
+      0,          // _In_      int     cbMultiByte,
+      NULL,       // _In_opt_  LPCSTR  lpDefaultChar,
+      NULL        // _Out_opt_ LPBOOL  lpUsedDefaultChar
+    );
+  }
+
+
+  if (NULL==(argv=malloc((argc*sizeof *argv)+size))) {
+    DMESSAGE("allocating argv");
+    goto malloc;
+  }
+
+  wp1=argv;
+  wp2=(char *)(argv+argc);
+  mp2=wp2+size;
+
+  for (rp=wargv;rp<mp1;++rp) {
+    *wp1++=wp2;
+
+    wp2+=WideCharToMultiByte(
+      CP_UTF8,    // _In_      UINT    CodePage,
+      0,          // _In_      DWORD   dwFlags,
+      *rp,        // _In_      LPCWSTR lpWideCharStr,
+      -1,         // _In_      int     cchWideChar,
+      wp2,        // _Out_opt_ LPSTR   lpMultiByteStr,
+      mp2-wp2,    // _In_      int     cbMultiByte,
+      NULL,       // _In_opt_  LPCSTR  lpDefaultChar,
+      NULL        // _Out_opt_ LPBOOL  lpUsedDefaultChar
+    );
+  }
+
+  return argv;
+malloc:
+  return NULL;
+}
+
+int wmain(int argc, wchar_t **wargv)
+#else // } {
+int main(int argc, char **argv)
+#endif // }
+{
+#if defined (_WIN32) // {
+  char **argv;
+#endif // }
   options_t options;
   FILE *f=stdout;
   tree_t root;
@@ -329,6 +391,13 @@ int main(int argc, char **argv)
   double overlap;
   double t1,t2;
   int c;
+
+#if defined (_WIN32) // {
+  if (NULL==(argv=bs1770gain_wargv2argv(argc,wargv))) {
+    DMESSAGE("converting arguments");
+    goto argv;
+  }
+#endif // }
 
   if (1==argc)
     bs1770gain_usage(argv,-1);
@@ -340,7 +409,7 @@ int main(int argc, char **argv)
   options.unit="LU";
   options.audio=-1;
   options.video=-1;
-  options.level=-23.0;
+  options.norm=-23.0;
   options.audio_ext="flac";
   options.video_ext="mkv";
 #if defined (BS1770GAIN_TAG_PREFIX) // {
@@ -502,21 +571,21 @@ int main(int argc, char **argv)
       else
         bs1770gain_usage(argv,-1);
       break;
-    case LEVEL:
-      options.level=atof(optarg);
+    case NORM:
+      options.norm=atof(optarg);
       break;
     case PREAMP:
       options.preamp=atof(optarg);
       break;
     /// without flag //////////////////////////////////////////////////////////
     case ATSC:
-      options.level=-24.0;
+      options.norm=-24.0;
       break;
     case EBU:
-      options.level=-23.0;
+      options.norm=-23.0;
       break;
     case REPLAYGAIN:
-      options.level=-18.0;
+      options.norm=-18.0;
       options.unit="dB";
       break;
     case RG_TAGS:
@@ -697,6 +766,10 @@ dynload:
 file:
   TRACE_POP();
   PBU_HEAP_PRINT();
+#if defined (_WIN32) // {
+  free(argv);
+argv:
+#endif // }
 
   return 0;
 }

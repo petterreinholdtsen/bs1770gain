@@ -19,6 +19,8 @@
  */
 #include <bs1770gain_priv.h>
 
+#define DBFMT "%.2f"
+
 ///////////////////////////////////////////////////////////////////////////////
 static const bs1770gain_print_vmt_t *get_vmt(void);
 
@@ -143,7 +145,7 @@ static void track_body(bs1770gain_print_t *p, aggregate_t *aggregate,
 {
   int flags=aggregate->flags;
   FILE *f=p->f;
-  double level=options->preamp+options->level;
+  double norm=options->preamp+options->norm;
   int width=bs1770gain_print_width(flags);
   double q,db;
 
@@ -153,16 +155,24 @@ static void track_body(bs1770gain_print_t *p, aggregate_t *aggregate,
   if (0!=(flags&AGGREGATE_MOMENTARY_MEAN)) {
     db=lib1770_stats_get_mean(aggregate->momentary,
         options->momentary.mean_gate);
-    //fprintf(f,"       integrated:  %.1f LUFS / %.1f LU\n",db,level-db);
+    //fprintf(f,"       integrated:  %.1f LUFS / %.1f LU\n",db,norm-db);
     bs1770gain_print_label("integrated",width,f);
-    fprintf(f,"%.1f LUFS / %.1f LU\n",db,level-db);
+#if defined (DBFMT) // {
+    fprintf(f,DBFMT " LUFS / " DBFMT " LU\n",db,norm-db);
+#else // } {
+    fprintf(f,"%.1f LUFS / %.1f LU\n",db,norm-db);
+#endif // }
   }
 
   if (0!=(flags&AGGREGATE_MOMENTARY_MAXIMUM)) {
     db=lib1770_stats_get_max(aggregate->momentary);
-    //fprintf(f,"        momentary:  %.1f LUFS / %.1f LU\n",db,level-db);
+    //fprintf(f,"        momentary:  %.1f LUFS / %.1f LU\n",db,norm-db);
     bs1770gain_print_label("momentary maximum",width,f);
-    fprintf(f,"%.1f LUFS / %.1f LU\n",db,level-db);
+#if defined (DBFMT) // {
+    fprintf(f,DBFMT " LUFS / " DBFMT " LU\n",db,norm-db);
+#else // } {
+    fprintf(f,"%.1f LUFS / %.1f LU\n",db,norm-db);
+#endif // }
   }
 
   if (0!=(flags&AGGREGATE_MOMENTARY_RANGE)) {
@@ -172,23 +182,35 @@ static void track_body(bs1770gain_print_t *p, aggregate_t *aggregate,
         options->momentary.range_upper_bound);
     //fprintf(f,"            range:  %.1f LUFS\n",db);
     bs1770gain_print_label("momentary range",width,f);
+#if defined (DBFMT) // {
+    fprintf(f,DBFMT " LUFS\n",db);
+#else // } {
     fprintf(f,"%.1f LUFS\n",db);
+#endif // }
   }
 
   ////////
   if (0!=(flags&AGGREGATE_SHORTTERM_MEAN)) {
     db=lib1770_stats_get_mean(aggregate->shortterm,
         options->shortterm.mean_gate);
-    //fprintf(f,"       integrated:  %.1f LUFS / %.1f LU\n",db,level-db);
+    //fprintf(f,"       integrated:  %.1f LUFS / %.1f LU\n",db,norm-db);
     bs1770gain_print_label("shortterm mean",width,f);
-    fprintf(f,"%.1f LUFS / %.1f LU\n",db,level-db);
+#if defined (DBFMT) // {
+    fprintf(f,DBFMT " LUFS / " DBFMT " LU\n",db,norm-db);
+#else // } {
+    fprintf(f,"%.1f LUFS / %.1f LU\n",db,norm-db);
+#endif // }
   }
 
   if (0!=(flags&AGGREGATE_SHORTTERM_MAXIMUM)) {
     db=lib1770_stats_get_max(aggregate->shortterm);
-    //fprintf(f,"       shortterm:  %.1f LUFS / %.1f LU\n",db,level-db);
+    //fprintf(f,"       shortterm:  %.1f LUFS / %.1f LU\n",db,norm-db);
     bs1770gain_print_label("shortterm maximum",width,f);
-    fprintf(f,"%.1f LUFS / %.1f LU\n",db,level-db);
+#if defined (DBFMT) // {
+    fprintf(f,DBFMT " LUFS / " DBFMT " LU\n",db,norm-db);
+#else // } {
+    fprintf(f,"%.1f LUFS / %.1f LU\n",db,norm-db);
+#endif // }
   }
 
   if (0!=(flags&AGGREGATE_SHORTTERM_RANGE)) {
@@ -198,7 +220,11 @@ static void track_body(bs1770gain_print_t *p, aggregate_t *aggregate,
         options->shortterm.range_upper_bound);
     //fprintf(f,"            range:  %.1f LUFS\n",db);
     bs1770gain_print_label("range",width,f);
+#if defined (DBFMT) // {
+    fprintf(f,DBFMT " LUFS\n",db);
+#else // } {
     fprintf(f,"%.1f LUFS\n",db);
+#endif // }
   }
 
   ////////
@@ -207,7 +233,11 @@ static void track_body(bs1770gain_print_t *p, aggregate_t *aggregate,
     db=LIB1770_Q2DB(q);
     //fprintf(f,"      sample peak:  %.1f SPFS / %f\n",db,q);
     bs1770gain_print_label("sample peak",width,f);
+#if defined (DBFMT) // {
+    fprintf(f,DBFMT " SPFS / %f\n",db,q);
+#else // } {
     fprintf(f,"%.1f SPFS / %f\n",db,q);
+#endif // }
   }
 
   if (0!=(flags&AGGREGATE_TRUEPEAK)) {
@@ -215,7 +245,11 @@ static void track_body(bs1770gain_print_t *p, aggregate_t *aggregate,
     db=LIB1770_Q2DB(q);
     //fprintf(f,"        true peak:  %.1f TPFS / %f\n",db,q);
     bs1770gain_print_label("true peak",width,f);
+#if defined (DBFMT) // {
+    fprintf(f,DBFMT " TPFS / %f\n",db,q);
+#else // } {
     fprintf(f,"%.1f TPFS / %f\n",db,q);
+#endif // }
   }
 }
 

@@ -148,7 +148,7 @@ struct bs1770gain_options {
   bs1770gain_print_t p;
   int xml;
   const char *unit;
-  double level;
+  double norm;
   double preamp;
   double drc;
   int64_t begin;
@@ -210,7 +210,11 @@ struct bs1770gain_tree {
 
     struct {
       const char *root;
+#if defined (_WIN32) // {
+      _WDIR *d;
+#else // } {
       DIR *d;
+#endif // }
       char *path;
     } dir;
   };

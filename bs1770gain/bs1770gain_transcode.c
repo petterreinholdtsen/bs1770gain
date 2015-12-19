@@ -23,9 +23,9 @@
 static void bs1770gain_tags_rg(tag_t *tags, const aggregate_t *track,
     const aggregate_t *album, const options_t *options)
 {
-  double db,level;
+  double db,norm;
 
-  level=options->preamp+options->level;
+  norm=options->preamp+options->norm;
 
   while (NULL!=tags->key) {
     ///////////////////////////////////////////////////////////////////////////
@@ -34,7 +34,7 @@ static void bs1770gain_tags_rg(tag_t *tags, const aggregate_t *track,
       goto next;
     }
     else if (0==strcasecmp("REPLAYGAIN_REFERENCE_LOUDNESS",tags->key)) {
-      sprintf(tags->val,"%.2f",level);
+      sprintf(tags->val,"%.2f",norm);
       goto next;
     }
 
@@ -42,7 +42,7 @@ static void bs1770gain_tags_rg(tag_t *tags, const aggregate_t *track,
     if (BS1770GAIN_IS_MODE_TRACK_TAGS(options->mode)) {
       if (0==strcasecmp("REPLAYGAIN_TRACK_GAIN",tags->key)) {
         db=bs1770gain_aggregate_get_loudness(track,options);
-        sprintf(tags->val,"%.2f %s",level-db,options->unit);
+        sprintf(tags->val,"%.2f %s",norm-db,options->unit);
         goto next;
       }
       else if (0==strcasecmp("REPLAYGAIN_TRACK_PEAK",tags->key)) {
@@ -70,7 +70,7 @@ static void bs1770gain_tags_rg(tag_t *tags, const aggregate_t *track,
     if (BS1770GAIN_IS_MODE_ALBUM_TAGS(options->mode)) {
       if (0==strcasecmp("REPLAYGAIN_ALBUM_GAIN",tags->key)) {
         db=bs1770gain_aggregate_get_loudness(album,options);
-        sprintf(tags->val,"%.2f %s",level-db,options->unit);
+        sprintf(tags->val,"%.2f %s",norm-db,options->unit);
         goto next;
       }
       else if (0==strcasecmp("REPLAYGAIN_ALBUM_PEAK",tags->key)) {
@@ -103,13 +103,13 @@ static void bs1770gain_tags_rg(tag_t *tags, const aggregate_t *track,
 static void bs1770gain_tags_bwf(tag_t *tags, const aggregate_t *aggregate,
     const options_t *options)
 {
-  double db,level;
+  double db,norm;
 
   while (NULL!=tags->key) { 
     if (0==strcasecmp("LoudnessValue",tags->key)) {
-      level=options->preamp+options->level;
+      norm=options->preamp+options->norm;
       db=bs1770gain_aggregate_get_loudness(aggregate,options);
-      sprintf(tags->val,"%d",(int)floor(100.0*(level-db)+0.5));
+      sprintf(tags->val,"%d",(int)floor(100.0*(norm-db)+0.5));
     }
     else if (0==strcasecmp("MaxTruePeakLevel",tags->key)) {
       if (0!=(aggregate->flags&AGGREGATE_TRUEPEAK))
@@ -395,7 +395,7 @@ int bs1770gain_transcode(track_t *t, options_t *options)
   }
 
   if (BS1770GAIN_IS_MODE_APPLY(options->mode)) {
-    q=options->preamp+options->level;
+    q=options->preamp+options->norm;
     q-=(1.0-options->apply)*bs1770gain_aggregate_get_loudness(&a->aggregate,
         options);
     q-=options->apply*bs1770gain_aggregate_get_loudness(&t->aggregate,

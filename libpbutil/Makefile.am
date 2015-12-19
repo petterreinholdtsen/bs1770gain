@@ -32,6 +32,7 @@ libpbutil_a_SOURCES+=pbu_malloc.c
 libpbutil_a_SOURCES+=pbu_mkdir.c
 libpbutil_a_SOURCES+=pbu_msvcrt.c
 libpbutil_a_SOURCES+=pbu_s2w.c
+libpbutil_a_SOURCES+=pbu_w2s.c
 libpbutil_a_SOURCES+=pbu_same_file.c
 libpbutil_a_SOURCES+=pbu_strtok.c
 libpbutil_a_SOURCES+=pbu_trace.c
