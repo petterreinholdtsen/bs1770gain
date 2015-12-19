@@ -1,3 +1,11 @@
+bs1770gain (0.4.8-1) unstable; urgency=medium
+
+  * New upstream version 0.4.8.
+  * Change order of avformat build dependency to prefer the ffmpeg
+    version now the primary version in Debian unstable.
+
+ -- Petter Reinholdtsen <pere@debian.org>  Sat, 19 Dec 2015 12:49:39 +0000
+
 bs1770gain (0.4.7-2) unstable; urgency=medium
 
   * Fix build problem with the current ffmpeg dev packages.
