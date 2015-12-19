@@ -1,3 +1,10 @@
+bs1770gain (0.4.8-2) unstable; urgency=medium
+
+  * Drop libavformat-ffmpeg-dev from build depends, as libavformat-dev
+    from ffmpeg is available also from backports.
+
+ -- Petter Reinholdtsen <pere@debian.org>  Sat, 19 Dec 2015 23:40:58 +0100
+
 bs1770gain (0.4.8-1) unstable; urgency=medium
 
   * New upstream version 0.4.8.
