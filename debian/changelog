@@ -1,3 +1,14 @@
+bs1770gain (0.4.9-1) unstable; urgency=medium
+
+  * New upstream version 0.4.9.
+    - Fixes build error with newer ffmpeg (Closes: #810563).
+    - Fixes build error with GCC 6 (Closes: #811955).
+  * Corrected d/watch to match new upstream file names.
+  * Updated Standards-Version from 3.9.6 to 3.9.7.
+  * Changed vcs links to more secure versions.
+
+ -- Petter Reinholdtsen <pere@debian.org>  Wed, 16 Mar 2016 11:34:12 +0100
+
 bs1770gain (0.4.8-2) unstable; urgency=medium
 
   * Drop libavformat-ffmpeg-dev from build depends, as libavformat-dev
