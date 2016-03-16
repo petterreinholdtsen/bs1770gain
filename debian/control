@@ -8,7 +8,7 @@ Build-depends: debhelper (>> 9)
  , libsox-dev
  , libavformat-dev (>= 7:2.7.0)
  , sox
-Standards-Version: 3.9.6
+Standards-Version: 3.9.7
 Homepage: http://bs1770gain.sourceforge.net/
 Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-multimedia/bs1770gain.git
 Vcs-Git: git://anonscm.debian.org/pkg-multimedia/bs1770gain.git
