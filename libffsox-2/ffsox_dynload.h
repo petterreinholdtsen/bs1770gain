@@ -35,8 +35,13 @@
 extern "C" {
 #endif
 
+///////////////////////////////////////////////////////////////////////////////
 #if defined (HAVE_FFSOX_DYNLOAD) // {
 #define FFSOX_DYNLOAD
+#endif // }
+
+#if 0 // {
+#define FFSOX_DEPRECATED_AV_FREE_PACKET
 #endif // }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,7 +58,7 @@ typedef struct ffsox_libsox ffsox_libsox_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 struct ffsox_avutil {
-#if 0 // {
+#if defined (__GNUC__) // {
   typeof (av_frame_alloc) *av_frame_alloc;
   typeof (av_frame_free) *av_frame_free;
   typeof (av_get_channel_layout_nb_channels)
@@ -116,7 +121,7 @@ struct ffsox_avutil {
 };
 
 struct ffsox_avcodec {
-#if 0 // {
+#if defined (__GNUC__) // {
   typeof (avcodec_find_decoder) *avcodec_find_decoder;
   typeof (avcodec_find_decoder_by_name) *avcodec_find_decoder_by_name;
   typeof (avcodec_find_encoder) *avcodec_find_encoder;
@@ -125,7 +130,11 @@ struct ffsox_avcodec {
   typeof (avcodec_decode_audio4) *avcodec_decode_audio4;
   typeof (avcodec_encode_audio2) *avcodec_encode_audio2;
   typeof (avcodec_decode_video2) *avcodec_decode_video2;
+#if defined (FFSOX_DEPRECATED_AV_FREE_PACKET) // {
   typeof (av_free_packet) *av_free_packet;
+#else // } {
+  typeof (av_packet_unref) *av_packet_unref;
+#endif // }
   typeof (avcodec_close) *avcodec_close;
   typeof (avcodec_copy_context) *avcodec_copy_context;
   typeof (av_packet_rescale_ts) *av_packet_rescale_ts;
@@ -142,7 +151,12 @@ struct ffsox_avcodec {
       const AVFrame *frame, int *got_packet_ptr);
   int (*avcodec_decode_video2)(AVCodecContext *avctx, AVFrame *picture,
       int *got_picture_ptr, const AVPacket *avpkt);
+#if defined (FFSOX_DEPRECATED_AV_FREE_PACKET) // {
+  attribute_deprecated
   void (*av_free_packet)(AVPacket *pkt);
+#else // } {
+  void (*av_packet_unref)(AVPacket *pkt);
+#endif // }
   int (*avcodec_close)(AVCodecContext *avctx);
   int (*avcodec_copy_context)(AVCodecContext *dest, const AVCodecContext *src);
   void (*av_packet_rescale_ts)(AVPacket *pkt, AVRational tb_src,
@@ -151,7 +165,7 @@ struct ffsox_avcodec {
 };
 
 struct ffsox_avformat {
-#if 0 // {
+#if defined (__GNUC__) // {
   typeof (av_register_all) *av_register_all;
   typeof (avformat_open_input) *avformat_open_input;
   typeof (avformat_find_stream_info) *avformat_find_stream_info;
@@ -200,7 +214,7 @@ extern ffsox_avformat_t ffsox_avformat;
 
 ///////////////////////////////////////////////////////////////////////////////
 struct ffsox_libsox {
-#if 0 // {
+#if defined (__GNUC__) // {
   typeof (sox_init) *sox_init;
   typeof (sox_quit) *sox_quit;
   typeof (sox_create_effects_chain) *sox_create_effects_chain;
@@ -310,7 +324,11 @@ extern ffsox_libsox_t ffsox_libsox;
 #define avcodec_decode_audio4 (*ffsox_avcodec.avcodec_decode_audio4)
 #define avcodec_encode_audio2 (*ffsox_avcodec.avcodec_encode_audio2)
 #define avcodec_decode_video2 (*ffsox_avcodec.avcodec_decode_video2)
+#if defined (FFSOX_DEPRECATED_AV_FREE_PACKET) // {
 #define av_free_packet (*ffsox_avcodec.av_free_packet)
+#else // } {
+#define av_packet_unref (*ffsox_avcodec.av_packet_unref)
+#endif // }
 #define avcodec_close (*ffsox_avcodec.avcodec_close)
 #define avcodec_copy_context (*ffsox_avcodec.avcodec_copy_context)
 #define av_packet_rescale_ts (*ffsox_avcodec.av_packet_rescale_ts)
@@ -327,7 +345,12 @@ int ffsox_avcodec_encode_audio2(AVCodecContext *avctx, AVPacket *avpkt,
     const AVFrame *frame, int *got_packet_ptr);
 int ffsox_avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
     int *got_picture_ptr, const AVPacket *avpkt);
+#if defined (FFSOX_DEPRECATED_AV_FREE_PACKET) // {
+attribute_deprecated
 void ffsox_av_free_packet(AVPacket *pkt);
+#else // } {
+void ffsox_av_packet_unref(AVPacket *pkt);
+#endif // }
 int ffsox_avcodec_close(AVCodecContext *avctx);
 int ffsox_avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src);
 void ffsox_av_packet_rescale_ts(AVPacket *pkt, AVRational tb_src,
@@ -342,7 +365,11 @@ void ffsox_av_packet_rescale_ts(AVPacket *pkt, AVRational tb_src,
 #define avcodec_decode_audio4 ffsox_avcodec_decode_audio4
 #define avcodec_encode_audio2 ffsox_avcodec_encode_audio2
 #define avcodec_decode_video2 ffsox_avcodec_decode_video2
+#if defined (FFSOX_DEPRECATED_AV_FREE_PACKET) // {
 #define av_free_packet ffsox_av_free_packet
+#else // } {
+#define av_packet_unref ffsox_av_packet_unref
+#endif // }
 #define avcodec_close ffsox_avcodec_close
 #define avcodec_copy_context ffsox_avcodec_copy_context
 #define av_packet_rescale_ts ffsox_av_packet_rescale_ts
