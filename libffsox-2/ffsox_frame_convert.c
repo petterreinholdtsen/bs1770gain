@@ -100,7 +100,7 @@ void ffsox_convert_int_int(uint8_t *rp, size_t rsize, uint8_t *wp,
  bits*=8; \
  bits-=1; \
  \
-  q=1.0==q?~(~0ll<<bits):q*~(~0ll<<bits); \
+  q=1.0==q?~(~0ull<<bits):q*~(~0ull<<bits); \
  \
   while (wp<mp) \
     *wp++=floor(q*(*rp++)+0.5); \
@@ -112,7 +112,7 @@ void ffsox_convert_int_int(uint8_t *rp, size_t rsize, uint8_t *wp,
  bits*=8; \
  bits-=1; \
  \
-  q/=~(~0ll<<bits); \
+  q/=~(~0ull<<bits); \
  \
   while (wp<mp) \
     *wp++=q*(*rp++); \
@@ -233,7 +233,7 @@ CONVERT_II(dbl,dbl,double,double,CONVERT_FLOAT_FLOAT_II)
  bits*=8; \
  bits-=1; \
  \
-  q=1.0==q?~(~0ll<<bits):q*~(~0ll<<bits); \
+  q=1.0==q?~(~0ull<<bits):q*~(~0ull<<bits); \
  \
   while (wp<mp) { \
     for (ch=0;ch<channels;++ch) \
@@ -247,7 +247,7 @@ CONVERT_II(dbl,dbl,double,double,CONVERT_FLOAT_FLOAT_II)
  bits*=8; \
  bits-=1; \
  \
-  q/=~(~0ll<<bits); \
+  q/=~(~0ull<<bits); \
  \
   while (wp<mp) { \
     for (ch=0;ch<channels;++ch) \

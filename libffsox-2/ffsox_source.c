@@ -154,7 +154,11 @@ static int source_run(source_t *n)
   case STATE_RUN:
     for (;;) {
       n->consumer.n=n->consumer.h;
+#if defined (FFSOX_DEPRECATED_AV_FREE_PACKET) // {
       av_free_packet(pkt);
+#else // } {
+      av_packet_unref(pkt);
+#endif // }
 
       if (av_read_frame(n->f.fc,pkt)<0) {
         n->state=STATE_FLUSH;

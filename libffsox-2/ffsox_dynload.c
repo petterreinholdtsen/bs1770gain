@@ -325,7 +325,11 @@ static int ffsox_dynload_avcodec(void *lib)
   FFSOX_BIND(lib,&ffsox_avcodec.avcodec_decode_audio4,"avcodec_decode_audio4");
   FFSOX_BIND(lib,&ffsox_avcodec.avcodec_encode_audio2,"avcodec_encode_audio2");
   FFSOX_BIND(lib,&ffsox_avcodec.avcodec_decode_video2,"avcodec_decode_video2");
+#if defined (FFSOX_DEPRECATED_AV_FREE_PACKET) // {
   FFSOX_BIND(lib,&ffsox_avcodec.av_free_packet,"av_free_packet");
+#else // } {
+  FFSOX_BIND(lib,&ffsox_avcodec.av_packet_unref,"av_packet_unref");
+#endif // }
   FFSOX_BIND(lib,&ffsox_avcodec.avcodec_close,"avcodec_close");
   FFSOX_BIND(lib,&ffsox_avcodec.avcodec_copy_context,"avcodec_copy_context");
   FFSOX_BIND(lib,&ffsox_avcodec.av_packet_rescale_ts,"av_packet_rescale_ts");
