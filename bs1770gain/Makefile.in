@@ -118,7 +118,7 @@ CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@ -Werror -Wall -Wformat -Wpointer-arith -Wcast-align \
 	-Wcast-qual -Wreturn-type -Wextra -Wstrict-prototypes \
-	-Wno-unused-parameter
+	-Wno-unused-parameter -Wno-deprecated-declarations
 CPP = @CPP@
 #CFLAGS+=-Wmissing-declarations
 #CFLAGS+=-Wmissing-prototypes

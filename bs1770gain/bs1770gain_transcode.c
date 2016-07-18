@@ -390,7 +390,7 @@ int bs1770gain_transcode(track_t *t, options_t *options)
   }
 
   if (ffsox_sink_create(&so,t->opath)<0) {
-    DMESSAGE("creating sink");
+    DMESSAGEV("creating sink \"%s\"",t->opath);
     goto so;
   }
 

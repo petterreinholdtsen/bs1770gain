@@ -7,6 +7,7 @@ CFLAGS+=-Wcast-qual
 CFLAGS+=-Wreturn-type
 CFLAGS+=-Wextra
 CFLAGS+=-Wstrict-prototypes
+CFLAGS+=-Wno-deprecated-declarations
 #CFLAGS+=-Wmissing-declarations
 #CFLAGS+=-Wmissing-prototypes
 
