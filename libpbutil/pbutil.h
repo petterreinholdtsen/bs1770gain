@@ -80,7 +80,7 @@ extern "C" {
 #define PBU_MIN(x,y) ((x)<(y)?(x):(y))
 
 #define PBU_MAXOF(T) \
-  (~(~0ll<<(((sizeof (T))<<3)-1)))
+  (~(~0ull<<(((sizeof (T))<<3)-1)))
 
 #if defined (_WIN32) // {
 #define wcstok_r(str,delim,saveptr) pbu_wcstok_r(str,delim,saveptr)

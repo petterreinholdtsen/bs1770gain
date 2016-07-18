@@ -8,6 +8,7 @@ CFLAGS+=-Wreturn-type
 CFLAGS+=-Wextra
 CFLAGS+=-Wstrict-prototypes
 CFLAGS+=-Wno-unused-parameter
+CFLAGS+=-Wno-deprecated-declarations
 #CFLAGS+=-Wmissing-declarations
 #CFLAGS+=-Wmissing-prototypes
 #CFLAGS+=-Wno-unused-variable
