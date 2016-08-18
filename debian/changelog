@@ -1,3 +1,9 @@
+bs1770gain (0.4.11-1) unstable; urgency=medium
+
+  * New upstream version 0.4.11.
+
+ -- Petter Reinholdtsen <pere@debian.org>  Thu, 18 Aug 2016 15:37:18 +0200
+
 bs1770gain (0.4.10-1) unstable; urgency=medium
 
   * New upstream version 0.4.10.
