@@ -55,11 +55,19 @@ int ffsox_audiostream(AVFormatContext *fc, int *aip, int *vip)
     switch (cc->codec_type) {
       case AVMEDIA_TYPE_AUDIO:
         if (NULL!=aip&&0<=*aip) {
+          // if no audio stream found yet, pick this one (regardless whether
+          // stereo or not).
           if (*aip==i)
             ai=i;
         }
-        else if (ai<0||2==cc->channels)
-          ai=i;
+        else if (ai<0||2==cc->channels) {
+          // if an audio stream alreay was found and is non-stereo,
+          // replace it by this stereo one.
+		  if (ai<0)
+            ai=i;
+          else if (2!=fc->streams[ai]->codec->channels)
+            ai=i;
+        }
 
         break;
       case AVMEDIA_TYPE_VIDEO:

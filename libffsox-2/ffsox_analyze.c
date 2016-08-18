@@ -22,7 +22,7 @@
 #define FFSOX_ANALYZE_RATE 192000.0
 
 #define FFSOX_ANALYZE_CASCADE
-int ffsox_analyze(analyze_config_t *ac)
+int ffsox_analyze(analyze_config_t *ac, int ai, int vi)
 {
   int code=-1;
   aggregate_t *aggregate=ac->aggregate;
@@ -43,7 +43,7 @@ int ffsox_analyze(analyze_config_t *ac)
   char buf[32];
 
   // create a source.
-  if (ffsox_source_create(&si,ac->path,-1,-1,progress,ac->f)<0) {
+  if (ffsox_source_create(&si,ac->path,ai,vi,progress,ac->f)<0) {
     DMESSAGE("creating source");
     goto si;
   }
