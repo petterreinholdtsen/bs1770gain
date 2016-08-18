@@ -130,7 +130,7 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
       ac.f=f;
       ac.dump=0;
 
-      if (ffsox_analyze(&ac)<0) {
+      if (ffsox_analyze(&ac,options->audio,ac.vi=options->video)<0) {
         fprintf(f,"Error gathering track statistics.\n");
         goto analyze;
       }

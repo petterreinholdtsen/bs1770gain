@@ -31,13 +31,19 @@
 ///////////////////////////////////////////////////////////////////////////////
 int ffsox_collect_create(collect_t *collect, collect_config_t *cc)
 {
+  // process LIB1770_MAX_CHANNELS at maximum
+  // ignore the rest
+  int channels=LIB1770_MAX_CHANNELS<cc->channels
+      ?LIB1770_MAX_CHANNELS
+      :cc->channels;
+
   collect->scale=cc->scale;
   collect->invscale=1.0/cc->scale;
   collect->aggregate=cc->aggregate;
-  collect->channels=cc->channels;
+  collect->channels=channels;
   collect->sp=collect->sample;
 
-  if (NULL==(collect->pre=lib1770_pre_new(cc->samplerate,cc->channels))) {
+  if (NULL==(collect->pre=lib1770_pre_new(cc->samplerate,channels))) {
     DMESSAGE("creating pre-filter");
     goto pre;
   }
