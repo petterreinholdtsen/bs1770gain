@@ -34,6 +34,8 @@ extern "C" {
 
 ///////////////////////////////////////////////////////////////////////////////
 #if defined (_WIN32) // {
+#define PBU_WIDEN2(x) L ## x
+#define PBU_WIDEN(x) PBU_WIDEN2(x)
 #define __func__ __FUNCTION__
 #endif // }
 
@@ -190,6 +192,7 @@ int pbu_copy_file(const wchar_t *src, const wchar_t *dst);
 wchar_t *pbu_s2w(const char *s);
 char *pbu_w2s(const wchar_t *w);
 const char *pbu_message(const char *format, ...);
+const wchar_t *pbu_wbasename(const wchar_t *wpath);
 #else // } {
 int pbu_copy_file(const char *src, const char *dst);
 #endif // }

@@ -171,6 +171,9 @@ struct bs1770gain_options {
 #if defined (BS1770GAIN_TAG_PREFIX) // {
   const char *tag_prefix;
 #endif // }
+#if defined (_WIN32) // [
+  int utf16;
+#endif // ]
 };
 
 ///////////////////////////////////////////////////////////////////////////////

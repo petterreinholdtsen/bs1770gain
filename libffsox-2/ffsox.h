@@ -301,6 +301,9 @@ struct ffsox_analyze_config {
   int dump;
   int ai;
   int vi;
+#if defined (_WIN32) // [
+  int utf16;
+#endif // ]
 };
 
 int ffsox_analyze(ffsox_analyze_config_t *ac, int ai, int vi);

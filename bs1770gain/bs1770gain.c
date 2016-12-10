@@ -19,7 +19,19 @@
  */
 #include <bs1770gain_priv.h>
 #include <getopt.h>
-//#include <locale.h>
+#if defined (_WIN32) // [
+#include <fcntl.h>
+//#define W_OPTION_UTF16
+#if defined (PACKAGE_VERSION) // [
+#define W_PACKAGE_VERSION PBU_WIDEN(PACKAGE_VERSION)
+#endif // ]
+#if defined (PACKAGE_URL) // [
+#define W_PACKAGE_URL PBU_WIDEN(PACKAGE_URL)
+#endif // ]
+#define FPRINTF(stream,format) fwprintf(stream,L##format)
+#else // ] [
+#define FPRINTF(stream,format) fprintf(stream,format)
+#endif // ]
 
 ///////////////////////////////////////////////////////////////////////////////
 #define CLOCKS_PER_MILLIS (CLOCKS_PER_SEC/1000)
@@ -44,35 +56,51 @@
   (0==((o)->aggregate&BS1770GAIN_AGGREGATE_RANGE_PEAK))
 
 ///////////////////////////////////////////////////////////////////////////////
+#if defined (_WIN32) // [
+void bs1770gain_usage(wchar_t **wargv, char **argv, int code)
+#else // ] [
 void bs1770gain_usage(char **argv, int code)
+#endif // ]
 {
-#if defined (PACKAGE_VERSION) // {
-  fprintf(stderr,"BS1770GAIN %s, Copyright (C) Peter Belkner 2014-2015.\n",
+#if defined (_WIN32) // [
+#if defined (W_PACKAGE_VERSION) // [
+  fwprintf(stderr,L"BS1770GAIN %s, Copyright (C) Peter Belkner 2014-2017.\n",
+      W_PACKAGE_VERSION);
+#endif // ]
+#if defined (W_PACKAGE_URL) // [
+  fwprintf(stderr,L"%s\n",W_PACKAGE_URL);
+#endif // ]
+  fwprintf(stderr,L"\n");
+  fwprintf(stderr,L"Usage:  %s [options] <file/dir> [<file/dir> ...]\n",
+      pbu_wbasename(wargv[0]));
+  fwprintf(stderr,L"\n");
+#else // ] [
+#if defined (PACKAGE_VERSION) // [
+  fprintf(stderr,"BS1770GAIN %s, Copyright (C) Peter Belkner 2014-2017.\n",
       PACKAGE_VERSION);
-#else // } {
-  fprintf(stderr,"BS1770GAIN, Copyright (C) Peter Belkner 2014-2015.\n");
-#endif // }
-#if defined (PACKAGE_URL) // {
+#endif // ]
+#if defined (PACKAGE_URL) // [
   fprintf(stderr,"%s\n",PACKAGE_URL);
-#endif // }
+#endif // ]
   fprintf(stderr,"\n");
   fprintf(stderr,"Usage:  %s [options] <file/dir> [<file/dir> ...]\n",
       pbu_basename(argv[0]));
   fprintf(stderr,"\n");
-  fprintf(stderr,"Options:\n");
-  fprintf(stderr," -h,--help:  print this message and exit\n");
+#endif // ]
+  FPRINTF(stderr,"Options:\n");
+  FPRINTF(stderr," -h,--help:  print this message and exit\n");
   /////////////////////////////////////////////////////////////////////////////
-  fprintf(stderr," -i,--integrated:  calculate integrated loudness\n");
-  fprintf(stderr," -s,--shorterm:  calculate maximum shortterm loudness\n");
-  fprintf(stderr," -m,--momentary:  claculate maximum momentary loudness\n");
-  fprintf(stderr," -r,--range:  calculate loudness range\n");
-  fprintf(stderr," -p,--samplepeak:  calculate maximum sample peak\n");
-  fprintf(stderr," -t,--truepeak:  calculate maximum true peak\n");
-  fprintf(stderr," -b <timestamp>,--begin <timestamp>:  begin decoding at\n"
+  FPRINTF(stderr," -i,--integrated:  calculate integrated loudness\n");
+  FPRINTF(stderr," -s,--shorterm:  calculate maximum shortterm loudness\n");
+  FPRINTF(stderr," -m,--momentary:  claculate maximum momentary loudness\n");
+  FPRINTF(stderr," -r,--range:  calculate loudness range\n");
+  FPRINTF(stderr," -p,--samplepeak:  calculate maximum sample peak\n");
+  FPRINTF(stderr," -t,--truepeak:  calculate maximum true peak\n");
+  FPRINTF(stderr," -b <timestamp>,--begin <timestamp>:  begin decoding at\n"
       "   timestamp (in microseconds, format: hh:mm:ss.mus)\n");
-  fprintf(stderr," -d <duration>,--duration <duration>:  let decoding\n"
+  FPRINTF(stderr," -d <duration>,--duration <duration>:  let decoding\n"
       "   last duration (in microseconds, format: hh:mm:ss.mus)\n");
-  fprintf(stderr," -u <method>,--use <method>:  base replay gain calculation\n"
+  FPRINTF(stderr," -u <method>,--use <method>:  base replay gain calculation\n"
       "   on method (with respect to the -a/--apply and -o/--output\n"
       "   options),\n"
       "   methods:  \"integrated\" (default), \"shortterm\", or\n"
@@ -81,13 +109,13 @@ void bs1770gain_usage(char **argv, int code)
       "   \"integrated\"), \"momentary-maximum\" (same as \"momentary\"),\n"
       "   \"shortterm-mean\", or \"shortterm-maximum\" (same as\n"
       "   \"shortterm\")\n");
-  fprintf(stderr," -a:  apply the EBU/ATSC/RG album gain to the output\n"
+  FPRINTF(stderr," -a:  apply the EBU/ATSC/RG album gain to the output\n"
       "   (in conjunction with the -o/--output option)\n");
-  fprintf(stderr," -o <folder>,--output <folder>:  write RG tags\n"
+  FPRINTF(stderr," -o <folder>,--output <folder>:  write RG tags\n"
       "   or apply the EBU/ATSC/RG gain, respectively,\n"
       "   and output to folder\n");
-  fprintf(stderr," -f <file>,--file <file>:  write analysis to file\n");
-  fprintf(stderr," -x,--extensions:  enable following extensions/defaults:\n"
+  FPRINTF(stderr," -f <file>,--file <file>:  write analysis to file\n");
+  FPRINTF(stderr," -x,--extensions:  enable following extensions/defaults:\n"
       "   1) rename files according to TITLE tag\n"
       "   2) read metadata from per-folder CSV file \"folder.csv\"\n"
       "   3) copy file \"folder.jpg\" from source to destination\n"
@@ -95,109 +123,114 @@ void bs1770gain_usage(char **argv, int code)
       "   4) automatically add the TRACK and DISC tags\n"
       "   5) calculate maximum true peak\n"
       "   6) convert to stereo\n");
-  fprintf(stderr," -l,--list:  print FFmpeg format/stream information\n");
+#if defined (_WIN32) && defined (W_OPTION_UTF16) // [
+  FPRINTF(stderr," -v,--utf-16:  use utf-16 for classical (i.e. non-xml)\n"
+      "   output (may be useful for languages containing non-ascii symbols,\n"
+      "   currently supresses displaying progress of analysis)\n");
+#endif // ]
+  FPRINTF(stderr," -l,--list:  print FFmpeg format/stream information\n");
   /////////////////////////////////////////////////////////////////////////////
-  fprintf(stderr," --ebu:  calculate replay gain according to EBU R128\n"
+  FPRINTF(stderr," --ebu:  calculate replay gain according to EBU R128\n"
       "   (-23.0 LUFS, default)\n");
-  fprintf(stderr," --atsc:  calculate replay gain according to ATSC A/85\n"
+  FPRINTF(stderr," --atsc:  calculate replay gain according to ATSC A/85\n"
       "   (-24.0 LUFS)\n");
-  fprintf(stderr," --replaygain:  calculate replay gain according to\n"
+  FPRINTF(stderr," --replaygain:  calculate replay gain according to\n"
       "   ReplayGain 2.0 (-18.0 LUFS)\n");
-  fprintf(stderr," --track-tags:  write track tags\n");
-  fprintf(stderr," --album-tags:  write album tags\n");
-#if defined (BS1770GAIN_TAG_PREFIX) // {
-#if 0 // {
-  fprintf(stderr," --tag-prefix <prefix>:  use <prefix> as tag prefix\n"
+  FPRINTF(stderr," --track-tags:  write track tags\n");
+  FPRINTF(stderr," --album-tags:  write album tags\n");
+#if defined (BS1770GAIN_TAG_PREFIX) // [
+#if 0 // [
+  FPRINTF(stderr," --tag-prefix <prefix>:  use <prefix> as tag prefix\n"
       "   instead of \"REPLAYGAIN\"\n");
-#else // } {
-  fprintf(stderr," --tag-prefix <prefix>:  instead of \"REPLAYGAIN\",\n"
+#else // ] [
+  FPRINTF(stderr," --tag-prefix <prefix>:  instead of \"REPLAYGAIN\",\n"
       "   use <prefix> as RG tag prefix\n");
-#endif // }
-#endif // }
-  fprintf(stderr," --unit <unit>:  write tags with <unit>\n");
-  fprintf(stderr," --apply <q>:  apply the EBU/ATSC/RG gain to the output\n"
+#endif // ]
+#endif // ]
+  FPRINTF(stderr," --unit <unit>:  write tags with <unit>\n");
+  FPRINTF(stderr," --apply <q>:  apply the EBU/ATSC/RG gain to the output\n"
       "   (in conjunction with the -o/--output option),\n"
       "   q=0.0 (album gain) ... 1.0 (track gain),\n"
       "   default:  0.0 (album gain)\n");
-  fprintf(stderr," --audio <index>:  select audio index (corresponds to\n"
+  FPRINTF(stderr," --audio <index>:  select audio index (corresponds to\n"
       "   [0:<index>] in FFmpeg listing, cf. -l/--list option)\n");
-  fprintf(stderr," --video <index>:  select video index (corresponds to\n"
+  FPRINTF(stderr," --video <index>:  select video index (corresponds to\n"
       "   [0:<index>] in FFmpeg listing, cf. -l/--list option)\n");
-  fprintf(stderr," --stereo:  convert to stereo\n");
-  fprintf(stderr," --drc <float>:  set AC3 dynamic range compression (DRC)\n");
-  fprintf(stderr," --extension <extension>:  enable extension out of\n"
+  FPRINTF(stderr," --stereo:  convert to stereo\n");
+  FPRINTF(stderr," --drc <float>:  set AC3 dynamic range compression (DRC)\n");
+  FPRINTF(stderr," --extension <extension>:  enable extension out of\n"
       "   \"rename\":  rename files according to TITLE tag\n"
       "   \"csv\":  read metadata from per-folder CSV file \"folder.csv\"\n"
       "   \"jpg\":  copy file \"folder.jpg\" from source to destination\n"
       "      folder\n"
       "   \"tags\":  automatically add the TRACK and DISC tags\n");
-  fprintf(stderr," --format <format>:  convert to format\n");
-  fprintf(stderr," --loglevel <level>:  set loglevel,\n"
+  FPRINTF(stderr," --format <format>:  convert to format\n");
+  FPRINTF(stderr," --loglevel <level>:  set loglevel,\n"
       "   level:  \"quiet\", \"panic\", \"fatal\", \"error\", \"warning\",\n"
       "   \"info\", \"verbose\", \"debug\"\n");
-  fprintf(stderr," --xml:  print results in xml format\n");
-  fprintf(stderr," --time:  print out duration of program invocation\n");
-  fprintf(stderr," --norm <float>:  norm loudness to float.\n");
-  //fprintf(stderr," --preamp <preamp>:\n");
-  //fprintf(stderr," --stero:\n");
-  //fprintf(stderr," --rg-tags:\n");
-  //fprintf(stderr," --bwf-tags:\n");
+  FPRINTF(stderr," --xml:  print results in xml format\n");
+  FPRINTF(stderr," --time:  print out duration of program invocation\n");
+  FPRINTF(stderr," --norm <float>:  norm loudness to float.\n");
+  //FPRINTF(stderr," --preamp <preamp>:\n");
+  //FPRINTF(stderr," --stero:\n");
+  //FPRINTF(stderr," --rg-tags:\n");
+  //FPRINTF(stderr," --bwf-tags:\n");
   /////////////////////////////////////////////////////////////////////////////
-  fprintf(stderr,"\n");
-  fprintf(stderr,"Experimental options:\n");
+  FPRINTF(stderr,"\n");
+  FPRINTF(stderr,"Experimental options:\n");
   ////////
-  fprintf(stderr,"1) momentary block\n");
-  fprintf(stderr," --momentary-mean:  calculate mean loudness based on\n"
+  FPRINTF(stderr,"1) momentary block\n");
+  FPRINTF(stderr," --momentary-mean:  calculate mean loudness based on\n"
       "   momentary block (same as --integrated)\n");
-  fprintf(stderr," --momentary-maximum:  calculate maximum loudness based\n"
+  FPRINTF(stderr," --momentary-maximum:  calculate maximum loudness based\n"
       "   on momentary block (same as --momentary)\n");
-  fprintf(stderr," --momentary-range:  calculate loudness range based on\n"
+  FPRINTF(stderr," --momentary-range:  calculate loudness range based on\n"
       "   momentary block\n");
-  fprintf(stderr," --momentary-length <ms>:  length of momentary block\n"
+  FPRINTF(stderr," --momentary-length <ms>:  length of momentary block\n"
       "   in milliseconds (default: 400)\n");
-  fprintf(stderr," --momentary-overlap <percent>:  overlap of momentary\n"
+  FPRINTF(stderr," --momentary-overlap <percent>:  overlap of momentary\n"
       "   block in percent (default: 75)\n");
-  fprintf(stderr," --momentary-mean-gate <gate>:  silence gate for mean\n"
+  FPRINTF(stderr," --momentary-mean-gate <gate>:  silence gate for mean\n"
       "   measurement of momentary block (default: -10.0)\n");
-  fprintf(stderr," --momentary-range-gate <gate>:  silence gate for range\n"
+  FPRINTF(stderr," --momentary-range-gate <gate>:  silence gate for range\n"
       "   measurement of momentary block (default: -20.0)\n");
-  fprintf(stderr," --momentary-range-lower-bound <float>:  lower bound for\n"
+  FPRINTF(stderr," --momentary-range-lower-bound <float>:  lower bound for\n"
       "   range measurement of momentary block (default: 0.1)\n");
-  fprintf(stderr," --momentary-range-upper-bound <float>:  upper bound for\n"
+  FPRINTF(stderr," --momentary-range-upper-bound <float>:  upper bound for\n"
       "   range measurement of momentary block (default: 0.95)\n");
   ////////
-  fprintf(stderr,"2) shortterm block\n");
-  fprintf(stderr," --shortterm-mean:  calculate mean loudness based on\n"
+  FPRINTF(stderr,"2) shortterm block\n");
+  FPRINTF(stderr," --shortterm-mean:  calculate mean loudness based on\n"
       "   shortterm block\n");
-  fprintf(stderr," --shortterm-maximum:  calculate maximum loudness based\n"
+  FPRINTF(stderr," --shortterm-maximum:  calculate maximum loudness based\n"
       "   on shortterm block (same as --shortterm)\n");
-  fprintf(stderr," --shortterm-range:  calculate loudness range based on\n"
+  FPRINTF(stderr," --shortterm-range:  calculate loudness range based on\n"
       "   shortterm block (same as --range)\n");
-  fprintf(stderr," --shortterm-length <ms>:  length of shortterm block\n"
+  FPRINTF(stderr," --shortterm-length <ms>:  length of shortterm block\n"
       "   in milliseconds (default: 3000)\n");
-  fprintf(stderr," --shortterm-overlap <percent>:  overlap of shortterm\n"
+  FPRINTF(stderr," --shortterm-overlap <percent>:  overlap of shortterm\n"
       "   block in percent (default: 67)\n");
-  fprintf(stderr," --shortterm-mean-gate <gate>:  silence gate for mean\n"
+  FPRINTF(stderr," --shortterm-mean-gate <gate>:  silence gate for mean\n"
       "   measurement of shortterm block (default: -10.0)\n");
-  fprintf(stderr," --shortterm-range-gate <gate>:  silence gate for range\n"
+  FPRINTF(stderr," --shortterm-range-gate <gate>:  silence gate for range\n"
       "   measurement of shortterm block (default: -20.0)\n");
-  fprintf(stderr," --shortterm-range-lower-bound <float>:  lower bound for\n"
+  FPRINTF(stderr," --shortterm-range-lower-bound <float>:  lower bound for\n"
       "   range measurement of shortterm block (default: 0.1)\n");
-  fprintf(stderr," --shortterm-range-upper-bound <float>:  upper bound for\n"
+  FPRINTF(stderr," --shortterm-range-upper-bound <float>:  upper bound for\n"
       "   range measurement of shortterm block (default: 0.95)\n");
   /////////////////////////////////////////////////////////////////////////////
-  fprintf(stderr,"\n");
-  fprintf(stderr,"Command line arguments can appear in any order.\n");
-#if defined (_WIN32) // {
+  FPRINTF(stderr,"\n");
+  FPRINTF(stderr,"Command line arguments can appear in any order.\n");
+#if defined (_WIN32) // [
   free(argv);
-#endif // }
+#endif // ]
   exit(code);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 enum {
   ////////////////
-  APPLY,
+  APPLY='z'+1,
   UNIT,
   DRC,
   FORMAT,
@@ -238,7 +271,11 @@ enum {
   SHORTTERM_RANGE_UPPER_BOUND
 };
 
-static const char *bs1770gain_flags="b:d:f:o:u:ahlimprstx";
+static const char *bs1770gain_flags="b:d:f:o:u:ahlimprstx"
+#if defined (_WIN32) && defined (W_OPTION_UTF16) // [
+    "v"
+#endif // ]
+    ;
 
 static struct option bs1770gain_opts[]={
   ////
@@ -257,6 +294,9 @@ static struct option bs1770gain_opts[]={
   { "shortterm",no_argument,NULL,'s' },
   { "truepeak",no_argument,NULL,'t' },
   { "extensions",no_argument,NULL,'x' },
+#if defined (_WIN32) && defined (W_OPTION_UTF16) // [
+  { "utf-16",no_argument,NULL,'v' },
+#endif // ]
   ////
   { "apply",required_argument,NULL,APPLY },
   { "unit",required_argument,NULL,UNIT },
@@ -345,7 +385,7 @@ static char **bs1770gain_wargv2argv(int argc, wchar_t **wargv)
   }
 
 
-  if (NULL==(argv=malloc((argc*sizeof *argv)+size))) {
+  if (NULL==(argv=MALLOC((argc*sizeof *argv)+size))) {
     DMESSAGE("allocating argv");
     goto malloc;
   }
@@ -386,21 +426,97 @@ int main(int argc, char **argv)
   FILE *f=stdout;
   tree_t root;
   char *fpath=NULL;
+#if defined (_WIN32) // [
+  wchar_t *wfpath=NULL;
+#endif // ]
   char *odirname=NULL;
   int loglevel=AV_LOG_QUIET;
   double overlap;
   double t1,t2;
   int c;
 
-#if defined (_WIN32) // {
+#if defined (_WIN32) // [
+#if 0 // [
+  int i;
+  wchar_t *warg;
+#endif // ]
+#if 0 // [
+  CONSOLE_FONT_INFOEX consoleFontInfoEx;
+  BOOL ret;
+#if 0 // [
+  HANDLE hConsole;
+
+  hConsole=GetStdHandle(STD_OUTPUT_HANDLE),
+
+  fprintf(stderr,"GetStdHandle(STD_OUTPUT_HANDLE) with %p\n",hConsole);
+#endif // ]
+
+  ZeroMemory(&consoleFontInfoEx,sizeof consoleFontInfoEx);
+  consoleFontInfoEx.cbSize=sizeof consoleFontInfoEx;
+
+  ret=GetCurrentConsoleFontEx(
+    GetStdHandle(STD_OUTPUT_HANDLE),
+    FALSE,
+    &consoleFontInfoEx
+  );
+
+  if (ret)
+    fprintf(stderr,"nFont: %ld\n",consoleFontInfoEx.nFont);
+  else {
+    fprintf(stderr,"GetCurrentConsoleFontEx returning with %d\n",ret);
+    fprintf(stderr,"GetLastError(): %ld\n",GetLastError());
+  }
+
+  consoleFontInfoEx.nFont=CP_UTF8;
+
+  ret=SetCurrentConsoleFontEx(
+    GetStdHandle(STD_OUTPUT_HANDLE),
+    FALSE,
+    &consoleFontInfoEx
+  );
+
+  if (ret)
+    fprintf(stderr,"nFont: %ld\n",consoleFontInfoEx.nFont);
+  else {
+    fprintf(stderr,"GetSurrentConsoleFontEx returning with %d\n",ret);
+    fprintf(stderr,"GetLastError(): %ld\n",GetLastError());
+  }
+#endif // ]
+#if 0 // [
+// http://stackoverflow.com/questions/10882277/properly-print-utf8-characters-in-windows-console
+#if 0 // [
+_setmode(_fileno(stdout), _O_U8TEXT);
+_setmode(_fileno(stderr), _O_U8TEXT);
+#else // ] [
+_setmode(_fileno(stdout), _O_U16TEXT);
+_setmode(_fileno(stderr), _O_U16TEXT);
+#endif // ]
+#endif // ]
+
   if (NULL==(argv=bs1770gain_wargv2argv(argc,wargv))) {
     DMESSAGE("converting arguments");
     goto argv;
   }
-#endif // }
 
-  if (1==argc)
+#if 0 // [
+for (i=0;i<argc;++i) {
+  fwprintf(stderr,L"arg[%d]: \"%s\"\t",i,wargv[i]);
+  fprintf(stderr,"\"%s\"\t\t",argv[i]);
+  warg=pbu_s2w(argv[i]);
+  fwprintf(stderr,L"\"%s\"\t\n",warg);
+  FREE(warg);
+}
+fprintf(stderr,"\n");
+#endif // ]
+#endif // ]
+
+  if (1==argc) {
+#if defined (_WIN32) // [
+    bs1770gain_usage(wargv,argv,-1);
+#else // ] [
     bs1770gain_usage(argv,-1);
+#endif // ]
+  }
 
   TRACE_PUSH();
 
@@ -415,6 +531,9 @@ int main(int argc, char **argv)
 #if defined (BS1770GAIN_TAG_PREFIX) // {
   options.tag_prefix="REPLAYGAIN";
 #endif // }
+#if defined (_WIN32) // [
+  options.utf16=0;
+#endif // ]
 
   options.momentary.ms=400.0;
   options.momentary.partition=4;
@@ -438,7 +557,11 @@ int main(int argc, char **argv)
     case '?':
       fprintf(stderr,"Error: Option \"%s\" not recognizsed.\n",argv[optind-1]);
       fprintf(stderr,"\n");
+#if defined (_WIN32) // [
+      bs1770gain_usage(wargv,argv,-1);
+#else // ] [
       bs1770gain_usage(argv,-1);
+#endif // ]
       break;
     /// with argument /////////////////////////////////////////////////////////
     case 'b':
@@ -476,7 +599,11 @@ int main(int argc, char **argv)
       else {
         fprintf(stderr,"Error: Method \"%s\" not recognized.\n",optarg);
         fprintf(stderr,"\n");
+#if defined (_WIN32) // [
+        bs1770gain_usage(wargv,argv,-1);
+#else // ] [
         bs1770gain_usage(argv,-1);
+#endif // ]
       }
 
       break;
@@ -486,7 +613,11 @@ int main(int argc, char **argv)
       options.apply=0.0;
       break;
     case 'h':
+#if defined (_WIN32) // [
+      bs1770gain_usage(wargv,argv,0);
+#else // ] [
       bs1770gain_usage(argv,0);
+#endif // ]
       break;
     case 'l':
       options.dump=1;
@@ -514,6 +645,11 @@ int main(int argc, char **argv)
       options.aggregate|=FFSOX_AGGREGATE_TRUEPEAK;
       options.stereo=1;
       break;
+#if defined (_WIN32) && defined (W_OPTION_UTF16) // [
+    case 'v':
+      options.utf16=1;
+      break;
+#endif // ]
     /// without flag //////////////////////////////////////////////////////////
     case AUDIO:
       options.audio=atoi(optarg);
@@ -540,8 +676,13 @@ int main(int argc, char **argv)
         options.extensions|=EXTENSION_JPG;
       else if (0==strcasecmp("tags",optarg))
         options.extensions|=EXTENSION_TAGS;
-      else
+      else {
+#if defined (_WIN32) // [
+        bs1770gain_usage(wargv,argv,-1);
+#else // ] [
         bs1770gain_usage(argv,-1);
+#endif // ]
+      }
       break;
 #if defined (BS1770GAIN_TAG_PREFIX) // {
     case TAG_PREFIX:
@@ -568,8 +709,13 @@ int main(int argc, char **argv)
         loglevel=AV_LOG_VERBOSE;
       else if (0==strcasecmp("debug",optarg))
         loglevel=AV_LOG_DEBUG;
-      else
+      else {
+#if defined (_WIN32) // [
+        bs1770gain_usage(wargv,argv,-1);
+#else // ] [
         bs1770gain_usage(argv,-1);
+#endif // ]
+      }
       break;
     case NORM:
       options.norm=atof(optarg);
@@ -623,9 +769,13 @@ int main(int argc, char **argv)
       if (0.0<=overlap&&overlap<100.0)
         options.momentary.partition=floor(100.0/(100.0-overlap)+0.5);
       else {
-        fprintf(stderr,"Error: Overlap out of range [0..100).\n");
-        fprintf(stderr,"\n");
+        FPRINTF(stderr,"Error: Overlap out of range [0..100).\n");
+        FPRINTF(stderr,"\n");
+#if defined (_WIN32) // [
+        bs1770gain_usage(wargv,argv,-1);
+#else // ] [
         bs1770gain_usage(argv,-1);
+#endif // ]
       }
 
       break;
@@ -655,9 +805,13 @@ int main(int argc, char **argv)
       if (0.0<=overlap&&overlap<100.0)
         options.shortterm.partition=floor(100.0/(100.0-overlap)+0.5);
       else {
-        fprintf(stderr,"Error: Overlap out of range [0..100).\n");
-        fprintf(stderr,"\n");
+        FPRINTF(stderr,"Error: Overlap out of range [0..100).\n");
+        FPRINTF(stderr,"\n");
+#if defined (_WIN32) // [
+        bs1770gain_usage(wargv,argv,-1);
+#else // ] [
         bs1770gain_usage(argv,-1);
+#endif // ]
       }
 
       break;
@@ -680,9 +834,13 @@ int main(int argc, char **argv)
   }
 
   if (0!=options.method&&NULL==odirname) {
-    fprintf(stderr,"Error: \"-u/--use\" requieres \"-o/--output\".\n");
-    fprintf(stderr,"\n");
+    FPRINTF(stderr,"Error: \"-u/--use\" requieres \"-o/--output\".\n");
+    FPRINTF(stderr,"\n");
+#if defined (_WIN32) // [
+    bs1770gain_usage(wargv,argv,-1);
+#else // ] [
     bs1770gain_usage(argv,-1);
+#endif // ]
   }
 
   if (BS1770GAIN_IS_MODE_APPLY(options.mode)&&NULL!=options.format) {
@@ -691,8 +849,13 @@ int main(int argc, char **argv)
     options.format=NULL;
   }
 
-  if (options.momentary.partition<1||options.shortterm.partition<1)
+  if (options.momentary.partition<1||options.shortterm.partition<1) {
+#if defined (_WIN32) // [
+    bs1770gain_usage(wargv,argv,-1);
+#else // ] [
     bs1770gain_usage(argv,-1);
+#endif // ]
+  }
 
   if (options.momentary.range_lower_bound<=0.0
       ||options.momentary.range_upper_bound
@@ -702,10 +865,14 @@ int main(int argc, char **argv)
       ||options.shortterm.range_upper_bound
           <=options.shortterm.range_lower_bound
       ||1.0<=options.shortterm.range_upper_bound) {
-    fprintf(stderr,"Error: Range bounds out of range "
+    FPRINTF(stderr,"Error: Range bounds out of range "
         " 0.0 < lower < upper < 1.0.\n");
-    fprintf(stderr,"\n");
+    FPRINTF(stderr,"\n");
+#if defined (_WIN32) // [
+    bs1770gain_usage(wargv,argv,-1);
+#else // ] [
     bs1770gain_usage(argv,-1);
+#endif // ]
   }
 
   if (!BS1770GAIN_IS_MODE_APPLY(options.mode)) {
@@ -721,6 +888,14 @@ int main(int argc, char **argv)
       options.aggregate|=FFSOX_AGGREGATE_MOMENTARY_MEAN;
   }
 
+#if defined (_WIN32) // [
+#if defined (W_OPTION_UTF16) // [
+  options.utf16&=!options.xml;
+#else // ] [
+  options.utf16=!options.xml;
+#endif // ]
+#endif // ]
+
   // load the FFmpeg and SoX libraries from "bs1770gain-tools".
   if (ffsox_dynload("bs1770gain-tools")<0) {
     PBU_DMESSAGE("loading shared libraries");
@@ -733,8 +908,55 @@ int main(int argc, char **argv)
   if (0==options.dump||av_log_get_level()<loglevel)
     av_log_set_level(loglevel);
 
-  if (fpath&&NULL==(f=fopen(fpath,"w")))
-    goto file;
+  if (fpath) {
+#if defined (_WIN32) // [
+    if (NULL==(wfpath=pbu_s2w(fpath))) {
+      fprintf(stderr,"Error converting file name to wide characters.\n");
+      goto wfpath;
+    }
+
+    if (options.utf16) {
+#if 0 // [
+      // https://msdn.microsoft.com/en-us/library/yeby3zcb.aspx
+      // seems not to work with mingw
+      if (NULL==(f=fopen(fpath,"w,css=UNICODE"))) {
+        fprintf(stderr,"Error opening file \"%s\".\n",fpath);
+        goto file;
+      }
+#else // ] [
+      // open in binary mode, write explicit BOM,
+      // then switch to respective text mode
+      if (NULL==(f=_wfopen(wfpath,L"wb"))) {
+        fwprintf(stderr,L"Error opening file \"%s\".\n",wfpath);
+        goto file;
+      }
+
+      // write BOM
+      // https://en.wikipedia.org/wiki/Byte_order_mark#UTF-16
+      fputc(0xff,f);
+      fputc(0xfe,f);
+      fflush(f);
+      // switch to respective text mode, cf. below
+#endif // ]
+    }
+    else if (NULL==(f=_wfopen(wfpath,L"w"))) {
+      fwprintf(stderr,L"Error opening file \"%s\".\n",wfpath);
+      goto file;
+    }
+#else // ] [
+    if (NULL==(f=fopen(fpath,"w"))) {
+      fprintf(stderr,"Error opening file \"%s\".\n",fpath);
+      goto file;
+    }
+#endif // ]
+  }
+
+#if defined (_WIN32) // [
+  if (options.utf16) {
+    // http://stackoverflow.com/questions/10882277/properly-print-utf8-characters-in-windows-console
+    _setmode(_fileno(f),_O_WTEXT);
+  }
+#endif // ]
 
   bs1770gain_tree_cli_init(&root,argc,argv,optind);
 
@@ -761,15 +983,25 @@ int main(int argc, char **argv)
   // still reachable: 9,689 bytes in 51 blocks
   // TODO: Cleanup FFmpeg. But how?
 dynload:
+#if defined (_WIN32) // [
+  if (NULL!=wfpath)
+    fclose(f);
+  else
+#endif // ]
   if (NULL!=fpath)
     fclose(f);
 file:
-  TRACE_POP();
-  PBU_HEAP_PRINT();
+#if defined (_WIN32) // [
+  if (NULL!=wfpath)
+    FREE(wfpath);
+wfpath:
+#endif // ]
 #if defined (_WIN32) // {
-  free(argv);
+  FREE(argv);
 argv:
 #endif // }
+  TRACE_POP();
+  PBU_HEAP_PRINT();
 
   return 0;
 }

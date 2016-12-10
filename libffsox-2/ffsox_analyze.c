@@ -18,6 +18,11 @@
  * MA  02110-1301  USA
  */
 #include <ffsox_priv.h>
+#if defined (_WIN32) // [
+#include <fcntl.h>
+
+#define W_WIN32
+#endif // ]
 
 #define FFSOX_ANALYZE_RATE 192000.0
 
@@ -41,6 +46,13 @@ int ffsox_analyze(analyze_config_t *ac, int ai, int vi)
   sox_rate_t rate;
 #endif // }
   char buf[32];
+
+#if defined (W_WIN32) // [
+  if (ac->utf16) {
+    fflush(ac->f);
+    _setmode(_fileno(ac->f),_O_TEXT);
+  }
+#endif // ]
 
   // create a source.
   if (ffsox_source_create(&si,ac->path,ai,vi,progress,ac->f)<0) {
@@ -163,5 +175,14 @@ collect:
 fr:
   si.vmt->cleanup(&si);
 si:
+#if defined (W_WIN32) // [
+  if (ac->utf16) {
+    fflush(ac->f);
+    _setmode(_fileno(ac->f),_O_WTEXT);
+  }
+#if 0 // [
+mode:
+#endif // ]
+#endif // ]
   return code;
 }

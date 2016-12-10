@@ -19,6 +19,11 @@
  */
 #include <bs1770gain_priv.h>
 #include <ctype.h>
+#if defined (_WIN32) // [
+#include <fcntl.h>
+
+#define W_WIN32
+#endif // ]
 
 static void bs1770gain_tags_rg(tag_t *tags, const aggregate_t *track,
     const aggregate_t *album, const options_t *options)
@@ -371,6 +376,13 @@ int bs1770gain_transcode(track_t *t, options_t *options)
 
   TRACE_PUSH();
 
+#if defined (W_WIN32) // [
+  if (options->utf16) {
+    fflush(f);
+    _setmode(_fileno(f),_O_TEXT);
+  }
+#endif // ]
+
   if (ffsox_source_create(&si,t->ipath,ai,vi,progress,f)<0) {
     DMESSAGE("creating source");
     goto si;
@@ -467,6 +479,15 @@ output:
 si:
   //code=0;
 //cleanup:
+#if defined (W_WIN32) // [
+  if (options->utf16) {
+    fflush(f);
+    _setmode(_fileno(f),_O_WTEXT);
+  }
+#if 0 // [
+mode:
+#endif // ]
+#endif // ]
   TRACE_POP();
 
   return code;
