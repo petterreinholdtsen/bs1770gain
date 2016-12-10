@@ -22,7 +22,6 @@
 #include <sys/stat.h>
 
 #if defined (_WIN32) // {
-#define W_WIN32
 #define CLOSEDIR(d)   _wclosedir(d)
 #define READDIR(d)    _wreaddir(d)
 #else // } {
@@ -78,10 +77,6 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
   bs1770gain_album_t *album;
   bs1770gain_track_t *track;
   const char *label;
-#if defined (W_WIN32) // [
-  wchar_t *wlabel;
-  wchar_t *wibasename;
-#endif // ]
   analyze_config_t ac;
 
   TRACE_PUSH();
@@ -134,20 +129,9 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
       ac.shortterm.partition=options->shortterm.partition;
       ac.f=f;
       ac.dump=0;
-#if defined (_WIN32) // [
-      ac.utf16=options->utf16;
-#endif // ]
 
       if (ffsox_analyze(&ac,options->audio,ac.vi=options->video)<0) {
-#if defined (W_WIN32) // [
-        if (options->utf16)
-          fwprintf(f,L"Error gathering track statistics.\n");
-        else {
-#endif // ]
-          fprintf(f,"Error gathering track statistics.\n");
-#if defined (W_WIN32) // [
-        }
-#endif // ]
+        fprintf(f,"Error gathering track statistics.\n");
         goto analyze;
       }
 
@@ -165,53 +149,12 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
     if (NULL!=odirname) {
       label=BS1770GAIN_IS_MODE_APPLY(options->mode)?"transcoding":"remuxing";
 
-#if defined (W_WIN32) // [
-      if (options->utf16) {
-        if (NULL==(wlabel=pbu_s2w(label))) {
-          DMESSAGE("converting UTF-8 to UTF-16");
-          goto wlabel;
-        }
-      }
-      else
-        wlabel=NULL;
-#endif // ]
-
-      // print a message.
+      // print a massage.
       if (f) {
-        if (NULL==ibasename||0==*ibasename) {
-#if defined (W_WIN32) // [
-          if (options->utf16)
-            fwprintf(f,L"%s ...\n",wlabel);
-          else {
-#endif // ]
-            fprintf(f,"%s ...\n",label);
-#if defined (W_WIN32) // [
-          }
-#endif // ]
-        }
-        else {
-#if defined (W_WIN32) // [
-          if (options->utf16) {
-            if (NULL==(wibasename=pbu_s2w(ibasename))) {
-              DMESSAGE("converting UTF-8 to UTF-16");
-              goto wibasename;
-            }
-
-            fwprintf(f,L"%s \"%s\" ...\n",wlabel,wibasename);
-          }
-          else {
-            wibasename=NULL;
-#endif // ]
-            fprintf(f,"%s \"%s\" ...\n",label,ibasename);
-#if defined (W_WIN32) // [
-          }
-
-          if (wibasename)
-            FREE(wibasename);
-wibasename:
-          ;
-#endif // ]
-        }
+        if (NULL==ibasename||0==*ibasename)
+          fprintf(f,"%s ...\n",label);
+        else
+          fprintf(f,"%s \"%s\" ...\n",label,ibasename);
       }
 
       // mkdir.
@@ -224,13 +167,6 @@ wibasename:
       // copy "folder.jpg" if requested.
       if (0!=(EXTENSION_JPG&options->extensions)&&NULL!=album->ipath)
         bs1770gain_album_copy_file(album,"folder.jpg");
-
-#if defined (W_WIN32) // [
-      if (wlabel)
-        FREE(wlabel);
-    wlabel:
-      ;
-#endif // ]
     }
 
     p->vmt->album.tail(p);
@@ -277,9 +213,6 @@ int bs1770gain_tree_album(const bs1770gain_tree_t *root, const char *odirname,
   char *path;
   bs1770gain_tree_t tree;
   FILE *f;
-#if defined (W_WIN32) // [
-  wchar_t *wrootpath;
-#endif // ]
 
   TRACE_PUSH();
   code =-1;
@@ -299,29 +232,8 @@ int bs1770gain_tree_album(const bs1770gain_tree_t *root, const char *odirname,
     goto dir;
   }
 
-  if (f) {
-#if defined (W_WIN32) // [
-    if (options->utf16) {
-      if (NULL==(wrootpath=pbu_s2w(root->path))) {
-        DMESSAGE("converting UTF-8 to UTF-16");
-        goto wrootpath;
-      }
-
-      fwprintf(f,L"%s\n",wrootpath);
-    }
-    else {
-      wrootpath=NULL;
-#endif // ]
-      fprintf(f,"%s\n",root->path);
-#if defined (W_WIN32) // [
-    }
-
-    if (wrootpath)
-      FREE(wrootpath);
-wrootpath:
-    ;
-#endif // ]
-  }
+  if (f)
+    fprintf(f,"%s\n",root->path);
 
   bs1770gain_tree_analyze(&tree,path,options);
   code=0;
@@ -519,7 +431,7 @@ bs1770gain_tree_t *bs1770gain_tree_dir_init(bs1770gain_tree_t *tree,
 #if defined (_WIN32) // {
   if (NULL==(wroot=pbu_s2w(root))) {
     DMESSAGE("converting string");
-    goto wroot;
+    goto s2w;
   }
 
   if (NULL==(tree->dir.d=_wopendir(wroot))) {
@@ -538,8 +450,8 @@ bs1770gain_tree_t *bs1770gain_tree_dir_init(bs1770gain_tree_t *tree,
   return tree;
 dir:
 #if defined (_WIN32) // {
-  FREE(wroot);
-wroot:
+  free(wroot);
+s2w:
 #endif // }
   return NULL;
 }

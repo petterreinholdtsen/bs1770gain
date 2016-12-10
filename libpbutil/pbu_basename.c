@@ -38,3 +38,25 @@ const char *pbu_basename(const char *path)
 
   return p;
 }
+
+#if defined (_WIN32) // [
+const wchar_t *pbu_wbasename(const wchar_t *wpath)
+{
+  const wchar_t *p;
+
+  if (NULL==wpath)
+    return NULL;
+
+  p=wpath+wcslen(wpath);
+
+  // TODO: unicode.
+  while (wpath<p&&('/'==p[-1]||'\\'==p[-1]))
+    --p;
+
+  // TODO: unicode.
+  while (wpath<p&&('/'!=p[-1]&&'\\'!=p[-1]))
+    --p;
+
+  return p;
+}
+#endif // ]
