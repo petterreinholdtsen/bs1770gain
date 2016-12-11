@@ -1,3 +1,10 @@
+bs1770gain (0.4.12-1) unstable; urgency=medium
+
+  * New upstream version 0.4.12.
+  * Added simple manual page using txt2man.
+
+ -- Petter Reinholdtsen <pere@debian.org>  Sun, 11 Dec 2016 08:31:14 +0000
+
 bs1770gain (0.4.11-1) unstable; urgency=medium
 
   * New upstream version 0.4.11.
