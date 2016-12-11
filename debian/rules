@@ -6,3 +6,10 @@
 override_dh_auto_test:
 	dh_auto_test
 	BS1770GAIN=`pwd`/bs1770gain/bs1770gain ./debian/tests/test-cmd-tool 
+
+# Generate and install manual page
+debian/bs1770gain.1: debian/bs1770gain.txtman
+	txt2man -t BS1770GAIN -d 2016-12-11 -s 1 debian/bs1770gain.txtman > $@
+override_dh_installman: debian/bs1770gain.1
+	dh_installman
+	$(RM) debian/bs1770gain.1

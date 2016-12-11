@@ -1,0 +1,71 @@
+NAME
+  bs1770gain - lundness scanner and normalizer based on ITU-R BS.1770
+SYNOPSIS
+  bs1770gain [options] <file/dir> [<file/dir> ...]
+DESCRIPTION
+  BS1770GAIN is a loudness scanner compliant with ITU-R BS.1770 and
+  its flavors EBU R128, ATSC A/85, and ReplayGain 2.0. It helps
+  normalizing the loudness of audio and video files to the same level.
+
+  See bs1770gain --help for experimental options.  Command line
+  arguments can appear in any order.
+OPTIONS
+  -h,--help        print this message and exit
+  -i,--integrated  calculate integrated loudness
+  -s,--shorterm    calculate maximum shortterm loudness
+  -m,--momentary   claculate maximum momentary loudness
+  -r,--range       calculate loudness range
+  -p,--samplepeak  calculate maximum sample peak
+  -t,--truepeak    calculate maximum true peak
+
+  -b <timestamp>,--begin <timestamp>    begin decoding at timestamp (in microseconds, format: hh:mm:ss.mus)
+
+  -d <duration>,--duration <duration>   let decoding last duration (in microseconds, format: hh:mm:ss.mus)
+
+  -u <method>,--use <method>            base replay gain calculation on method (with respect to the -a/--apply and -o/--output options), methods: "integrated" (default), "shortterm", or "momentary" experimental methods: "momentary-mean" (same as "integrated"), "momentary-maximum" (same as "momentary"), "shortterm-mean", or "shortterm-maximum" (same as "shortterm")
+
+  -a               apply the EBU/ATSC/RG album gain to the output (in conjunction with the -o/--output option)
+  -o <folder>,--output <folder>          write RG tags or apply the EBU/ATSC/RG gain,
+                   respectively, and output to folder
+  -f <file>,--file <file>
+                   write analysis to file
+  -x,--extensions  enable following extensions/defaults:
+    1) rename files according to TITLE tag
+    2) read metadata from per-folder CSV file "folder.csv"
+    3) copy file "folder.jpg" from source to destination
+       folder
+    4) automatically add the TRACK and DISC tags
+    5) calculate maximum true peak
+    6) convert to stereo
+  -l,--list        print FFmpeg format/stream information
+  --ebu            calculate replay gain according to EBU R128 (-23.0 LUFS, default)
+  --atsc           calculate replay gain according to ATSC A/85 (-24.0 LUFS)
+  --replaygain     calculate replay gain according to ReplayGain 2.0 (-18.0 LUFS)
+  --track-tags     write track tags
+  --album-tags     write album tags
+  --unit <unit>    write tags with <unit>
+  --apply <q>      apply the EBU/ATSC/RG gain to the output (in conjunction with the -o/--output option), q=0.0 (album gain) ... 1.0 (track gain), default  0.0 (album gain)
+  --audio <index>  select audio index (corresponds to
+    [0:<index>] in FFmpeg listing, cf. -l/--list option)
+  --video <index>  select video index (corresponds to
+    [0:<index>] in FFmpeg listing, cf. -l/--list option)
+  --stereo         convert to stereo
+  --drc <float>    set AC3 dynamic range compression (DRC)
+  --extension <extension>  enable extension out of
+    "rename":  rename files according to TITLE tag
+    "csv":  read metadata from per-folder CSV file "folder.csv"
+    "jpg":  copy file "folder.jpg" from source to destination folder
+    "tags":  automatically add the TRACK and DISC tags
+  --format <format>  convert to format
+  --loglevel <level>  set loglevel,
+    level:  "quiet", "panic", "fatal", "error", "warning",
+    "info", "verbose", "debug"
+  --xml            print results in xml format
+  --time           print out duration of program invocation
+  --norm <float>   norm loudness to float.
+AUTHOR
+  The bs1770gain system is written Peter Belkner and others.  The
+  authors can be contacted via http://bs1770gain.sourceforge.net/ .
+
+  This manual page for bs1770gain was written by Petter Reinholdtsen
+  and is licensed using the same terms as the bs1770gain source.
