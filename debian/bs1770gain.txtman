@@ -13,7 +13,7 @@ OPTIONS
   -h,--help        print this message and exit
   -i,--integrated  calculate integrated loudness
   -s,--shorterm    calculate maximum shortterm loudness
-  -m,--momentary   claculate maximum momentary loudness
+  -m,--momentary   calculate maximum momentary loudness
   -r,--range       calculate loudness range
   -p,--samplepeak  calculate maximum sample peak
   -t,--truepeak    calculate maximum true peak
