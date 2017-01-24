@@ -1,3 +1,11 @@
+bs1770gain (0.4.12-2) unstable; urgency=low
+
+  [ Matteo F. Vescovi ]
+  * Fixed typo in manpage and added new 0001-Fix_typo_in_help_entry.patch
+    fixing the same typo in the program help text.
+
+ -- Petter Reinholdtsen <pere@debian.org>  Tue, 24 Jan 2017 08:27:21 +0000
+
 bs1770gain (0.4.12-1) unstable; urgency=medium
 
   * New upstream version 0.4.12.
