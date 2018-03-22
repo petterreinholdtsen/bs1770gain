@@ -1,0 +1,20 @@
+Description: Ignore autoreconf errors to get build working
+ This is a workaround to get dh-autoreconf working, needed to
+ use debhelper compat level 10.
+Author: Petter Reinholdtsen <pere@debian.org>
+Bug-Debian: https://bugs.debian.org/882224
+Forwarded: no
+Reviewed-By: Petter Reinholdtsen <pere@debian.org>
+Last-Update: 2018-03-22
+
+--- bs1770gain-0.4.12.orig/configure.ac
++++ bs1770gain-0.4.12/configure.ac
+@@ -27,7 +27,7 @@
+ # AC_CHECK_LIB (library, function, [action-if-found], [action-if-not-found], [other-libraries])
+ 
+ AC_INIT([bs1770gain], [0.4.11-beta-2], [pbelkner@users.sf.net], [], [http://bs1770gain.sourceforge.net/])
+-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
++AM_INIT_AUTOMAKE([-Wall foreign])
+ AC_PROG_CC
+ AC_PROG_RANLIB
+ 

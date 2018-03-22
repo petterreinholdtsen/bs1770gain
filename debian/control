@@ -3,7 +3,7 @@ Section: sound
 Priority: optional
 Maintainer: Debian Multimedia Team <pkg-multimedia-maintainers@lists.alioth.debian.org>
 Uploaders: Petter Reinholdtsen <pere@debian.org>
-Build-depends: debhelper (>> 9)
+Build-depends: debhelper (>> 10~)
  , dh-autoreconf
  , libsox-dev
  , libavformat-dev (>= 7:2.7.0)
