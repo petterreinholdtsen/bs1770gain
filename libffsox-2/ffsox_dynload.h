@@ -18,37 +18,86 @@
  * MA  02110-1301  USA
  */
 #ifndef __FFSOX_DYNLOAD_H__
-#define __FFSOX_DYNLOAD_H__ // {
-#if defined (HAVE_CONFIG_H) // {
+#define __FFSOX_DYNLOAD_H__ // [
+#if defined (HAVE_CONFIG_H) // [
 #include <config.h>
-#endif // }
+#endif // ]
 #include <libavformat/avformat.h>
-#if defined (_MSC_VER) && defined (AV_TIME_BASE_Q) // {
+#include <libswresample/swresample.h>
+#if defined (AV_CODEC_FLAG_GLOBAL_HEADER) // [
+// just fine!
+#elif defined (CODEC_FLAG_GLOBAL_HEADER) // ] [
+// define it!
+#define AV_CODEC_FLAG_GLOBAL_HEADER CODEC_FLAG_GLOBAL_HEADER
+#else // ] [
+// one out of the two should be defined.
+#error AV_CODEC_FLAG_GLOBAL_HEADER
+#endif // ]
+#if defined (_MSC_VER) && defined (AV_TIME_BASE_Q) // [
   #undef AV_TIME_BASE_Q
-#endif // }
+#endif // ]
 #include <sox.h>
-#if defined (__GNUC__) && defined (__LP64__) && defined (LSX_API) // {
+#if defined (__GNUC__) && defined (__LP64__) && defined (LSX_API) // [
   #undef LSX_API
   #define LSX_API
-#endif // }
-#ifdef __cpluplus
+#endif // ]
+#ifdef __cpluplus // [
 extern "C" {
-#endif
+#endif // ]
+
+#if defined (HAVE_FFSOX_DYNLOAD) // [
+///////////////////////////////////////////////////////////////////////////////
+//#define FFSOX_DYNLOAD
+#if ! defined (FFSOX_DYNLOAD) // [
+#define FFSOX_DYNLOAD2
+#endif // ]
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined (HAVE_FFSOX_DYNLOAD) // {
-#define FFSOX_DYNLOAD
-#endif // }
+#if ! defined (FFSOX_AVUTIL_V) // [
+  #define FFSOX_AVUTIL_V PBU_STR(LIBAVUTIL_VERSION_MAJOR)
+#endif // ]
+#if ! defined (FFSOX_SWRESAMPLE_V) // [
+  #define FFSOX_SWRESAMPLE_V PBU_STR(LIBSWRESAMPLE_VERSION_MAJOR)
+#endif // ]
+#if ! defined (FFSOX_AVCODEC_V) // [
+  #define FFSOX_AVCODEC_V PBU_STR(LIBAVCODEC_VERSION_MAJOR)
+#endif // ]
+#if ! defined (FFSOX_AVFORMAT_V) // [
+  #define FFSOX_AVFORMAT_V PBU_STR(LIBAVFORMAT_VERSION_MAJOR)
+#endif // ]
+#if ! defined (FFSOX_LIBSOX_V) // [
+  #define FFSOX_LIBSOX_V "3"
+#endif // ]
 
-#if 0 // {
-#define FFSOX_DEPRECATED_AV_FREE_PACKET
-#endif // }
+///////////////////////////////////////////////////////////////////////////////
+#if defined (_WIN32) // [
+#define FFSOX_AVUTIL "avutil-" FFSOX_AVUTIL_V ".dll"
+#define FFSOX_SWRESAMPLE "swresample-" FFSOX_SWRESAMPLE_V  ".dll"
+#define FFSOX_AVCODEC "avcodec-" FFSOX_AVCODEC_V  ".dll"
+#define FFSOX_AVFORMAT "avformat-" FFSOX_AVFORMAT_V  ".dll"
+#define FFSOX_LIBSOX "libsox-" FFSOX_LIBSOX_V  ".dll"
+#else // ] [
+#define FFSOX_AVUTIL "libavutil.so." FFSOX_AVUTIL_V
+#define FFSOX_SWRESAMPLE "libswresample.so." FFSOX_SWRESAMPLE_V
+#define FFSOX_AVCODEC "libavcodec.so." FFSOX_AVCODEC_V
+#define FFSOX_AVFORMAT "libavformat.so." FFSOX_AVFORMAT_V
+#define FFSOX_LIBSOX "libsox.so." FFSOX_LIBSOX_V
+#endif // ]
 
 ///////////////////////////////////////////////////////////////////////////////
 int ffsox_dynload(const char *dirname);
 void ffsox_unload(void);
+#endif // ]
 
-#if defined (FFSOX_DYNLOAD) // {
+///////////////////////////////////////////////////////////////////////////////
+//#define FFSOX_FILTER_CHANNELS
+
+#if 0 // [
+#define FFSOX_DEPRECATED_AV_FREE_PACKET
+#endif // ]
+
+#if defined (FFSOX_DYNLOAD2) // [
+#elif defined (FFSOX_DYNLOAD) // ] [
 ///////////////////////////////////////////////////////////////////////////////
 typedef struct ffsox_avutil ffsox_avutil_t;
 typedef struct ffsox_avcodec ffsox_avcodec_t;
@@ -59,6 +108,7 @@ typedef struct ffsox_libsox ffsox_libsox_t;
 ///////////////////////////////////////////////////////////////////////////////
 struct ffsox_avutil {
 #if defined (__GNUC__) // {
+  typeof (avutil_version) *avutil_version;
   typeof (av_frame_alloc) *av_frame_alloc;
   typeof (av_frame_free) *av_frame_free;
   typeof (av_get_channel_layout_nb_channels)
@@ -86,7 +136,12 @@ struct ffsox_avutil {
   typeof (av_dict_set) *av_dict_set;
   typeof (av_dict_free) *av_dict_free;
   typeof (av_frame_get_buffer) *av_frame_get_buffer;
+#if defined (FFSOX_FILTER_CHANNELS) // [
+  typeof (av_get_channel_layout_channel_index)
+      *av_get_channel_layout_channel_index;
+#endif // ]
 #else // } {
+  void *avutil_version;
   AVFrame *(*av_frame_alloc)(void);
   void (*av_frame_free)(AVFrame **frame);
   int (*av_get_channel_layout_nb_channels)(uint64_t channel_layout);
@@ -116,12 +171,16 @@ struct ffsox_avutil {
   int (*av_dict_set)(AVDictionary **pm, const char *key, const char *value,
       int flags);
   void (*av_dict_free)(AVDictionary **m);
-  int (*av_frame_get_buffer)(AVFrame *frame, int align);
+#if defined (FFSOX_FILTER_CHANNELS) // [
+  int (*av_get_channel_layout_channel_index)(uint64_t channel_layout,
+      int index);
+#endif // ]
 #endif // }
 };
 
 struct ffsox_avcodec {
 #if defined (__GNUC__) // {
+  typeof (avcodec_version) *avcodec_version;
   typeof (avcodec_find_decoder) *avcodec_find_decoder;
   typeof (avcodec_find_decoder_by_name) *avcodec_find_decoder_by_name;
   typeof (avcodec_find_encoder) *avcodec_find_encoder;
@@ -139,6 +198,7 @@ struct ffsox_avcodec {
   typeof (avcodec_copy_context) *avcodec_copy_context;
   typeof (av_packet_rescale_ts) *av_packet_rescale_ts;
 #else // } {
+  void *avcodec_version;
   AVCodec *(*avcodec_find_decoder)(enum AVCodecID id);
   AVCodec *(*avcodec_find_decoder_by_name)(const char *name);
   AVCodec *(*avcodec_find_encoder)(enum AVCodecID id);
@@ -166,6 +226,7 @@ struct ffsox_avcodec {
 
 struct ffsox_avformat {
 #if defined (__GNUC__) // {
+  typeof (avformat_version) *avformat_version;
   typeof (av_register_all) *av_register_all;
   typeof (avformat_open_input) *avformat_open_input;
   typeof (avformat_find_stream_info) *avformat_find_stream_info;
@@ -183,6 +244,7 @@ struct ffsox_avformat {
   typeof (avformat_seek_file) *avformat_seek_file;
   typeof (av_dump_format) *av_dump_format;
 #else // } {
+  void *avformat_version;
   void (*av_register_all)(void);
   int (*avformat_open_input)(AVFormatContext **ps, const char *filename,
       AVInputFormat *fmt, AVDictionary **options);
@@ -286,8 +348,11 @@ extern ffsox_libsox_t ffsox_libsox;
 
 #if ! defined (FFSOX_DYNLOAD_PRIV) // {
 ///////////////////////////////////////////////////////////////////////////////
+#define avutil_version (*ffsox_avutil.avutil_version)
 #define av_frame_alloc (*ffsox_avutil.av_frame_alloc)
 #define av_frame_free (*ffsox_avutil.av_frame_free)
+#define av_get_channel_layout_nb_channels \
+    (*ffsox_avutil.av_get_channel_layout_nb_channels)
 #define av_frame_get_best_effort_timestamp \
     (*ffsox_avutil.av_frame_get_best_effort_timestamp)
 #define av_frame_set_best_effort_timestamp \
@@ -313,8 +378,13 @@ extern ffsox_libsox_t ffsox_libsox;
 #define av_dict_set (*ffsox_avutil.av_dict_set)
 #define av_dict_free (*ffsox_avutil.av_dict_free)
 #define av_frame_get_buffer (*ffsox_avutil.av_frame_get_buffer)
+#if defined (FFSOX_FILTER_CHANNELS) // [
+#define av_get_channel_layout_channel_index \
+    (*ffsox_avutil.av_get_channel_layout_channel_index)
+#endif // ]
 
 #if ! defined (PBU_MALLOC_DEBUG) // {
+#define avcodec_version (*ffsox_avcodec.avcodec_version)
 #define avcodec_find_decoder (*ffsox_avcodec.avcodec_find_decoder)
 #define avcodec_find_decoder_by_name \
     (*ffsox_avcodec.avcodec_find_decoder_by_name)
@@ -376,6 +446,7 @@ void ffsox_av_packet_rescale_ts(AVPacket *pkt, AVRational tb_src,
 #endif // }
 
 #if ! defined (PBU_MALLOC_DEBUG) // {
+#define avformat_version (*ffsox_avformat.avformat_version)
 #define av_register_all (*ffsox_avformat.av_register_all)
 #define avformat_open_input (*ffsox_avformat.avformat_open_input)
 #define avformat_find_stream_info \
@@ -459,9 +530,9 @@ void ffsox_av_dump_format(AVFormatContext *ic, int index, const char *url,
 #define sox_close (*ffsox_libsox.sox_close)
 #define sox_init_encodinginfo (*ffsox_libsox.sox_init_encodinginfo)
 #endif // }
-#endif // }
+#endif // ]
 
-#ifdef __cpluplus
+#ifdef __cpluplus // [
 }
-#endif
-#endif // }
+#endif // ]
+#endif // ]

@@ -19,8 +19,13 @@
  */
 #include <ffsox_priv.h>
 
+#if defined (FFSOX_FIX_881132_CHANNEL_OVERFLOW) // [
+int ffsox_convert_setup(convert_t *convert, frame_t *fr, frame_t *fw,
+    double q, intercept_t *intercept)
+#else // ] [
 void ffsox_convert_setup(convert_t *convert, frame_t *fr, frame_t *fw,
     double q, intercept_t *intercept)
+#endif // ]
 {
   int nb_samples1,nb_samples2;
 
@@ -30,7 +35,19 @@ void ffsox_convert_setup(convert_t *convert, frame_t *fr, frame_t *fw,
   convert->intercept=intercept;
   convert->channels=av_frame_get_channels(fr->frame);
 
+#if defined (FFSOX_FIX_881132_CHANNEL_OVERFLOW) // [
+  if (AV_NUM_DATA_POINTERS<=convert->channels) {
+		DVMESSAGE("#channels (%d) not in range (%d at maximum)",
+				convert->channels,AV_NUM_DATA_POINTERS);
+		return -1;
+	}
+#endif // ]
+
   nb_samples1=fr->frame->nb_samples-fr->nb_samples.frame;
   nb_samples2=fw->frame->nb_samples-fw->nb_samples.frame;
   convert->nb_samples=PBU_MIN(nb_samples1,nb_samples2);
+
+#if defined (FFSOX_FIX_881132_CHANNEL_OVERFLOW) // [
+  return 0;
+#endif // ]
 }

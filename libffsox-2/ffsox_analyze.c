@@ -77,6 +77,9 @@ int ffsox_analyze(analyze_config_t *ac, int ai, int vi)
   cc.channels=fr->si.cc->channels;
   cc.momentary=ac->momentary;
   cc.shortterm=ac->shortterm;
+#if defined (FFSOX_LFE_CHANNEL) // [
+  cc.lfe=ac->lfe;
+#endif // ]
 
   if (ffsox_collect_create(&collect,&cc)<0) {
     DMESSAGE("creating collector");
@@ -114,6 +117,7 @@ int ffsox_analyze(analyze_config_t *ac, int ai, int vi)
   // add the SoX rate effect to the SoX chain.
   if (0!=(AGGREGATE_TRUEPEAK&aggregate->flags)) {
 #if defined (FFSOX_ANALYZE_CASCADE) // {
+//#error FFSOX_ANALYZE_CASCADE
     rate=signal.rate;
 
     while ((rate*=2.0)<=FFSOX_ANALYZE_RATE) {
@@ -155,6 +159,7 @@ int ffsox_analyze(analyze_config_t *ac, int ai, int vi)
     goto effect;
   }
 
+//DMARKLN();
   // run the SoX chain.
   if (SOX_SUCCESS!=sox_flow_effects(chain,NULL,NULL)
       ||0!=read->sox_errno) {
@@ -162,7 +167,9 @@ int ffsox_analyze(analyze_config_t *ac, int ai, int vi)
     goto flow;
   }
 
+//DMARKLN();
   ffsox_collect_flush(&collect);
+//DMARKLN();
   code=0;
 // cleanup:
 flow:

@@ -65,6 +65,7 @@ ARFLAGS = cru
 libpbutil_a_AR = $(AR) $(ARFLAGS)
 libpbutil_a_LIBADD =
 am_libpbutil_a_OBJECTS = pbu_basename.$(OBJEXT) \
+  pbu_vwritelna.$(OBJEXT) pbu_vwritelnw.$(OBJEXT) \
 	pbu_copy_file.$(OBJEXT) pbu_ext.$(OBJEXT) \
 	pbu_extend_path.$(OBJEXT) pbu_list.$(OBJEXT) \
 	pbu_malloc.$(OBJEXT) pbu_mkdir.$(OBJEXT) pbu_msvcrt.$(OBJEXT) \

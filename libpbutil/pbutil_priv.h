@@ -25,13 +25,20 @@ extern "C" {
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
+#define DMARKLN()                   PBU_DMARKLN()
+#define DWRITELN(cs)                PBU_DWRITELN(cs)
+#define DVWRITELN(format,...)       PBU_DVWRITELN(format,__VA_ARGS__)
+#if defined (_WIN32) // [
+#define DWRITELNW(cs)               PBU_DWRITELNW(cs)
+#define DVWRITELNW(format,...)      PBU_DVWRITELNW(format,__VA_ARGS__)
+#endif // ]
 #define DPUTS(cs)                   PBU_DPUTS(cs)
 #define DPRINTF(cs,...)             PBU_DPRINTF(cs,__VA_ARGS__)
 #define DPUTWS(ws)                  PBU_DPUTWS(ws)
 #define DWPRINTF(ws,...)            PBU_DWPRINTF(ws,__VA_ARGS__)
 #define DERROR(x,y)                 PBU_DERROR(x,y)
 #define DMESSAGE(m)                 PBU_DMESSAGE(m)
-#define DMESSAGEV(m,...)            PBU_DMESSAGEV(m,__VA_ARGS__)
+#define DVMESSAGE(m,...)            PBU_DVMESSAGE(m,__VA_ARGS__)
 
 #define DDPUTS(debug,cs)            PBU_DDPUTS(debug,cs)
 #define DDPRINTF(debug,cs,...)      PBU_DDPRINTF(debug,cs,__VA_ARGS__)
@@ -39,7 +46,7 @@ extern "C" {
 #define DDWPRINTF(debug,ws,...)     PBU_DDWPRINTF(debug,ws,__VA_ARGS__)
 #define DDERROR(debug,x,y)          PBU_DDERROR(debug,x,y)
 #define DDMESSAGE(debug,m)          PBU_DDMESSAGE(debug,m)
-#define DDMESSAGEV(debug,m,...)     PBU_DDMESSAGEV(debug,m,__VA_ARGS__)
+#define DDVMESSAGE(debug,m,...)     PBU_DDVMESSAGE(debug,m,__VA_ARGS__)
 
 ///////////////////////////////////////////////////////////////////////////////
 #define TRACE_PUSH()                PBU_TRACE_PUSH()

@@ -27,10 +27,17 @@ int ffsox_packet_writer_create(packet_writer_t *pw, source_t *si,
   AVRational ar;
 
   // initialize the base calss.
+#if defined (FFSOX_FIX_883198_MISSING_CODEC_ID) // [
+  if (ffsox_packet_consumer_create(&pw->packet_consumer,si,stream_index,1)<0) {
+    DMESSAGE("creating packet consumer");
+    goto base;
+  }
+#else // ] [
   if (ffsox_packet_consumer_create(&pw->packet_consumer,si,stream_index)<0) {
     DMESSAGE("creating packet consumer");
     goto base;
   }
+#endif // ]
 
   // set the vmt.
   pw->vmt=ffsox_packet_writer_get_vmt();
@@ -65,7 +72,7 @@ int ffsox_packet_writer_create(packet_writer_t *pw, source_t *si,
   pw->so.cc->codec_tag=0;
 
   if (pw->so.fc->oformat->flags&AVFMT_GLOBALHEADER)
-    pw->so.cc->flags|=CODEC_FLAG_GLOBAL_HEADER;
+    pw->so.cc->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
 
   if (ffsox_sink_append(so,&pw->si,&pw->so)<0) {
     DMESSAGE("appending output stream");
@@ -128,6 +135,7 @@ static int packet_writer_set_packet(packet_writer_t *n, AVPacket *pkt)
   if (NULL==pkt)
     n->state=STATE_FLUSH;
   else {
+#if (LIBAVFORMAT_VERSION_MAJOR < 58) // [
     if (pkt->pts!=AV_NOPTS_VALUE)
       pkt->pts=av_rescale_q(pkt->pts,sti->time_base,sto->time_base);
 
@@ -135,6 +143,16 @@ static int packet_writer_set_packet(packet_writer_t *n, AVPacket *pkt)
       pkt->dts=av_rescale_q(pkt->dts,sti->time_base,sto->time_base);
 
     pkt->duration=av_rescale_q(pkt->duration,sti->time_base,sto->time_base);
+#else // ] [
+    // <ffmpeg>/doc/examples/remuxing.c
+//DVWRITELN("sti->time_base: %I64d, sto->time_base: %I64d",sti->time_base,sto->time_base);
+    pkt->pts=av_rescale_q_rnd(pkt->pts,sti->time_base,sto->time_base,
+        AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
+    pkt->dts=av_rescale_q_rnd(pkt->dts,sti->time_base,sto->time_base,
+        AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
+    pkt->duration=av_rescale_q(pkt->duration,sti->time_base,sto->time_base);
+    pkt->pos=-1;
+#endif // ]
 
     if (ffsox_stream_interleaved_write(&n->so,pkt)<0) {
       DMESSAGE("writing packet");

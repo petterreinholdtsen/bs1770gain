@@ -507,10 +507,10 @@ int ffsox_audio_player_play(audio_player_t *ap)
 {
   int code=-1;
   HANDLE hThread;
-  machine_t m;
+  engine_t m;
 
-  if (ffsox_machine_run(&m,&ap->node)<0) {
-    DMESSAGE("running machine");
+  if (ffsox_engine_run(&m,&ap->node)<0) {
+    DMESSAGE("running engine");
     goto pfx;
   }
 
@@ -530,8 +530,8 @@ int ffsox_audio_player_play(audio_player_t *ap)
   }
 
   while (STATE_END!=ap->state) {
-    if (ffsox_machine_run(&m,&ap->node)<0) {
-      DMESSAGE("running machine");
+    if (ffsox_engine_run(&m,&ap->node)<0) {
+      DMESSAGE("running engine");
       goto run;
     }
   }

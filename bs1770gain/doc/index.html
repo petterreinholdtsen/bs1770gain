@@ -1,8 +1,9 @@
+<!DOCTYPE html>
 <html>
 <head>
 <title>BS1770GAIN</title>
 <meta name="keywords" content="EBU R128, loudness">
-<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" type="text/css" href="css/styles.css">
 <script type="text/javascript">
 if (0<=navigator.appVersion.indexOf("Win")) {
   var pfx="win32"
@@ -30,7 +31,7 @@ else {
 <h2>BS1770GAIN</h2>
 
 <div class="preamble">
-Copyright &copy; 2014-2016 by Peter Belkner
+Copyright &copy; 2014-2018 by Peter Belkner
 (<a target="_blank" href="http://home.snafu.de/pbelkner/">http://home.snafu.de/pbelkner/</a>)
 
 <p>This program is free software: you can redistribute it and/or modify
@@ -53,6 +54,9 @@ along with this program. If not, see
 flavors EBU R128, ATSC A/85, and ReplayGain 2.0. It helps normalizing the
 loudness of audio and video files to the same level.</b>
 
+<p><a name="political"><a target="_blank" href="https://en.wikipedia.org/wiki/Standing_on_the_shoulders_of_giants">Nanos gigantum humeris insidentes</a>: This project is dedicated to my European heritage. It is strictly to be understood as a statement against the saccarine "sweet" liberal lie of "multiculturalism" which is going to destroy Europe as we know it, in particular against the Merkel regime selling out Europe for nothing as we watch.
+<a target="_blank" href="https://twitter.com/hashtag/TeamWhite?src=hash">#TeamWhite</a>
+
 <p><table border="0" cellpadding="0" cellspacing="0">
 <tr>
   <td style="text-align:right"><b>Home:</b></td>
@@ -73,16 +77,229 @@ loudness of audio and video files to the same level.</b>
 
 <h3>Content</h3>
 <ol>
-  <li><a href="#hist">History</a>
+  <li><a href="#hist">News</a>
+  <li><a href="#badges">Badges</a>
   <li><a href="#intro">Introduction</a>
   <li><a href="#usage">Usage</a>
   <li><a href="#cli">Command Line Syntax</a>
   <li><a href="#test">Test Cases</a>
 </ol>
 
-<a name="hist"><h3>1. History</h3>
+<a name="hist"><h3>1. News</h3>
 
 <p><div class="history"><table style="width:100%">
+<tr>
+  <td valign="top" nowrap>2018-09-02</td>
+  <td valign="top" nowrap><a name="0.5.0"><a target="_blank"
+    href="https://sourceforge.net/projects/bs1770gain/files/bs1770gain/0.5.0/">0.5.0</a></td>
+  <td valign="top">Essentialy the same as <a href="#0.5.0-beta-5">0.5.0-&beta;5</a>.</td>
+<tr>
+<tr>
+  <td valign="top" nowrap>2018-09-01</td>
+  <td valign="top" nowrap>&nbsp;</td>
+  <td valign="top">
+    We&apos;re aware that we&apos;re not the world&apos;s most gifted
+    software developer. Anyway, we&apos;re a member of
+    <a target="_blank" href="https://twitter.com/hashtag/TeamWhite?src=hash">#TeamWhite</a>
+    and hence added the respective hashtag to the above
+    <a href="#political">note</a>.
+  </td>
+</tr>
+<tr>
+  <td valign="top" nowrap>2018-08-11</td>
+  <td valign="top" nowrap><a name="0.5.0-beta-5"><a target="_blank"
+    href="https://sourceforge.net/projects/bs1770gain/files/bs1770gain/0.5.0-beta-5/">0.5.0-&beta;5</a></td>
+  <td valign="top"><ul>
+  <li>Remuxing files with more then one stream (i.e. video files) was broken. This &beta;-release fixes the issue.
+  </ul></td>
+<tr>
+<tr>
+  <td valign="top" nowrap>2018-08-09</td>
+  <td valign="top" nowrap><a name="0.5.0-beta-4"><a target="_blank"
+    href="https://sourceforge.net/projects/bs1770gain/files/bs1770gain/0.5.0-beta-4/">0.5.0-&beta;4</a></td>
+  <td valign="top"><ul>
+  <li>
+    With <a href="#0.5.0-beta-1">v0.5.0-&beta;1</a> we introduced guarding
+    <i>bs1770gain</i> against being run with incompatible <i>FFmpeg</i> and
+    <i>SoX</i> libraries.  At least this was the goal. In case of the <i>FFmpeg</i>
+    libraries the test was done against the full version consiting of <i>major</i>,
+    <i>minor</i>, and <i>micro</i> version numbers. This was by far to much. As
+    far as we know just a bump of the <i>major</i> version number indicates some
+    change in binary compatibility.  This release relexas the test to <i>FFmpeg
+    major</i> version number.
+  <li><a name="feed-the-world">BTW:<ul>
+    <li>Around the time we were releasing
+      <a href="#0.5.0-beta-1">v0.5.0-&beta;1</a>
+      we&apos;ve received the following mail from some <i>Debian</i> official:
+<blockquote><tt>
+From: daniel &lt;daniel@xxxxxxxx.xxx&gt;
+<br>Date: 29.07.2018 19:36
+<br>To: Peter Belkner &lt;pbelkner@snafu.de&gt;
+<br>Subject: Re: Bug#883198: Fixed
+<br>
+<br>Hi Peter,
+<br>
+<br>Thanks for the link. I was sorry to see the statement about European heritage on this page. I'm not sure how a Debian or Free Software user who isn't European is meant to react to that.
+<br>
+<br>Daniel
+<br>
+<br>-------- Original message --------
+<br>From: Peter Belkner &lt;pbelkner@snafu.de&gt;
+<br>Date: 29/07/2018 5:36 pm (GMT+00:00)
+<br>To: 883198@bugs.debian.org
+<br>Subject: Bug#883198: Fixed
+<br>
+<br>For details refer to
+<a href="#0.5.0-beta-1">http://bs1770gain.sourceforge.net/index.html#0.5.0-beta-1</a>
+<br>
+<br>Peter
+</tt></blockquote>
+    <li>To be honest, dear <i>Daniel</i>:
+      We&apos;re simply not interested in "how a Debian or
+      Free Software user who isn&apos;t European is meant to react."
+      We develop open source software&#44; and we&apos;re from Europe.
+      We&apos;re interested in how <i>we</i> as native Europeans feel when
+      overrun by the third world:
+      To us the message of the above mail is nothing else then a typical
+      instance of anti-white "racism" (by no means it is in accordance with the
+      <a target="_blank" href="https://www.debian.org/code_of_conduct">saccarine "sweet" words</a>
+      published by <i>Debian</i>.)
+      To us the idea of developing open source software was
+      always (and possibly will ever) be educational similar to academia
+      and sience. Add the internet and you&apos;re in a position to bring it
+      to the smallest
+      village all over the world. In the ages of the internet there&apos;s
+      really not the slidest reason for someone interested in open source
+      software leaving his home somewhere in the world and coming to Europe
+      for some silly promise made by 
+      <i><a href="http://www.pentagonstrike.co.uk/">those</a></i>
+      obviously nobody ever can keep
+      (not by <i>us</i> of course, cf. <a href="#those">below</a>)
+      and that way destroying all the infrastucture <i>we&apos;ve</i> created
+      here in Europe in the course of thousands of years (just for a free
+      lunch nobody is able to deliver to the whole world anyway.) Contrary
+      to <i>those</i> (who are no native inhabitants of Europe) <i>we</i>,
+      the native inhabitants of Europe, clearly state:
+      <u>Make no mistake, stay at home and learn&#44; learn&#44; learn! Learn as much as you can!</u>
+    <li><a name="those">We're convinced that the so called
+      <a traget="_blank" href="https://en.wikipedia.org/wiki/Refugee_crisis">refugee crisis</a>
+      is an event staged by 
+      <i><a href="http://www.pentagonstrike.co.uk/">those</a></i>
+      literally nobody is even allowed to call
+      by their very name (at least here in Europe; cf. the German fairytale
+      <a target="_blank" href="https://en.wikipedia.org/wiki/Rumpelstiltskin">Rumpelstiltskin</a>:
+      we have to break the spell and again have to learn to call the
+      <i>chosen people</i>
+      by their very name as it was usual
+      for centuries and just nowadys is "prohibided" by some strange "laws" like
+      <a target="_blank" href="https://en.wikipedia.org/wiki/Volksverhetzung">&sect; 130 volksverhetzung</a>
+      dictated by themselfs) in order to make their wet dream of a
+      <a target="_blank" href="https://en.wikipedia.org/wiki/New_world_order_(politics)">new world order</a>
+      (either in the clothes of <i>nominal communism</i> or in the clothes of
+      <i>crypto-communism</i> aka <i>liberalism</i> - two sides of the very same coin anyway)
+      become true&#44; and finally make <i>those</i> the masters of the world:
+      <a target="_blank" href="https://en.wikipedia.org/wiki/Libert%C3%A9&#44;_%C3%A9galit%C3%A9&#44;_fraternit%C3%A9">libert&eacute;&#44; &eacute;galit&eacute;&#44; fraternit&eacute;</a> for everyone 
+      <a target="_blank" href="https://www.bitchute.com/video/Cl3X_yYnFcc/">except <i>those</i> who have <i>chosen</i> themselfs to be the masters</a>.
+    <li>In order to emphasize the above we&apos;d like to recommend the <i>Youtube</i> channels of<ul>
+      <li><a target="_blank" href="https://www.youtube.com/channel/UCm-DnCgPGdwogxhBQUL-U9w/">Ratatosk</a>, and
+      <li><a target="_blank" href="https://www.youtube.com/channel/UC4teOyQNXzMH94YMYySl9mA/">Der Volkslehrer</a>, Nikolai Nerling,
+    </ul>
+    especially the recent videos by <i>Ratatosk</i> introducing Nikolai Nerling:<ul>
+      <li><a target="_blank" href="https://www.youtube.com/watch?v=wAdvKTmqKOo">Der Volkslehrer - Folk-Teacher [Part 1]</a>, and
+      <li><a target="_blank" href="https://www.youtube.com/watch?v=W2UrCu7vEpQ">Der Volkslehrer - Folk-Teacher [Part 2]</a>.
+    </ul>
+    </ul>
+  </ul></td>
+</tr>
+<tr>
+  <td valign="top" nowrap>2018-08-05</td>
+  <td valign="top" nowrap><a name="0.5.0-beta-3"><a target="_blank"
+    href="https://sourceforge.net/projects/bs1770gain/files/bs1770gain/0.5.0-beta-3/">0.5.0-&beta;3</a></td>
+  <td valign="top"><ul>
+  <li>User <i>Martin</i> reported that the <i>Windows</i> build of
+    prior versions is broken in that when called from a <i>Windows</i>
+    <a target="_blank" href="https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/cmd">cmd</a>
+    box rather than from
+    <a target="_blank" href="http://www.msys2.org/">MSYS2</a>
+    it might come up
+    with a message box like
+    <br><img src="images/0.5.0-beta2-win-error-67.jpg">
+  <li>Hence this release is of interest just for <i>Windows</i> users
+    in that it fixes the issue.
+  <li>Many thanks, <i>Martin</i>!
+  </ul></td>
+</tr>
+<tr>
+  <td valign="top" nowrap>2018-08-02</td>
+  <td valign="top" nowrap><a name="0.5.0-beta-2"><a target="_blank"
+    href="https://sourceforge.net/projects/bs1770gain/files/bs1770gain/0.5.0-beta-2/">0.5.0-&beta;2</a></td>
+  <td valign="top"><ul>
+  <li>User <i>Michal</i> reported that
+    <a href="#0.5.0-beta-1">bs1770gain v0.5.0-&beta;1</a>
+    is crashing when run with
+    <a target="_blank" href="http://opus-codec.org/">Opus</a>
+    samples.
+  <li>As root cause we could identify that (deprecated) 
+    <a target="_blank" href="https://ffmpeg.org/doxygen/2.7/group__lavc__decoding.html#ga834bb1b062fbcc2de4cf7fb93f154a3e">avcodec_decode_audio4()</a>
+    crashes when flushed with <tt>AV_CODEC_ID_OPUS</tt>.
+  <li>As a workaround flushing the decoder is avoided now for <tt>AV_CODEC_ID_OPUS</tt>.
+  <li>There's nothing preventing us from replacing deprectated API
+    <tt>avcodec_decode_audio4()</tt> by the contemporary replacement API
+    <a target="_blank" href="https://blogs.gentoo.org/lu_zero/2016/03/29/new-avcodec-api/">avcodec_send_packet()/avcodec_receive_frame</a>
+    (as already announced for several times. Of course, it's easier said then done ...)
+  <li>Thanks again <i>Michal</i>!
+  </ul></td>
+</tr>
+<tr>
+  <td valign="top" nowrap>2018-07-29</td>
+  <td valign="top" nowrap><a name="0.5.0-beta-1"><a target="_blank"
+    href="https://sourceforge.net/projects/bs1770gain/files/bs1770gain/0.5.0-beta-1/">0.5.0-&beta;1</a></td>
+  <td valign="top"><ul>
+  <li>Essentially this is a re-compilation against current <i>FFmpeg</i>. As it
+    turned out <i>bs100gain</i>  was showing unexpected behaviour when run with
+    current (incompatible) <i>FFmpeg</i> libraries.
+  <li>While at it we guarded <i>bs1770gain</i> against being run with incompatible
+    <i>FFmpeg</i> and <i>SoX</i> libraries.
+  <li>Fixed some bugs:<ul>
+    <li><a target="_blank" href="https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=881131">#881131</a>:
+      The bug was forced due to artifical test data faking zero channels: 
+<pre>peter@debian-9-32:~/msys64/bs1770gain$ <b>~/bs1770gain/bin/bs1770gain ./bug-881131-channel-underflow/poc -o output</b>
+analyzing ...
+  [1/1] "poc": Error channel underflow (0 - should be 1 at min): ffsox_frame_reader_create() - "ffsox_frame_reader.c" (55).
+Error creating frame reader: ffsox_frame_reader_new() - "ffsox_frame_reader.c" (132).
+Error creating frame reader: ffsox_analyze() - "ffsox_analyze.c" (68).
+Error gathering track statistics - "bs1770gain_tree.c" (152).
+peter@debian-9-32:~/msys64/bs1770gain$ _</pre>
+    <li><a target="_blank" href="https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=881132">#881132</a>:
+      The bug was forced due to artifical test data faking a number of
+      channels by far greater then the numer supported by <i>FFmpeg</i>: 
+<pre>peter@debian-9-32:~/msys64/bs1770gain$ <b>~/bs1770gain/bin/bs1770gain ./bug-881132-channel-overflow/poc -o output</b>
+analyzing ...
+  [1/1] "poc": Error channel overflow (31 - should be 8 at max): ffsox_frame_reader_create() - "ffsox_frame_reader.c" (63).
+Error creating frame reader: ffsox_frame_reader_new() - "ffsox_frame_reader.c" (132).
+Error creating frame reader: ffsox_analyze() - "ffsox_analyze.c" (68).
+Error gathering track statistics - "bs1770gain_tree.c" (152).
+peter@debian-9-32:~/msys64/bs1770gain$ _</pre>
+    <li><a target="_blank" href="https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=883198">#883198</a>:
+      The bug was forced due to artifical test data fooling <i>FFmpeg</i> to come
+      up with a zero <i>codec id</i>:
+<pre>peter@debian-9-32:~/msys64/bs1770gain$ <b>~/bs1770gain/bin/bs1770gain ./bug-883198-missing-codec-id/poc -o output</b>
+analyzing ...
+  [1/1] "poc": Error finding decoder: ffsox_frame_reader_create() - "ffsox_frame_reader.c" (48).
+Error creating frame reader: ffsox_frame_reader_new() - "ffsox_frame_reader.c" (132).
+Error creating frame reader: ffsox_analyze() - "ffsox_analyze.c" (68).
+Error gathering track statistics - "bs1770gain_tree.c" (152).
+peter@debian-9-32:~/msys64/bs1770gain$ _</pre>
+    </ul>
+    <li>Re-designed the dynamic loader module
+      (<tt>"ffsox_dynload.c"</tt> vs. <tt>"ffsox_dynload2.c"</tt>).
+  </ul></td>
+</tr>
+<tr>
+  <td valign="top">2017-01-10</td>
+  <td valign="top">&nbsp;</td>
+  <td>Added a <a href="#political">political statement</a> to the top of this page.</td>
+</tr>
 <tr>
   <td valign="top">2016-12-08</td>
   <td valign="top">0.4.12</td>
@@ -319,9 +536,17 @@ ways to achieve this:
 <p>Following we describe in more detail how <tt>BS1770GAIN</tt> has to be
 customized.
 
-<a name="usage"><h3>3. Usage</h3>
+<a name="badges"><h3>3. Badges</h3>
 
-<a name="measure"><h4>3.1. Loudness Measurement</h4>
+<p>The following shows versions and up to date status of this package in all known repositories.
+
+<blockquote><a href="https://repology.org/metapackage/bs1770gain">
+  <img src="https://repology.org/badge/vertical-allrepos/bs1770gain.svg" alt="Packaging status">
+</a></blockquote>
+
+<a name="usage"><h3>4. Usage</h3>
+
+<a name="measure"><h4>4.1. Loudness Measurement</h4>
 
 <p>In the simplest case we want to analyze the <i>(integrated) loudness</i> of
 a track or, a bit more general, an album.
@@ -456,7 +681,7 @@ analyzing "2012_live_at_the_georgia_theatre" ...
 done.
 </pre></blockquote>
 
-<a name="apply"><h4>3.2. Applying the Gain</h4>
+<a name="apply"><h4>4.2. Applying the Gain</h4>
 
 <p>With the help of <tt>BS1770GAIN</tt> we can adjust the loudness on the fly.
 There are two ways to achieve this:
@@ -665,7 +890,7 @@ remuxing "2012_live_at_the_georgia_theatre" ...
 done.
 </pre></blockquote>
 
-<a name="experimental"><h4>3.3. Experimental Options</h4>
+<a name="experimental"><h4>4.3. Experimental Options</h4>
 
 <p>We can imagine the ITU-R BS.1770 measurement device as a blackbox 
 where time after time portions of the audio with the same length
@@ -761,7 +986,7 @@ done.
 </pre></blockquote>
 -->
 
-<a name="cli"><h3>4. Command Line Syntax</h3>
+<a name="cli"><h3>5. Command Line Syntax</h3>
 
 <blockquote><pre>
 $ <b>bs1770gain -h</b>
@@ -882,7 +1107,7 @@ Experimental options:
 Command line arguments may appear in any order.
 </pre></blockquote>
 
-<a name="test"><h3>5. Test Cases</h3>
+<a name="test"><h3>6. Test Cases</h3>
 
 <p>Results for the <a href="http://tech.ebu.ch/webdav/site/tech/shared/testmaterial/ebu-loudness-test-setv03.zip">EBU R128 test vector</a>:
 

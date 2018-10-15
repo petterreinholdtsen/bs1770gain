@@ -28,10 +28,17 @@ int ffsox_frame_reader_create(frame_reader_t *fr, source_t *si,
   char buf[32];
 
   // initialize the base calss.
+#if defined (FFSOX_FIX_883198_MISSING_CODEC_ID) // [
+  if (ffsox_packet_consumer_create(&fr->packet_consumer,si,stream_index,0)<0) {
+    DMESSAGE("creating packet consumer");
+    goto base;
+  }
+#else // ] [
   if (ffsox_packet_consumer_create(&fr->packet_consumer,si,stream_index)<0) {
     DMESSAGE("creating packet consumer");
     goto base;
   }
+#endif // ]
 
   // set the vmt.
   fr->vmt=ffsox_frame_reader_get_vmt();
@@ -41,6 +48,30 @@ int ffsox_frame_reader_create(frame_reader_t *fr, source_t *si,
     DMESSAGE("finding decoder");
     goto find;
   }
+
+#if defined (FFSOX_FIX_881131_CHANNEL_UNDERFOW) // [
+  if (fr->si.cc->channels<=0) {
+    DVMESSAGE("channel underflow (%d - should be 1 at min)",
+        fr->si.cc->channels);
+    goto channel_underflow;
+  }
+#endif // ]
+
+#if defined (FFSOX_FIX_881132_CHANNEL_OVERFLOW) // [
+  if (AV_NUM_DATA_POINTERS<=fr->si.cc->channels) {
+		DVMESSAGE("channel overflow (%d - should be %d at max)",
+				fr->si.cc->channels,AV_NUM_DATA_POINTERS);
+		goto channel_overflow;
+	}
+#endif // ]
+
+#if defined (FFSOX_FIX_883198_MISSING_CODEC_ID) // [
+  // link us to the packet consumer list.
+  if (ffsox_source_append(si,&fr->packet_consumer)<0) {
+    DMESSAGE("appending packet consumer");
+    goto append;
+  }
+#endif // ]
 
   // if we want to have stereo:
   if (stereo)
@@ -72,6 +103,15 @@ int ffsox_frame_reader_create(frame_reader_t *fr, source_t *si,
 frame:
   avcodec_close(fr->si.cc);
 open:
+#if defined (FFSOX_FIX_883198_MISSING_CODEC_ID) // [
+append:
+#endif // ]
+#if defined (FFSOX_FIX_881132_CHANNEL_OVERFLOW) // [
+channel_overflow:
+#endif // ]
+#if defined (FFSOX_FIX_881131_CHANNEL_UNDERFOW) // [
+channel_underflow:
+#endif // ]
 find:
   vmt.parent->cleanup(&fr->packet_consumer);
 base:
@@ -115,53 +155,112 @@ static node_t *frame_reader_next(frame_reader_t *n)
 
 static int frame_reader_next_set_frame(frame_reader_t *n, frame_t *fo)
 {
+//DMARKLN();
   if (NULL!=n->next) {
-    if (NULL==fo)
+//DMARKLN();
+    if (NULL==fo) {
+//DMARKLN();
       n->next->state=STATE_FLUSH;
+//DMARKLN();
+	}
 
+//DMARKLN();
     if (n->next->vmt->set_frame(n->next,fo)<0) {
+//DMARKLN();
       DMESSAGE("setting frame");
       return -1;
     }
+//DMARKLN();
   }
+//DMARKLN();
 
   return MACHINE_PUSH;
 }
 
 #define FRAME_READER_SKIP_ERROR
+#define FRAME_READER_RUN_CODE
 static int frame_reader_run(frame_reader_t *n)
 {
+#if defined (FRAME_READER_RUN_CODE) // [
+  int code=-1;
+#endif // ]
   AVCodecContext *cc=n->si.cc;
   frame_t *fo=&n->fo;
   AVFrame *frame=fo->frame;
   AVPacket *pkt=&n->pkt;
   int got_frame,size;
 
+//DMARKLN();
   switch (n->state) {
   case STATE_RUN:
+//DMARKLN();
     while (0<pkt->size) {
+//DMARKLN();
       if (0ll<fo->nb_samples.frame) {
         DMESSAGE("frame not consumed");
+#if defined (FRAME_READER_RUN_CODE) // [
+        goto exit;
+#else // ] [
         return -1;
+#endif // ]
       }
 
+#if 0 // [
       if ((size=avcodec_decode_audio4(cc,frame,&got_frame,pkt))<0) {
-#if defined (FRAME_READER_SKIP_ERROR) // {
-        // skip the package.
-        DMESSAGE("decoding audio, skipping audio package");
-        pkt->size=0;
-        return 0;
-#else // } {
-        DMESSAGE("decoding audio");
-        return -1;
-#endif // }
-      }
+#else // ] [
+//DMARKLN();
+      size=avcodec_decode_audio4(cc,frame,&got_frame,pkt);
+//DVWRITELN("size: %d",size);
 
+			if (size<0) {
+				//DMARKLN();
+#endif // ]
+#if defined (FRAME_READER_SKIP_ERROR) // [
+        // skip the package.
+#if defined (PBU_DEBUG) // [
+        DMESSAGE("decoding audio, skipping audio package");
+#endif // ]
+        pkt->size=0;
+#if defined (FRAME_READER_RUN_CODE) // [
+        code=0;
+        goto exit;
+#else // ] [
+        return 0;
+#endif // ]
+#else // ] [
+        DMESSAGE("decoding audio");
+#if defined (FRAME_READER_RUN_CODE) // [
+        goto exit;
+#else // ] [
+        return -1;
+#endif // ]
+#endif // ]
+#if 1 // [
+      }
+//DMARKLN();
+#else // ] [
+      }
+#endif // ]
+
+#if 0 // [
       pkt->size-=size;
       pkt->data+=size;
+#else // ][
+//DVWRITELN("size: %d, pkt->size: %d",size,pkt->size);
+      pkt->size-=size;
+      pkt->data+=size;
+//DVWRITELN("size: %d, pkt->size: %d",size,pkt->size);
+//DVWRITELN("got_frame: %d",got_frame);
+#endif // ]
 
-      if (0!=got_frame)
+      if (0!=got_frame) {
+#if defined (FRAME_READER_RUN_CODE) // [
+        code=frame_reader_next_set_frame(n,fo);
+        goto exit;
+#else // ] [
         return frame_reader_next_set_frame(n,fo);
+#endif // ]
+      } 
     }
 
     return MACHINE_POP;
@@ -169,24 +268,56 @@ static int frame_reader_run(frame_reader_t *n)
     pkt->size=0;
     pkt->data=NULL;
 
-    if (avcodec_decode_audio4(cc,frame,&got_frame,pkt)<0) {
-      DMESSAGE("decoding audio");
-      return -1;
+//DVWRITELN("cc: %p, codec_id: %0x, OPUS: %0x, frame: %p, got_frame: %d, pkt: %p",cc,cc->codec_id,AV_CODEC_ID_OPUS,frame,got_frame,pkt);
+    if (AV_CODEC_ID_OPUS==cc->codec_id) {
+      n->state=STATE_END;
+
+      return frame_reader_next_set_frame(n,NULL);
     }
+    else if (avcodec_decode_audio4(cc,frame,&got_frame,pkt)<0) {
+      DMESSAGE("decoding audio");
+#if defined (FRAME_READER_RUN_CODE) // [
+        goto exit;
+#else // ] [
+        return -1;
+#endif // ]
+    }
+//DMARKLN();
 
     if (0==got_frame) {
       n->state=STATE_END;
 
       return frame_reader_next_set_frame(n,NULL);
     }
-    else
-      return frame_reader_next_set_frame(n,fo);
+    else {
+#if defined (FRAME_READER_RUN_CODE) // [
+        code=frame_reader_next_set_frame(n,fo);
+        goto exit;
+#else // ] [
+        return frame_reader_next_set_frame(n,fo);
+#endif // ]
+    }
   case STATE_END:
-    return MACHINE_POP;
+//DMARKLN();
+#if defined (FRAME_READER_RUN_CODE) // [
+        code=MACHINE_POP;
+        goto exit;
+#else // ] [
+        return MACHINE_POP;
+#endif // ]
   default:
+//DMARKLN();
     DMESSAGE("illegal read decode state");
+#if defined (FRAME_READER_RUN_CODE) // [
+    goto exit;
+#else // ] [
     return -1;
+#endif // ]
   }
+#if defined (FRAME_READER_RUN_CODE) // [
+exit: 
+  return code;
+#endif // ]
 }
 
 static int frame_reader_set_packet(frame_reader_t *n, AVPacket *pkt)

@@ -368,9 +368,18 @@ CONVERT(dblp)
 int ffsox_frame_convert(frame_t *fr, frame_t *fw, double q)
 {
   convert_t convert;
+#if defined (FFSOX_FIX_881132_CHANNEL_OVERFLOW) // [
+  int code=ffsox_convert_setup(&convert,fr,fw,q,NULL);
+#else // ] [
   int code;
+#endif // ]
 
+#if defined (FFSOX_FIX_881132_CHANNEL_OVERFLOW) // [
+  if (code<0)
+		goto error;
+#else // ] [
   ffsox_convert_setup(&convert,fr,fw,q,NULL);
+#endif // ]
 
   switch (convert.fr->frame->format) {
   /// interleaved /////////////////////////////////////////////////////////////
@@ -410,7 +419,9 @@ int ffsox_frame_convert(frame_t *fr, frame_t *fw, double q)
     DMESSAGE("unsupported sample format");
     return -1;
   }
-
+#if defined (FFSOX_FIX_881132_CHANNEL_OVERFLOW) // [
+error:
+#endif // ]
   if (code<0) {
     DMESSAGE("converion not supported");
     return -1;

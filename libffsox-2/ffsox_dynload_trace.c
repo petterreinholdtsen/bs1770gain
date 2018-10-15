@@ -85,11 +85,19 @@ int ffsox_avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
       got_picture_ptr,avpkt);
 }
 
+#if defined (FFSOX_DEPRECATED_AV_FREE_PACKET) // [
 void ffsox_av_free_packet(AVPacket *pkt)
 {
   pbu_trace_puts("ffsox_av_free_packet()");
   ffsox_avcodec.av_free_packet(pkt);
 }
+#else // ] [
+void ffsox_av_packet_unref(AVPacket *pkt)
+{
+  pbu_trace_puts("ffsox_av_packet_unref()");
+  ffsox_avcodec.av_packet_unref(pkt);
+}
+#endif // ]
 
 int ffsox_avcodec_close(AVCodecContext *avctx)
 {

@@ -1,0 +1,75 @@
+#!/bin/bash
+bs1770gain=./mingw32/bin/bs1770gain
+ffmpeg=./mingw32/bin/ffmpeg
+bs170gain_output=bs1770gain_output.txt
+
+if [ "2" != "$#" ]; then # [
+  echo "Usage: ${0} <input directory> <output directory>"
+  exit 1
+fi # ]
+
+input_directory=${1}; shift
+output_directory=${1}; shift
+
+echo "input directory: ${input_directory}"
+echo "output directory: ${output_directory}"
+
+# Do the BS1770GAIN analysis.
+${bs1770gain} ${input_directory} > ${bs170gain_output}
+echo "result of bs1770gain analysis:"
+cat ${bs170gain_output}
+
+# Line by line loop through the analysis file and build corresponding arrays
+# of names and gains (i: 0 .. n; names[i] corresponds to gains[i]).
+album=""
+let n=0
+names=( )
+gains=( )
+
+# https://stackoverflow.com/questions/10929453/read-a-name-line-by-line-assigning-the-value-to-a-variable
+while IFS='' read -r line || [[ -n "$line" ]]; do # [
+  # Filter the lines containing an integrated gain:
+  gain=`echo ${line} | sed -n 's/.*integrated:[ ]\+\([+-]\?[0-9]\+\.[0-9]\+\).*/\1/p'`
+
+  if [ \( 0 -lt ${#gain} \) -a \( 0 -lt ${#name} \) ]; then # [
+    if [ 0 -lt ${#album} ]; then # [
+      album_gain=${gain}
+    else # ] [
+      names[${n}]=${name}
+      gains[${n}]=${gain}
+      let n++
+    fi # ]
+  else # ] [
+    # Filter the lines containing a file name:
+    name=`echo ${line} | sed -n 's/.*\[.*\].*"\(.*\)".*/\1/p'`
+
+    if [ 0 -eq ${#name} ]; then # [
+      # Filter the line containing ALBUM:
+      album=`echo ${line} | sed -n 's/.*\[\(ALBUM\)\]:.*/\1/p'`
+      name=${album}
+    fi # ]
+  fi # ]
+done < "${bs170gain_output}" # ]
+
+# By means of FFmpeg write the replaygain tags to each file.
+mkdir -p ${output_directory}
+let i=0
+
+while [ ${i} -lt ${n} ]; do # [
+  name=${names[${i}]}
+  gain=${gains[${i}]}
+  command="${ffmpeg}"
+  command="${command} -i ${input_directory}/${name}"
+  command="${command} -codec copy"
+  command="${command} -metadata REPLAYGAIN_TRACK_GAIN=${gain}"
+  if [ 0 -lt ${#album_gain} ]; then # [
+    command="${command} -metadata REPLAYGAIN_ALBUM_GAIN=${album_gain}"
+  fi # ]
+  command="${command} -y ${output_directory}/${name}"
+  echo "${command}"
+  eval "${command}"
+  unset command
+  let i++
+done # ]
+
+rm -f ${bs170gain_output}

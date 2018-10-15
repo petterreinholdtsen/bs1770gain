@@ -20,13 +20,19 @@
 #ifndef __BS1770GAIN_H__ // {
 #define __BS1770GAIN_H__
 #include <ffsox.h>
+#if defined (_MSC_VER) // [
+#include <windows.h>
+#else // ] [
 #include <dirent.h>
+#endif // ]
 #ifdef __cpluplus
 extern "C" {
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
 //#define BS1770GAIN_TAG_PREFIX
+//#define BS1770GAIN_OVERWRITE
+#define BS1770GAIN_VERSIONS
 
 ///////////////////////////////////////////////////////////////////////////////
 typedef struct bs1770gain_block_options bs1770gain_block_options_t;
@@ -168,11 +174,17 @@ struct bs1770gain_options {
   const char *format;
   const char *video_ext;
   const char *audio_ext;
-#if defined (BS1770GAIN_TAG_PREFIX) // {
+#if defined (BS1770GAIN_TAG_PREFIX) // [
   const char *tag_prefix;
-#endif // }
+#endif // ]
 #if defined (_WIN32) // [
   int utf16;
+#endif // ]
+#if defined (BS1770GAIN_OVERWRITE) // [
+  int overwrite;
+#endif // ]
+#if defined (FFSOX_LFE_CHANNEL) // [
+  int lfe;
 #endif // ]
 };
 
@@ -213,11 +225,13 @@ struct bs1770gain_tree {
 
     struct {
       const char *root;
-#if defined (_WIN32) // {
+#if defined (_MSC_VER) // [
+      HANDLE hFind;
+#elif defined (_WIN32) // ] [
       _WDIR *d;
-#else // } {
+#else // ] [
       DIR *d;
-#endif // }
+#endif // ]
       char *path;
     } dir;
   };
@@ -268,12 +282,15 @@ bs1770gain_album_t *bs1770gain_album_new(const char *ipath, const char *opath,
     const bs1770gain_options_t *options);
 void bs1770gain_album_close(bs1770gain_album_t *album);
 
-void bs1770gain_album_copy_file(const bs1770gain_album_t *album,
+int bs1770gain_album_copy_file(const bs1770gain_album_t *album,
     const char *basename);
 void bs1770gain_album_renumber(const bs1770gain_album_t *album);
 
 ///////////////////////////////////////////////////////////////////////////////
 struct bs1770gain_track {
+#if defined (BS1770GAIN_OVERWRITE) // [
+  char *idir;
+#endif // ]
   char *ipath;
   char *opath;
   ffsox_aggregate_t aggregate;
@@ -283,12 +300,21 @@ struct bs1770gain_track {
   bs1770gain_track_t *next;
 };
 
+#if defined (BS1770GAIN_OVERWRITE) // [
+bs1770gain_track_t *bs1770gain_track_new(const char *idir, const char *ipath,
+    bs1770gain_album_t *album, const bs1770gain_options_t *options);
+#else // ] [
 bs1770gain_track_t *bs1770gain_track_new(const char *ipath,
     bs1770gain_album_t *album, const bs1770gain_options_t *options);
+#endif // ]
 void bs1770gain_track_close(bs1770gain_track_t *track);
 
 int bs1770gain_track_alloc_output(bs1770gain_track_t *track,
     const ffsox_source_t *si, const bs1770gain_options_t *options);
+#if defined (BS1770GAIN_OVERWRITE) // [
+void bs1770gain_track_rename(bs1770gain_track_t *track,
+    const bs1770gain_options_t *options);
+#endif // ]
 
 #ifdef __cpluplus
 }

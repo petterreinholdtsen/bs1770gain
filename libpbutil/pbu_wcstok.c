@@ -38,8 +38,13 @@ wchar_t *pbu_wcstok_r(wchar_t *str, const wchar_t *delim, wchar_t **saveptr)
     if (NULL==(hLib=pbu_msvcrt()))
       goto wcstok;
 
+#if ! defined (__GNUC__) || ! defined (_WIN64) // [
     if (NULL==(wcstok_s=(wcstok_s_t)GetProcAddress(hLib,"wcstok_s")))
       goto wcstok;
+#else // ] [
+    if (NULL==(wcstok_s=(void *)GetProcAddress(hLib,"wcstok_s")))
+      goto wcstok;
+#endif // ]
 
     goto wcstok_s;
   wcstok:

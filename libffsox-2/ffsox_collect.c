@@ -20,13 +20,7 @@
 #include <ffsox_priv.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-#define FFMPEG_BASS 3
-
-#define FFMPEG_CHANNEL_IN_RANGE(ch,channels) ( \
-  (channels)<=LIB1770_MAX_CHANNELS \
-  ?(ch)<LIB1770_MAX_CHANNELS \
-  :((ch)<FFMPEG_BASS||(FFMPEG_BASS<(ch)&&(ch)<=LIB1770_MAX_CHANNELS)) \
-)
+// https://ffmpeg.org/doxygen/3.0/channel__layout_8c_source.html
 
 ///////////////////////////////////////////////////////////////////////////////
 int ffsox_collect_create(collect_t *collect, collect_config_t *cc)
@@ -42,6 +36,9 @@ int ffsox_collect_create(collect_t *collect, collect_config_t *cc)
   collect->aggregate=cc->aggregate;
   collect->channels=channels;
   collect->sp=collect->sample;
+#if defined (FFSOX_LFE_CHANNEL) // [
+  collect->lfe=channels<cc->channels?FFSOX_LFE_CHANNEL:-1;
+#endif // ]
 
   if (NULL==(collect->pre=lib1770_pre_new(cc->samplerate,channels))) {
     DMESSAGE("creating pre-filter");
@@ -113,8 +110,10 @@ void ffsox_collect_channel(void *data, int ch, double x)
   collect_t *collect=data;
   aggregate_t *aggregate=collect->aggregate;
 
-  if (FFMPEG_CHANNEL_IN_RANGE(ch,collect->channels))
+#if defined (FFSOX_LFE_CHANNEL) // [
+  if (collect->lfe<0||ch!=collect->lfe)
     *collect->sp++=x;
+#endif // ]
 
   if (0!=(AGGREGATE_SAMPLEPEAK&aggregate->flags)) {
     if (x<0)

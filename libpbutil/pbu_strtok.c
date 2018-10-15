@@ -37,8 +37,13 @@ char *pbu_strtok_r(char *str, const char *delim, char **saveptr)
     if (NULL==(hLib=pbu_msvcrt()))
       goto strtok;
 
+#if ! defined (__GNUC__) || ! defined (_WIN64) // [
     if (NULL==(strtok_s=(strtok_s_t)GetProcAddress(hLib,"strtok_s")))
       goto strtok;
+#else // ] [
+    if (NULL==(strtok_s=(void *)GetProcAddress(hLib,"strtok_s")))
+      goto strtok;
+#endif // ]
 
     goto strtok_s;
   strtok:

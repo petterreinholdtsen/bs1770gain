@@ -19,29 +19,11 @@
  */
 #define FFSOX_DYNLOAD_PRIV
 #include <ffsox_priv.h>
-#if defined (FFSOX_DYNLOAD) // {
-#if ! defined (_WIN32) // {
+#if defined (FFSOX_DYNLOAD) // [
+#if ! defined (_WIN32) // [
 #include <unistd.h>
 #include <dlfcn.h>
-#endif // }
-
-///////////////////////////////////////////////////////////////////////////////
-#if ! defined (FFSOX_AVUTIL_V) // {
-  #define FFSOX_AVUTIL_V "54"
-#endif // }
-#if ! defined (FFSOX_SWRESAMPLE_V) // {
-  #define FFSOX_SWRESAMPLE_V "1"
-#endif // }
-#if ! defined (FFSOX_AVCODEC_V) // {
-  #define FFSOX_AVCODEC_V "56"
-#endif // }
-#if ! defined (FFSOX_AVFORMAT_V) // {
-  #define FFSOX_AVFORMAT_V "56"
-#endif // }
-
-#if ! defined (FFSOX_LIBSOX_V) // {
-  #define FFSOX_LIBSOX_V "3"
-#endif // }
+#endif // ]
 
 ///////////////////////////////////////////////////////////////////////////////
 ffsox_avutil_t ffsox_avutil;
@@ -50,14 +32,7 @@ ffsox_avformat_t ffsox_avformat;
 ffsox_libsox_t ffsox_libsox;
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined (_WIN32) // {
-#define FFSOX_AVUTIL "avutil-" FFSOX_AVUTIL_V ".dll"
-#define FFSOX_SWRESAMPLE "swresample-" FFSOX_SWRESAMPLE_V  ".dll"
-#define FFSOX_AVCODEC "avcodec-" FFSOX_AVCODEC_V  ".dll"
-#define FFSOX_AVFORMAT "avformat-" FFSOX_AVFORMAT_V  ".dll"
-
-#define FFSOX_LIBSOX "libsox-" FFSOX_LIBSOX_V  ".dll"
-
+#if defined (_WIN32) // [
 #define FFSOX_UNLOAD(lib) FreeLibrary(lib)
 
 #define FFSOX_BIND(hLib,app,np) do { \
@@ -153,14 +128,7 @@ path:
 found:
   return hLib;
 }
-#else // } {
-#define FFSOX_AVUTIL "libavutil.so." FFSOX_AVUTIL_V
-#define FFSOX_SWRESAMPLE "libswresample.so." FFSOX_SWRESAMPLE_V
-#define FFSOX_AVCODEC "libavcodec.so." FFSOX_AVCODEC_V
-#define FFSOX_AVFORMAT "libavformat.so." FFSOX_AVFORMAT_V
-
-#define FFSOX_LIBSOX "libsox.so." FFSOX_LIBSOX_V
-
+#else // ] [
 #define FFSOX_UNLOAD(lib) dlclose(lib)
 
 #define FFSOX_BIND(lib,app,np) do { \
@@ -255,15 +223,18 @@ path:
 found:
   return lib;
 }
-#endif // }
+#endif // ]
 
 ///////////////////////////////////////////////////////////////////////////////
 static int ffsox_dynload_avutil(void *lib)
 {
   int code=-1;
 
+  FFSOX_BIND(lib,&ffsox_avutil.avutil_version,"avutil_version");
   FFSOX_BIND(lib,&ffsox_avutil.av_frame_alloc,"av_frame_alloc");
   FFSOX_BIND(lib,&ffsox_avutil.av_frame_free,"av_frame_free");
+  FFSOX_BIND(lib,&ffsox_avutil.av_get_channel_layout_nb_channels,
+      "av_get_channel_layout_nb_channels");
   FFSOX_BIND(lib,&ffsox_avutil.av_frame_get_best_effort_timestamp,
       "av_frame_get_best_effort_timestamp");
   FFSOX_BIND(lib,&ffsox_avutil.av_frame_set_best_effort_timestamp,
@@ -291,6 +262,10 @@ static int ffsox_dynload_avutil(void *lib)
   FFSOX_BIND(lib,&ffsox_avutil.av_dict_set,"av_dict_set");
   FFSOX_BIND(lib,&ffsox_avutil.av_dict_free,"av_dict_free");
   FFSOX_BIND(lib,&ffsox_avutil.av_frame_get_buffer,"av_frame_get_buffer");
+#if defined (FFSOX_FILTER_CHANNELS) // [
+  FFSOX_BIND(lib,&ffsox_avutil.av_get_channel_layout_channel_index,
+      "av_get_channel_layout_channel_index");
+#endif // ]
 
   code=0;
 loadlib:
@@ -316,6 +291,7 @@ static int ffsox_dynload_avcodec(void *lib)
 {
   int code=-1;
 
+  FFSOX_BIND(lib,&ffsox_avcodec.avcodec_version,"avcodec_version");
   FFSOX_BIND(lib,&ffsox_avcodec.avcodec_find_decoder,"avcodec_find_decoder");
   FFSOX_BIND(lib,&ffsox_avcodec.avcodec_find_decoder_by_name,
       "avcodec_find_decoder_by_name");
@@ -343,6 +319,7 @@ static int ffsox_dynload_avformat(void *lib)
 {
   int code=-1;
 
+  FFSOX_BIND(lib,&ffsox_avformat.avformat_version,"avformat_version");
   FFSOX_BIND(lib,&ffsox_avformat.av_register_all,"av_register_all");
   FFSOX_BIND(lib,&ffsox_avformat.avformat_open_input,"avformat_open_input");
   FFSOX_BIND(lib,&ffsox_avformat.avformat_find_stream_info,
@@ -519,15 +496,4 @@ void ffsox_unload(void)
     avutil=NULL;
   }
 }
-#else // } {
-int ffsox_dynload(const char *dirname)
-{
-  (void)dirname;
-
-  return 0;
-}
-
-void ffsox_unload(void)
-{
-}
-#endif // }
+#endif // ]
