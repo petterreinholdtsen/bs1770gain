@@ -370,7 +370,7 @@ int bs1770gain_transcode(track_t *t, options_t *options)
   album_t *a=t->album;
   source_t si;
   sink_t so;
-  machine_t m;
+  engine_t e;
   int sample_fmt;
   double q;
 
@@ -398,11 +398,11 @@ int bs1770gain_transcode(track_t *t, options_t *options)
 
   if (0==pbu_same_file(t->ipath,t->opath)) {
     DMESSAGE("overwriting of input not supported");
-    goto output;
+    goto samefile;
   }
 
   if (ffsox_sink_create(&so,t->opath)<0) {
-    DMESSAGEV("creating sink \"%s\"",t->opath);
+    DVMESSAGE("creating sink \"%s\"",t->opath);
     goto so;
   }
 
@@ -455,9 +455,9 @@ int bs1770gain_transcode(track_t *t, options_t *options)
     fflush(f);
   }
 
-  if (ffsox_machine_run(&m,&si.node)<0) {
-    DMESSAGE("running machine");
-    goto machine;
+  if (ffsox_engine_run(&e,&si.node)<0) {
+    DMESSAGE("running engine");
+    goto engine;
   }
 
   if (stdout==f)
@@ -465,7 +465,7 @@ int bs1770gain_transcode(track_t *t, options_t *options)
 
   code=0;
 // cleanup:
-machine:
+engine:
   ffsox_sink_close(&so);
 open:
 seek:
@@ -474,6 +474,7 @@ seek:
 link:
   ffsox_sink_cleanup(&so);
 so:
+samefile:
 output:
   si.vmt->cleanup(&si);
 si:
@@ -487,6 +488,10 @@ si:
 #if 0 // [
 mode:
 #endif // ]
+#endif // ]
+#if defined (BS1770GAIN_OVERWRITE) // [
+  if (options->overwrite)
+    bs1770gain_track_rename(t,options);
 #endif // ]
   TRACE_POP();
 

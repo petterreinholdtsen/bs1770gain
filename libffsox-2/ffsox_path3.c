@@ -20,7 +20,8 @@
 #include <ffsox_priv.h>
 
 #if defined (_WIN32) // {
-wchar_t *ffsox_path3(const wchar_t *ws1, const char *s2, const char *s3)
+wchar_t *ffsox_path3sep(const wchar_t *ws1, const char *s2, const char *s3,
+    wchar_t sep1, wchar_t sep2)
 {
   wchar_t *path,*pp;
   int size1,size2,size3,size;
@@ -65,7 +66,11 @@ wchar_t *ffsox_path3(const wchar_t *ws1, const char *s2, const char *s3)
   if (0<size1) {
     wcscpy(pp,ws1);
     pp+=size1;
+#if 0 // [
     pp[-1]=L'\\';
+#else // ] [
+    pp[-1]=sep1;
+#endif // ]
   }
 
   if (0<size2) {
@@ -78,7 +83,11 @@ wchar_t *ffsox_path3(const wchar_t *ws1, const char *s2, const char *s3)
       size2     // _In_       int cchWideChar
     );
 
+#if 0 // [
     pp[-1]=L'\\';
+#else // ] [
+    pp[-1]=sep2;
+#endif // ]
   }
 
   if (0<size3) {
@@ -93,10 +102,17 @@ wchar_t *ffsox_path3(const wchar_t *ws1, const char *s2, const char *s3)
   }
 malloc:
 empty:
+if (!path) exit(1);
   return path;
 }
+
+wchar_t *ffsox_path3(const wchar_t *ws1, const char *s2, const char *s3)
+{
+  return ffsox_path3sep(ws1,s2,s3,L'\\',L'\\');
+}
 #else // } {
-char *ffsox_path3(const char *s1, const char *s2, const char *s3)
+char *ffsox_path3sep(const char *s1, const char *s2, const char *s3,
+    int sep1, int sep2)
 {
   char *path,*pp;
   int size1,size2,size3,size;
@@ -117,13 +133,21 @@ char *ffsox_path3(const char *s1, const char *s2, const char *s3)
   if (0<size1) {
     strcpy(pp,s1);
     pp+=size1;
+#if 0 // [
     pp[-1]='/';
+#else // ] [
+    pp[-1]=sep1;
+#endif // ]
   }
 
   if (0<size2) {
     strcpy(pp,s2);
     pp+=size2;
+#if 0 // [
     pp[-1]='/';
+#else // ] [
+    pp[-1]=sep2;
+#endif // ]
   }
 
   if (0<size3)
@@ -131,5 +155,10 @@ char *ffsox_path3(const char *s1, const char *s2, const char *s3)
 path:
 empty:
   return path;
+}
+
+char *ffsox_path3(const char *s1, const char *s2, const char *s3)
+{
+  return ffsox_path3sep(s1,s2,s3,'/','/');
 }
 #endif // }

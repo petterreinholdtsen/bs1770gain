@@ -26,7 +26,7 @@ extern "C" {
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
 #define HR_ERROR_CASE                 FFSOX_HR_ERROR_CASE
 #define REFTIMES_PER_SEC              FFSOX_REFTIMES_PER_SEC
 #define REFTIMES_PER_MILLISEC         FFSOX_REFTIMES_PER_MILLISEC
@@ -60,7 +60,7 @@ typedef ffsox_convert_t convert_t;
 typedef ffsox_format_t format_t;
 typedef ffsox_stream_t stream_t;
 typedef ffsox_frame_t frame_t;
-typedef ffsox_machine_t machine_t;
+typedef ffsox_engine_t engine_t;
 typedef ffsox_read_list_t read_list_t;
 typedef ffsox_packet_consumer_list_t packet_consumer_list_t;
 typedef ffsox_stream_list_t stream_list_t;
@@ -81,7 +81,7 @@ typedef ffsox_node_vmt_t node_vmt_t;
     typedef ffsox_frame_reader_vmt_t frame_reader_vmt_t;
   typedef ffsox_frame_consumer_vmt_t frame_consumer_vmt_t;
     typedef ffsox_frame_writer_vmt_t frame_writer_vmt_t;
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
     typedef ffsox_audio_player_vmt_t audio_player_vmt_t;
 #endif // }
     typedef ffsox_sox_reader_vmt_t sox_reader_vmt_t;
@@ -93,7 +93,7 @@ typedef ffsox_node_t node_t;
     typedef ffsox_frame_reader_t frame_reader_t;
   typedef ffsox_frame_consumer_t frame_consumer_t;
     typedef ffsox_frame_writer_t frame_writer_t;
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
     typedef ffsox_audio_player_t audio_player_t;
 #endif // }
     typedef ffsox_sox_reader_t sox_reader_t;

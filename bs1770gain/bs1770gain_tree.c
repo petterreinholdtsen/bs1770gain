@@ -92,6 +92,7 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
     goto album;
   }
 
+//DMARKLN();
   while (0<tree->vmt->next(tree,options)) {
     switch (tree->state) {
     case BS1770GAIN_TREE_STATE_REG:
@@ -113,16 +114,24 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
     }
   }
 
+//DMARKLN();
   bs1770gain_album_renumber(album);
 
-  if (NULL==album->head)
+  if (NULL==album->head) {
+//DMARKLN();
     ;
+  }
   else if (0==options->dump) {
+//DMARKLN();
     p->vmt->album.head(p,album,ibasename);
+//DMARKLN();
 
+//DMARKLN();
     for (track=album->head;NULL!=track;track=track->next) {
+//DMARKLN();
       p->vmt->track.head(p,track);
 
+//DMARKLN();
       memset(&ac,0,sizeof ac);
       ac.path=track->ipath;
       ac.aggregate=&track->aggregate;
@@ -134,35 +143,52 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
       ac.shortterm.partition=options->shortterm.partition;
       ac.f=f;
       ac.dump=0;
+//DMARKLN();
 #if defined (_WIN32) // [
       ac.utf16=options->utf16;
 #endif // ]
+#if defined (FFSOX_LFE_CHANNEL) // [
+      ac.lfe=options->lfe;
+#endif // ]
 
+//DMARKLN();
       if (ffsox_analyze(&ac,options->audio,ac.vi=options->video)<0) {
+//DMARKLN();
 #if defined (W_WIN32) // [
         if (options->utf16)
-          fwprintf(f,L"Error gathering track statistics.\n");
+          pbu_vwritelnw(f,__FILE__,__LINE__,__func__,
+              L"Error gathering track statistics.");
         else {
 #endif // ]
-          fprintf(f,"Error gathering track statistics.\n");
+          pbu_vwritelna(f,__FILE__,__LINE__,__func__,
+              "Error gathering track statistics.");
 #if defined (W_WIN32) // [
         }
 #endif // ]
         goto analyze;
       }
+//DMARKLN();
 
       p->vmt->track.body(p,&track->aggregate,options);
+//DMARKLN();
       ffsox_aggregate_merge(&album->aggregate,&track->aggregate);
+//DMARKLN();
       p->vmt->track.tail(p);
+//DMARKLN();
     }
 
+//DMARKLN();
     if (BS1770GAIN_IS_MODE_ALBUM_TAGS(options->mode)) {
       p->vmt->track.head(p,NULL);
       p->vmt->track.body(p,&album->aggregate,options);
       p->vmt->track.tail(p);
     }
 
+#if defined (BS1770GAIN_OVERWRITE) // [
+    if (options->overwrite||odirname) {
+#else // ] [
     if (NULL!=odirname) {
+#endif // ]
       label=BS1770GAIN_IS_MODE_APPLY(options->mode)?"transcoding":"remuxing";
 
 #if defined (W_WIN32) // [
@@ -171,7 +197,11 @@ int bs1770gain_tree_analyze(tree_t *tree, const char *odirname,
           DMESSAGE("converting UTF-8 to UTF-16");
           goto wlabel;
         }
+#if ! defined (BS1770GAIN_OVERWRITE) // [
       }
+#else // ] [
+      }
+#endif // ]
       else
         wlabel=NULL;
 #endif // ]
@@ -214,16 +244,28 @@ wibasename:
         }
       }
 
+#if defined (BS1770GAIN_OVERWRITE) // [
+      if (!options->overwrite) {
+#endif // ]
       // mkdir.
       pbu_mkdir(album->opath);
+#if defined (BS1770GAIN_OVERWRITE) // [
+      }
+#endif // ]
 
       // copy the tracks.
       for (track=album->head;NULL!=track;track=track->next)
         bs1770gain_transcode(track,options);
 
+#if defined (BS1770GAIN_OVERWRITE) // [
+      if (!options->overwrite) {
+#endif // ]
       // copy "folder.jpg" if requested.
-      if (0!=(EXTENSION_JPG&options->extensions)&&NULL!=album->ipath)
+      if (0!=(EXTENSION_JPG&options->extensions)/*&&NULL!=album->ipath*/)
         bs1770gain_album_copy_file(album,"folder.jpg");
+#if defined (BS1770GAIN_OVERWRITE) // [
+      }
+#endif // ]
 
 #if defined (W_WIN32) // [
       if (wlabel)
@@ -254,13 +296,23 @@ int bs1770gain_tree_track(bs1770gain_tree_t *tree, bs1770gain_album_t *album,
     bs1770gain_options_t *options)
 {
   int code =-1;
+#if defined (BS1770GAIN_OVERWRITE) // [
+  const char *path=tree->parent?tree->parent->path:NULL;
+#endif // ]
 
   TRACE_PUSH();
 
+#if defined (BS1770GAIN_OVERWRITE) // [
+  if (NULL==bs1770gain_track_new(path,tree->path,album,options)) {
+    DMESSAGE("allocation album");
+    goto track;
+  }
+#else // ] [
   if (NULL==bs1770gain_track_new(tree->path,album,options)) {
     DMESSAGE("allocation album");
     goto track;
   }
+#endif // ]
 
   code=0;
 // cleanup:
@@ -282,9 +334,16 @@ int bs1770gain_tree_album(const bs1770gain_tree_t *root, const char *odirname,
 #endif // ]
 
   TRACE_PUSH();
-  code =-1;
+  code=-1;
   f=options->p.vmt->session.file(&options->p);
 
+#if defined (BS1770GAIN_OVERWRITE) // [
+  if (options->overwrite) {
+fprintf(stderr,"Sorry, %s not implemented yet.\n",__func__);
+exit(1);
+  }
+  else
+#endif // ]
   if (NULL!=odirname) {
     if (NULL==(path=pbu_extend_path(odirname,root->basename))) {
       DMESSAGE("extending output path");
@@ -509,14 +568,16 @@ bs1770gain_tree_t *bs1770gain_tree_dir_init(bs1770gain_tree_t *tree,
     const char *root)
 {
 #if defined (_WIN32) // {
-  wchar_t *wroot;
+  wchar_t *wroot=NULL;
 #endif // }
 
   bs1770gain_tree_init(tree,bs1770gain_tree_dir_vmt(),cli,parent);
   tree->dir.root=root;
   tree->dir.path=NULL;
 
-#if defined (_WIN32) // {
+#if defined (_MSC_VER) // [
+#error Not implemented yet.
+#elif defined (_WIN32) // ] [
   if (NULL==(wroot=pbu_s2w(root))) {
     DMESSAGE("converting string");
     goto wroot;
@@ -528,17 +589,18 @@ bs1770gain_tree_t *bs1770gain_tree_dir_init(bs1770gain_tree_t *tree,
   }
 
   free(wroot);
-#else // } {
+#else // ] [
   if (NULL==(tree->dir.d=opendir(root))) {
     DMESSAGE("opening directory");
     goto dir;
   }
-#endif // }
+#endif // ]
 
   return tree;
 dir:
 #if defined (_WIN32) // {
-  FREE(wroot);
+	if (root)
+  	FREE(wroot);
 wroot:
 #endif // }
   return NULL;
@@ -547,37 +609,47 @@ wroot:
 void bs1770gain_tree_dir_cleanup(bs1770gain_tree_t *tree)
 {
   bs1770gain_tree_free_path(tree);
+#if defined (_MSC_VER) // [
+#error Not implemented yet.
+#else // ] [
   CLOSEDIR(tree->dir.d);
+#endif // ]
 }
 
 int bs1770gain_tree_dir_next(bs1770gain_tree_t *tree,
     const bs1770gain_options_t *options)
 {
-#if defined (_WIN32) // {
+  char *d_name=NULL;
+#if defined (_MSC_VER) // [
+#error Not implemented yet.
+#elif defined (_WIN32) // ] [
   struct _wdirent *e;
-#else // } {
+#else // ] [
   struct dirent *e;
-#endif // }
-  char *d_name;
+#endif // ]
 
   bs1770gain_tree_free_path(tree);
 
+#if defined (_MSC_VER) // [
+#error Not implemented yet.
+#else // ] [
   while (NULL!=(e=READDIR(tree->dir.d))) {
-#if defined (_WIN32) // {
+#if defined (_WIN32) // [
     if (NULL==(d_name=pbu_w2s(e->d_name))) {
       DMESSAGE("converting string");
       goto invalid;
     }
-#else // } {
+#else // ] [
     d_name=e->d_name;
-#endif // }
+#endif // ]
     if (0==strcmp(".",d_name)||0==strcmp("..",d_name))
       goto next;
     else if (NULL==(tree->dir.path=pbu_extend_path(tree->dir.root,d_name)))
       goto next;
     else if (0<bs1770gain_tree_stat(tree,tree->dir.path,options)) {
 #if defined (_WIN32) // {
-      free(d_name);
+      if (d_name)
+      	free(d_name);
 #endif // }
       return tree->state;
     }
@@ -585,11 +657,13 @@ int bs1770gain_tree_dir_next(bs1770gain_tree_t *tree,
     bs1770gain_tree_free_path(tree);
   next:
 #if defined (_WIN32) // {
-    free(d_name);
+    if (d_name)
+    	free(d_name);
 #else // } {
     ;
 #endif // }
   }
+#endif // ]
 
 #if defined (_WIN32) // {
 invalid:

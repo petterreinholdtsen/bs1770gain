@@ -54,14 +54,17 @@ int ffsox_sink_append(sink_t *sink, stream_t *si, stream_t *so)
   return PBU_LIST_APPEND(sink->streams,stream);
 }
 
+//#define FFSOX_NO_AVFMT_NOFILE
 int ffsox_sink_open(sink_t *s)
 {
+#if ! defined (FFSOX_NO_AVFMT_NOFILE) // [
   if (0==(s->f.fc->oformat->flags&AVFMT_NOFILE)) {
     if (avio_open(&s->f.fc->pb,s->f.path,AVIO_FLAG_WRITE)<0) {
       DMESSAGE("opening output file");
       goto open;
     }
   }
+#endif // ]
 
   if (avformat_write_header(s->f.fc,NULL)<0) {
     DMESSAGE("writing header");
@@ -72,9 +75,11 @@ int ffsox_sink_open(sink_t *s)
 // close:
   av_write_trailer(s->f.fc);
 header:
+#if ! defined (FFSOX_NO_AVFMT_NOFILE) // [
   if (0==(s->f.fc->flags&AVFMT_NOFILE))
     avio_close(s->f.fc->pb);
 open:
+#endif // ]
   return -1;
 }
 

@@ -29,8 +29,10 @@
 #define W_PACKAGE_URL PBU_WIDEN(PACKAGE_URL)
 #endif // ]
 #define FPRINTF(stream,format) fwprintf(stream,L##format)
+#define FVPRINTF(stream,format,...) fwprintf(stream,L##format,__VA_ARGS__)
 #else // ] [
 #define FPRINTF(stream,format) fprintf(stream,format)
+#define FVPRINTF(stream,format,...) fprintf(stream,format,__VA_ARGS__)
 #endif // ]
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -56,15 +58,17 @@
   (0==((o)->aggregate&BS1770GAIN_AGGREGATE_RANGE_PEAK))
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined (_WIN32) // [
+#if 0 && defined (_WIN32) // [
 void bs1770gain_usage(wchar_t **wargv, char **argv, int code)
 #else // ] [
+#define BS177GAIN_NANOS_GIGANTUM_HUMERIS_INSIDENTES \
+    "Nanos gigantum humeris insidentes."
 void bs1770gain_usage(char **argv, int code)
 #endif // ]
 {
-#if defined (_WIN32) // [
+#if 0 && defined (_WIN32) // [
 #if defined (W_PACKAGE_VERSION) // [
-  fwprintf(stderr,L"BS1770GAIN %s, Copyright (C) Peter Belkner 2014-2017.\n",
+  fwprintf(stderr,L"BS1770GAIN %s, Copyright (C) Peter Belkner 2014-2018.\n",
       W_PACKAGE_VERSION);
 #endif // ]
 #if defined (W_PACKAGE_URL) // [
@@ -76,8 +80,11 @@ void bs1770gain_usage(char **argv, int code)
   fwprintf(stderr,L"\n");
 #else // ] [
 #if defined (PACKAGE_VERSION) // [
-  fprintf(stderr,"BS1770GAIN %s, Copyright (C) Peter Belkner 2014-2017.\n",
+  fprintf(stderr,"BS1770GAIN %s, Copyright (C) Peter Belkner 2014-2018.\n",
       PACKAGE_VERSION);
+#endif // ]
+#if defined (BS177GAIN_NANOS_GIGANTUM_HUMERIS_INSIDENTES) // [
+  fputs(BS177GAIN_NANOS_GIGANTUM_HUMERIS_INSIDENTES "\n",stderr);
 #endif // ]
 #if defined (PACKAGE_URL) // [
   fprintf(stderr,"%s\n",PACKAGE_URL);
@@ -92,15 +99,15 @@ void bs1770gain_usage(char **argv, int code)
   /////////////////////////////////////////////////////////////////////////////
   FPRINTF(stderr," -i,--integrated:  calculate integrated loudness\n");
   FPRINTF(stderr," -s,--shorterm:  calculate maximum shortterm loudness\n");
-  FPRINTF(stderr," -m,--momentary:  claculate maximum momentary loudness\n");
+  FPRINTF(stderr," -m,--momentary:  calculate maximum momentary loudness\n");
   FPRINTF(stderr," -r,--range:  calculate loudness range\n");
   FPRINTF(stderr," -p,--samplepeak:  calculate maximum sample peak\n");
   FPRINTF(stderr," -t,--truepeak:  calculate maximum true peak\n");
-  FPRINTF(stderr," -b <timestamp>,--begin <timestamp>:  begin decoding at\n"
+  FPRINTF(stderr," -b <timestamp>,--begin=<timestamp>:  begin decoding at\n"
       "   timestamp (in microseconds, format: hh:mm:ss.mus)\n");
-  FPRINTF(stderr," -d <duration>,--duration <duration>:  let decoding\n"
+  FPRINTF(stderr," -d <duration>,--duration=<duration>:  let decoding\n"
       "   last duration (in microseconds, format: hh:mm:ss.mus)\n");
-  FPRINTF(stderr," -u <method>,--use <method>:  base replay gain calculation\n"
+  FPRINTF(stderr," -u <method>,--use=<method>:  base replay gain calculation\n"
       "   on method (with respect to the -a/--apply and -o/--output\n"
       "   options),\n"
       "   methods:  \"integrated\" (default), \"shortterm\", or\n"
@@ -111,10 +118,10 @@ void bs1770gain_usage(char **argv, int code)
       "   \"shortterm\")\n");
   FPRINTF(stderr," -a:  apply the EBU/ATSC/RG album gain to the output\n"
       "   (in conjunction with the -o/--output option)\n");
-  FPRINTF(stderr," -o <folder>,--output <folder>:  write RG tags\n"
+  FPRINTF(stderr," -o <folder>,--output=<folder>:  write RG tags\n"
       "   or apply the EBU/ATSC/RG gain, respectively,\n"
       "   and output to folder\n");
-  FPRINTF(stderr," -f <file>,--file <file>:  write analysis to file\n");
+  FPRINTF(stderr," -f <file>,--file=<file>:  write analysis to file\n");
   FPRINTF(stderr," -x,--extensions:  enable following extensions/defaults:\n"
       "   1) rename files according to TITLE tag\n"
       "   2) read metadata from per-folder CSV file \"folder.csv\"\n"
@@ -140,41 +147,51 @@ void bs1770gain_usage(char **argv, int code)
   FPRINTF(stderr," --album-tags:  write album tags\n");
 #if defined (BS1770GAIN_TAG_PREFIX) // [
 #if 0 // [
-  FPRINTF(stderr," --tag-prefix <prefix>:  use <prefix> as tag prefix\n"
+  FPRINTF(stderr," --tag-prefix=<prefix>:  use <prefix> as tag prefix\n"
       "   instead of \"REPLAYGAIN\"\n");
 #else // ] [
-  FPRINTF(stderr," --tag-prefix <prefix>:  instead of \"REPLAYGAIN\",\n"
+  FPRINTF(stderr," --tag-prefix=<prefix>:  instead of \"REPLAYGAIN\",\n"
       "   use <prefix> as RG tag prefix\n");
 #endif // ]
 #endif // ]
-  FPRINTF(stderr," --unit <unit>:  write tags with <unit>\n");
-  FPRINTF(stderr," --apply <q>:  apply the EBU/ATSC/RG gain to the output\n"
+  FPRINTF(stderr," --unit=<unit>:  write tags with <unit>\n");
+  FPRINTF(stderr," --apply=<q>:  apply the EBU/ATSC/RG gain to the output\n"
       "   (in conjunction with the -o/--output option),\n"
       "   q=0.0 (album gain) ... 1.0 (track gain),\n"
       "   default:  0.0 (album gain)\n");
-  FPRINTF(stderr," --audio <index>:  select audio index (corresponds to\n"
+  FPRINTF(stderr," --audio=<index>:  select audio index (corresponds to\n"
       "   [0:<index>] in FFmpeg listing, cf. -l/--list option)\n");
-  FPRINTF(stderr," --video <index>:  select video index (corresponds to\n"
+  FPRINTF(stderr," --video=<index>:  select video index (corresponds to\n"
       "   [0:<index>] in FFmpeg listing, cf. -l/--list option)\n");
   FPRINTF(stderr," --stereo:  convert to stereo\n");
-  FPRINTF(stderr," --drc <float>:  set AC3 dynamic range compression (DRC)\n");
-  FPRINTF(stderr," --extension <extension>:  enable extension out of\n"
+  FPRINTF(stderr," --drc=<float>:  set AC3 dynamic range compression (DRC)\n");
+  FPRINTF(stderr," --extension=<extension>:  enable extension out of\n"
       "   \"rename\":  rename files according to TITLE tag\n"
       "   \"csv\":  read metadata from per-folder CSV file \"folder.csv\"\n"
       "   \"jpg\":  copy file \"folder.jpg\" from source to destination\n"
       "      folder\n"
       "   \"tags\":  automatically add the TRACK and DISC tags\n");
-  FPRINTF(stderr," --format <format>:  convert to format\n");
-  FPRINTF(stderr," --loglevel <level>:  set loglevel,\n"
+  FPRINTF(stderr," --format=<format>:  convert to format\n");
+  FPRINTF(stderr," --loglevel=<level>:  set loglevel,\n"
       "   level:  \"quiet\", \"panic\", \"fatal\", \"error\", \"warning\",\n"
       "   \"info\", \"verbose\", \"debug\"\n");
   FPRINTF(stderr," --xml:  print results in xml format\n");
   FPRINTF(stderr," --time:  print out duration of program invocation\n");
-  FPRINTF(stderr," --norm <float>:  norm loudness to float.\n");
-  //FPRINTF(stderr," --preamp <preamp>:\n");
+  FPRINTF(stderr," --norm=<float>:  norm loudness to float.\n");
+  //FPRINTF(stderr," --preamp=<preamp>:\n");
   //FPRINTF(stderr," --stero:\n");
   //FPRINTF(stderr," --rg-tags:\n");
   //FPRINTF(stderr," --bwf-tags:\n");
+#if defined (BS1770GAIN_OVERWRITE) // [
+  FPRINTF(stderr," --overwrite:  replace any input files by their respective\n"
+      "   output files (this option takes precedence over -o/--output). An\n"
+      "   input file is not really replaced but moved to a file with a name\n"
+      "   constructed from the old name by \"<old name>.BS1770GAIN\".\n");
+#endif // ]
+#if defined (FFSOX_LFE_CHANNEL) // [
+  FVPRINTF(stderr," --lfe=<lfe channel> overwrite the default lfe channel"
+      " (default: %d).\n",FFSOX_LFE_CHANNEL);
+#endif // ]
   /////////////////////////////////////////////////////////////////////////////
   FPRINTF(stderr,"\n");
   FPRINTF(stderr,"Experimental options:\n");
@@ -186,17 +203,17 @@ void bs1770gain_usage(char **argv, int code)
       "   on momentary block (same as --momentary)\n");
   FPRINTF(stderr," --momentary-range:  calculate loudness range based on\n"
       "   momentary block\n");
-  FPRINTF(stderr," --momentary-length <ms>:  length of momentary block\n"
+  FPRINTF(stderr," --momentary-length=<ms>:  length of momentary block\n"
       "   in milliseconds (default: 400)\n");
-  FPRINTF(stderr," --momentary-overlap <percent>:  overlap of momentary\n"
+  FPRINTF(stderr," --momentary-overlap=<percent>:  overlap of momentary\n"
       "   block in percent (default: 75)\n");
-  FPRINTF(stderr," --momentary-mean-gate <gate>:  silence gate for mean\n"
+  FPRINTF(stderr," --momentary-mean-gate=<gate>:  silence gate for mean\n"
       "   measurement of momentary block (default: -10.0)\n");
-  FPRINTF(stderr," --momentary-range-gate <gate>:  silence gate for range\n"
+  FPRINTF(stderr," --momentary-range-gate=<gate>:  silence gate for range\n"
       "   measurement of momentary block (default: -20.0)\n");
-  FPRINTF(stderr," --momentary-range-lower-bound <float>:  lower bound for\n"
+  FPRINTF(stderr," --momentary-range-lower-bound=<float>:  lower bound for\n"
       "   range measurement of momentary block (default: 0.1)\n");
-  FPRINTF(stderr," --momentary-range-upper-bound <float>:  upper bound for\n"
+  FPRINTF(stderr," --momentary-range-upper-bound=<float>:  upper bound for\n"
       "   range measurement of momentary block (default: 0.95)\n");
   ////////
   FPRINTF(stderr,"2) shortterm block\n");
@@ -206,17 +223,17 @@ void bs1770gain_usage(char **argv, int code)
       "   on shortterm block (same as --shortterm)\n");
   FPRINTF(stderr," --shortterm-range:  calculate loudness range based on\n"
       "   shortterm block (same as --range)\n");
-  FPRINTF(stderr," --shortterm-length <ms>:  length of shortterm block\n"
+  FPRINTF(stderr," --shortterm-length=<ms>:  length of shortterm block\n"
       "   in milliseconds (default: 3000)\n");
   FPRINTF(stderr," --shortterm-overlap <percent>:  overlap of shortterm\n"
       "   block in percent (default: 67)\n");
-  FPRINTF(stderr," --shortterm-mean-gate <gate>:  silence gate for mean\n"
+  FPRINTF(stderr," --shortterm-mean-gate=<gate>:  silence gate for mean\n"
       "   measurement of shortterm block (default: -10.0)\n");
-  FPRINTF(stderr," --shortterm-range-gate <gate>:  silence gate for range\n"
+  FPRINTF(stderr," --shortterm-range-gate=<gate>:  silence gate for range\n"
       "   measurement of shortterm block (default: -20.0)\n");
-  FPRINTF(stderr," --shortterm-range-lower-bound <float>:  lower bound for\n"
+  FPRINTF(stderr," --shortterm-range-lower-bound=<float>:  lower bound for\n"
       "   range measurement of shortterm block (default: 0.1)\n");
-  FPRINTF(stderr," --shortterm-range-upper-bound <float>:  upper bound for\n"
+  FPRINTF(stderr," --shortterm-range-upper-bound=<float>:  upper bound for\n"
       "   range measurement of shortterm block (default: 0.95)\n");
   /////////////////////////////////////////////////////////////////////////////
   FPRINTF(stderr,"\n");
@@ -251,9 +268,15 @@ enum {
   TRACK_TAGS,
   ALBUM_TAGS,
   XML,
-#if defined (BS1770GAIN_TAG_PREFIX) // {
+#if defined (BS1770GAIN_TAG_PREFIX) // [
   TAG_PREFIX,
-#endif // }
+#endif // ]
+#if defined (BS1770GAIN_OVERWRITE) // [
+  OVERWRITE,
+#endif // ]
+#if defined (FFSOX_LFE_CHANNEL) // [
+  LFE_CHANNEL,
+#endif // ]
   ////////////////
   MOMENTARY_RANGE,
   MOMENTARY_LENGTH,
@@ -319,9 +342,15 @@ static struct option bs1770gain_opts[]={
   { "track-tags",no_argument,NULL,TRACK_TAGS },
   { "album-tags",no_argument,NULL,ALBUM_TAGS },
   { "xml",no_argument,NULL,XML },
-#if defined (BS1770GAIN_TAG_PREFIX) // {
+#if defined (BS1770GAIN_TAG_PREFIX) // [
   { "tag-prefix",required_argument,NULL,TAG_PREFIX },
-#endif // }
+#endif // ]
+#if defined (BS1770GAIN_OVERWRITE) // [
+  { "overwrite",no_argument,NULL,OVERWRITE },
+#endif // ]
+#if defined (FFSOX_LFE_CHANNEL) // [
+  { "lfe",required_argument,NULL,LFE_CHANNEL },
+#endif // ]
   ////
   { "momentary-mean",no_argument,NULL,'i' },
   { "momentary-maximum",no_argument,NULL,'m' },
@@ -422,6 +451,9 @@ int main(int argc, char **argv)
 #if defined (_WIN32) // {
   char **argv;
 #endif // }
+#if defined (BS1770GAIN_VERSIONS) // [
+  sox_version_info_t const *sox_version;
+#endif // ]
   options_t options;
   FILE *f=stdout;
   tree_t root;
@@ -511,7 +543,7 @@ fprintf(stderr,"\n");
 #endif // ]
 
   if (1==argc) {
-#if defined (_WIN32) // [
+#if 0 && defined (_WIN32) // [
     bs1770gain_usage(wargv,argv,-1);
 #else // ] [
     bs1770gain_usage(argv,-1);
@@ -528,11 +560,14 @@ fprintf(stderr,"\n");
   options.norm=-23.0;
   options.audio_ext="flac";
   options.video_ext="mkv";
-#if defined (BS1770GAIN_TAG_PREFIX) // {
+#if defined (BS1770GAIN_TAG_PREFIX) // [
   options.tag_prefix="REPLAYGAIN";
-#endif // }
+#endif // ]
 #if defined (_WIN32) // [
   options.utf16=0;
+#endif // ]
+#if defined (FFSOX_LFE_CHANNEL) // [
+  options.lfe=FFSOX_LFE_CHANNEL;
 #endif // ]
 
   options.momentary.ms=400.0;
@@ -557,7 +592,7 @@ fprintf(stderr,"\n");
     case '?':
       fprintf(stderr,"Error: Option \"%s\" not recognizsed.\n",argv[optind-1]);
       fprintf(stderr,"\n");
-#if defined (_WIN32) // [
+#if 0 && defined (_WIN32) // [
       bs1770gain_usage(wargv,argv,-1);
 #else // ] [
       bs1770gain_usage(argv,-1);
@@ -599,7 +634,7 @@ fprintf(stderr,"\n");
       else {
         fprintf(stderr,"Error: Method \"%s\" not recognized.\n",optarg);
         fprintf(stderr,"\n");
-#if defined (_WIN32) // [
+#if 0 && defined (_WIN32) // [
         bs1770gain_usage(wargv,argv,-1);
 #else // ] [
         bs1770gain_usage(argv,-1);
@@ -613,7 +648,7 @@ fprintf(stderr,"\n");
       options.apply=0.0;
       break;
     case 'h':
-#if defined (_WIN32) // [
+#if 0 && defined (_WIN32) // [
       bs1770gain_usage(wargv,argv,0);
 #else // ] [
       bs1770gain_usage(argv,0);
@@ -677,21 +712,31 @@ fprintf(stderr,"\n");
       else if (0==strcasecmp("tags",optarg))
         options.extensions|=EXTENSION_TAGS;
       else {
-#if defined (_WIN32) // [
+#if 0 && defined (_WIN32) // [
         bs1770gain_usage(wargv,argv,-1);
 #else // ] [
         bs1770gain_usage(argv,-1);
 #endif // ]
       }
       break;
-#if defined (BS1770GAIN_TAG_PREFIX) // {
+#if defined (BS1770GAIN_TAG_PREFIX) // [
     case TAG_PREFIX:
       options.tag_prefix=optarg;
       break;
-#endif // }
+#endif // ]
     case FORMAT:
       options.format=optarg;
       break;
+#if defined (BS1770GAIN_OVERWRITE) // [
+    case OVERWRITE:
+      options.overwrite=1;
+      break;
+#endif // ]
+#if defined (FFSOX_LFE_CHANNEL) // [
+    case LFE_CHANNEL:
+      options.lfe=atoi(optarg);
+      break;
+#endif // ]
     case LOGLEVEL:
       if (0==strcasecmp("quiet",optarg))
         loglevel=AV_LOG_QUIET;
@@ -710,7 +755,7 @@ fprintf(stderr,"\n");
       else if (0==strcasecmp("debug",optarg))
         loglevel=AV_LOG_DEBUG;
       else {
-#if defined (_WIN32) // [
+#if 0 && defined (_WIN32) // [
         bs1770gain_usage(wargv,argv,-1);
 #else // ] [
         bs1770gain_usage(argv,-1);
@@ -771,7 +816,7 @@ fprintf(stderr,"\n");
       else {
         FPRINTF(stderr,"Error: Overlap out of range [0..100).\n");
         FPRINTF(stderr,"\n");
-#if defined (_WIN32) // [
+#if 0 && defined (_WIN32) // [
         bs1770gain_usage(wargv,argv,-1);
 #else // ] [
         bs1770gain_usage(argv,-1);
@@ -807,7 +852,7 @@ fprintf(stderr,"\n");
       else {
         FPRINTF(stderr,"Error: Overlap out of range [0..100).\n");
         FPRINTF(stderr,"\n");
-#if defined (_WIN32) // [
+#if 0 && defined (_WIN32) // [
         bs1770gain_usage(wargv,argv,-1);
 #else // ] [
         bs1770gain_usage(argv,-1);
@@ -836,7 +881,7 @@ fprintf(stderr,"\n");
   if (0!=options.method&&NULL==odirname) {
     FPRINTF(stderr,"Error: \"-u/--use\" requieres \"-o/--output\".\n");
     FPRINTF(stderr,"\n");
-#if defined (_WIN32) // [
+#if 0 && defined (_WIN32) // [
     bs1770gain_usage(wargv,argv,-1);
 #else // ] [
     bs1770gain_usage(argv,-1);
@@ -850,7 +895,7 @@ fprintf(stderr,"\n");
   }
 
   if (options.momentary.partition<1||options.shortterm.partition<1) {
-#if defined (_WIN32) // [
+#if 0 && defined (_WIN32) // [
     bs1770gain_usage(wargv,argv,-1);
 #else // ] [
     bs1770gain_usage(argv,-1);
@@ -868,7 +913,7 @@ fprintf(stderr,"\n");
     FPRINTF(stderr,"Error: Range bounds out of range "
         " 0.0 < lower < upper < 1.0.\n");
     FPRINTF(stderr,"\n");
-#if defined (_WIN32) // [
+#if 0 && defined (_WIN32) // [
     bs1770gain_usage(wargv,argv,-1);
 #else // ] [
     bs1770gain_usage(argv,-1);
@@ -890,19 +935,57 @@ fprintf(stderr,"\n");
 
 #if defined (_WIN32) // [
 #if defined (W_OPTION_UTF16) // [
-  options.utf16&=!options.xml;
+  if (!options.xml)
+    options.utf16=1;
 #else // ] [
   options.utf16=!options.xml;
 #endif // ]
 #endif // ]
 
+#if defined (HAVE_FFSOX_DYNLOAD) // [
   // load the FFmpeg and SoX libraries from "bs1770gain-tools".
   if (ffsox_dynload("bs1770gain-tools")<0) {
     PBU_DMESSAGE("loading shared libraries");
     goto dynload;
   }
+#endif // ]
 
+#if defined (BS1770GAIN_VERSIONS) // [
+  if (LIBAVUTIL_VERSION_MAJOR!=AV_VERSION_MAJOR(avutil_version())) {
+    DVMESSAGE("wrong version of avutil: %d needed.",
+        LIBAVUTIL_VERSION_MAJOR);
+    goto versions;
+  }
+
+  if (LIBSWRESAMPLE_VERSION_MAJOR!=AV_VERSION_MAJOR(swresample_version())) {
+    DVMESSAGE("wrong version of swresample: %d needed.",
+        LIBSWRESAMPLE_VERSION_MAJOR);
+    goto versions;
+  }
+
+  if (LIBAVCODEC_VERSION_MAJOR!=AV_VERSION_MAJOR(avcodec_version())) {
+    DVMESSAGE("wrong version of avcodec: %d needed.",
+        LIBAVCODEC_VERSION_MAJOR);
+    goto versions;
+  }
+
+  if (LIBAVFORMAT_VERSION_MAJOR!=AV_VERSION_MAJOR(avformat_version())) {
+    DVMESSAGE("wrong version of avformat: %d needed.",
+        LIBAVFORMAT_VERSION_MAJOR);
+    goto versions;
+  }
+
+  sox_version=sox_version_info();
+
+  if (!sox_version||SOX_LIB_VERSION_CODE!=sox_version->version_code) {
+    DVMESSAGE("wrong version of libsox: %d needed.",SOX_LIB_VERSION_CODE);
+    goto versions;
+  }
+#endif // ]
+
+#if LIBAVFORMAT_VERSION_MAJOR < 58 // [
   av_register_all();
+#endif // ]
   sox_init();
 
   if (0==options.dump||av_log_get_level()<loglevel)
@@ -982,7 +1065,6 @@ fprintf(stderr,"\n");
   sox_quit();
   // still reachable: 9,689 bytes in 51 blocks
   // TODO: Cleanup FFmpeg. But how?
-dynload:
 #if defined (_WIN32) // [
   if (NULL!=wfpath)
     fclose(f);
@@ -996,12 +1078,18 @@ file:
     FREE(wfpath);
 wfpath:
 #endif // ]
+#if defined (BS1770GAIN_VERSIONS) // [
+versions:
+#endif // ]
+#if defined (HAVE_FFSOX_DYNLOAD) // [
+  ffsox_unload();
+dynload:
+#endif // ]
 #if defined (_WIN32) // {
   FREE(argv);
 argv:
 #endif // }
   TRACE_POP();
   PBU_HEAP_PRINT();
-
   return 0;
 }

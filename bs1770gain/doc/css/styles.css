@@ -6,6 +6,7 @@ td, th {
   font-size: 14px;
 }
 td ul {
+ margin-top:0;
  margin-bottom:0;
  padding-left:1em;
 }
@@ -22,9 +23,14 @@ td ul {
   border-spacing: 0;
   border-collapse: collapse;
 }
-.history td {
+.history td, .history th {
   margin: 0;
   padding: 4px;
   border-width: 1px 1px 0 0;
   background-color: #FFC;
 }
+/*
+.history-inner table, .history-inner td, .history-inner th {
+  border-color:#FFC
+}
+*/

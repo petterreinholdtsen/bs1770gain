@@ -21,30 +21,64 @@
 
 char *pbu_extend_path(const char *dirname, const char *basename)
 {
+#if 0 // [
   const char *p1;
   char *path,*p2;
   int len1,len2;
 
-  path=NULL;
-  p1=dirname+strlen(dirname);
+  if (dirname) {
+    path=NULL;
+    p1=dirname+strlen(dirname);
 
-  // TODO: unicode.
-  while (dirname<p1&&('/'==p1[-1]||'\\'==p1[-1]))
-    --p1;
+    // TODO: unicode.
+    while (dirname<p1&&('/'==p1[-1]||'\\'==p1[-1]))
+      --p1;
 
-  len1=p1-dirname;
+    len1=p1-dirname;
+  else
+    len1=0;
+
   len2=strlen(basename);
 
-  if (NULL==(path=MALLOC((len1+1)+(len2+1)))) {
+  if (NULL==(path=MALLOC((len1?len1+1:0)+(len2+1)))) {
     DMESSAGE("allocating path");
     goto path;
   }
 
   p2=path;
-  memcpy(p2,dirname,len1);
-  p2+=len1;
-  *p2++='/';
+
+  if (dirname) {
+    memcpy(p2,dirname,len1);
+    p2+=len1;
+    *p2++='/';
+  }
+
   strcpy(p2,basename);
 path:
   return path;
+#else // ] [
+  char *path,*wp;
+  size_t len1,len2;
+
+  len1=dirname?strlen(dirname):0;
+  len2=basename?strlen(basename):0;
+
+  if (NULL==(path=wp=MALLOC((len1?len1+1:0)+(len2?len2+1:0)))) {
+    DMESSAGE("allocating path");
+    goto path;
+  }
+
+  if (len1) {
+    memcpy(wp,dirname,len1);
+    wp+=len1;
+    *wp++='/';
+  }
+
+  if (len2)
+    strcpy(wp,basename);
+
+  return path;
+path:
+  return NULL;
+#endif // ]
 }

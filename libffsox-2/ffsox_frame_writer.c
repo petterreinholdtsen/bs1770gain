@@ -66,7 +66,7 @@ int ffsox_frame_writer_create(frame_writer_t *fw, sink_t *so,
     goto open;
 
   if (fw->so.fc->oformat->flags&AVFMT_GLOBALHEADER)
-    fw->so.cc->flags|=CODEC_FLAG_GLOBAL_HEADER;
+    fw->so.cc->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
 
   fw->so.st->time_base=fw->so.cc->time_base;
   //fw->so.st->time_base=fr->si.st->time_base;

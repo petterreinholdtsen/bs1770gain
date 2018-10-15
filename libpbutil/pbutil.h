@@ -33,11 +33,18 @@ extern "C" {
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
+//#define PBU_DEBUG
+#define PBU_LIST_RING
+
+///////////////////////////////////////////////////////////////////////////////
 #if defined (_WIN32) // {
 #define PBU_WIDEN2(x) L ## x
 #define PBU_WIDEN(x) PBU_WIDEN2(x)
 #define __func__ __FUNCTION__
 #endif // }
+
+#define _PBU_STR(s) #s
+#define PBU_STR(s) _PBU_STR(s)
 
 ///////////////////////////////////////////////////////////////////////////////
 //#define PBU_MALLOC_DEBUG
@@ -91,14 +98,80 @@ extern "C" {
 
 #if defined (_MSC_VER) // {
 #define strcasecmp(s1,s2)       stricmp(s1,s2)
-#define round(x)                floor((x)+0.5)
+//#define round(x)                floor((x)+0.5)
 #define S_ISDIR(st_mode)        (_S_IFDIR&(st_mode))
 #define S_ISREG(st_mode)        (_S_IFREG&(st_mode))
 #endif // }
 
 ///////////////////////////////////////////////////////////////////////////////
-#define PBU_DEBUG
-#if defined (PBU_DEBUG) // {
+#define __PBU_FILE__ pbu_basename(__FILE__)
+#define PBU_ERROR(m) "Error " m ": %s() - \"%s\" (%d).\n"
+#if defined (_WIN32) // [
+#define __PBU_FILEW__ pbu_wbasename(PBU_WIDEN(__FILE__))
+#define __pbu_funcw__ L ## __func__
+#define PBU_ERRORW(m) L"Error " m ": %s() - \"%s\" (%d).\n"
+#endif // ]
+
+#if 0 // [
+#define PBU_DMESSAGE(m) fprintf(stderr,"Error " m ": " \
+    "%s(), \"%s\" (%d).\n",__func__, \
+    pbu_basename(__FILE__),__LINE__)
+#define PBU_DMESSAGEV(m,...) fprintf(stderr,"Error " m ": " \
+    "%s(), \"%s\" (%d).\n",__VA_ARGS__,__func__, \
+    pbu_basename(__FILE__),__LINE__)
+#else // ] [
+#define PBU_DMESSAGE(m) { \
+    fprintf(stderr,PBU_ERROR(m),__func__,__PBU_FILE__,__LINE__); \
+    fflush(stderr); \
+}
+#define PBU_DVMESSAGE(m,...) { \
+    fprintf(stderr,PBU_ERROR(m),__VA_ARGS__,__func__,__PBU_FILE__, \
+        __LINE__); \
+    fflush(stderr); \
+}
+#if defined (_WIN32) // [
+#define PBU_DMESSAGEW(m) { \
+    fprintf(stderr,PBU_ERRORW(m),__pbu_wfunc__,__PBU_WFILE__,__LINE__); \
+    fflush(stderr); \
+}
+#define PBU_DVMESSAGEW(m,...) { \
+    fprintf(stderr,PBU_ERRORW(m),__VA_ARGS__,__pbu_wfunc__,__PBU_WFILE__, \
+        __LINE__); \
+    fflush(stderr); \
+}
+#endif // ]
+
+#endif // ]
+#if defined (PBU_DEBUG) // [
+#if 0 // [
+  #define PBU_DMARKLN() do { \
+    fprintf(stderr,"[%s:%d:%s]\n",__PBU_FILE__,__LINE__,__func__); \
+    fflush(stderr); \
+  } while (0)
+  #define PBU_DWRITELN(cs) do { \
+    fprintf(stderr,"[%s:%d:%s] ",__PBU_FILE__,__LINE__,__func__); \
+    fputs(cs "\n",stderr); \
+    fflush(stderr); \
+  } while (0)
+  #define PBU_DVWRITELN(format, ...) do { \
+    fprintf(stderr,"[%s:%d:%s] ",__PBU_FILE__,__LINE__,__func__); \
+    fprintf(stderr,format "\n",__VA_ARGS__); \
+    fflush(stderr); \
+  } while (0)
+#else // ] [
+  #define PBU_DMARKLN() \
+    pbu_vwritelna(stderr,__FILE__,__LINE__,__func__,NULL)
+  #define PBU_DWRITELN(cs) \
+    pbu_vwritelna(stderr,__FILE__,__LINE__,__func__,cs)
+  #define PBU_DVWRITELN(format, ...) \
+    pbu_vwritelna(stderr,__FILE__,__LINE__,__func__,format,__VA_ARGS__)
+#if defined (_WIN32) // [
+  #define PBU_DWRITELNW(cs) \
+    pbu_vwritelnw(stderr,__FILE__,__LINE__,__func__,cs)
+  #define PBU_DVWRITELNW(format, ...) \
+    pbu_vwritelnw(stderr,__FILE__,__LINE__,__func__,format,__VA_ARGS__)
+#endif // ]
+#endif // ]
   #define PBU_DPUTS(cs) \
       fputs(cs,stderr)
   #define PBU_DPRINTF(cs,...) \
@@ -109,13 +182,6 @@ extern "C" {
       fwprintf(stderr,ws,__VA_ARGS__)
   #define PBU_DERROR(x,y) \
       ((void)((x)==(y)&&fputs(#x "\n",stderr)))
-  #define PBU_DMESSAGE(m) fprintf(stderr,"Error " m ": " \
-      "%s(), \"%s\" (%d).\n",__func__, \
-      pbu_basename(__FILE__),__LINE__)
-  #define PBU_DMESSAGEV(m,...) fprintf(stderr,"Error " m ": " \
-      "%s(), \"%s\" (%d).\n",__VA_ARGS__,__func__, \
-      pbu_basename(__FILE__),__LINE__)
-  ////
   #define PBU_DDPUTS(debug,cs) \
       ((debug)&&PBU_DPUTS(cs))
   #define PBU_DDPRINTF(debug,cs,...) \
@@ -128,36 +194,49 @@ extern "C" {
       ((debug)&&PBU_DERROR(x,y))
   #define PBU_DDMESSAGE(debug,m) \
       ((debug)&&PBU_DMESSAGE(m))
-  #define PBU_DDMESSAGEV(debug,m,...) \
-      ((debug)&&PBU_DMESSAGEV(m,__VA_ARGS__))
-#else // } {
+  #define PBU_DDVDMESSAGE(debug,m,...) \
+      ((debug)&&PBU_DVMESSAGE(m,__VA_ARGS__))
+#else // ] [
+  #define PBU_DMARKLN()
+  #define PBU_DWRITELN(cs)
+  #define PBU_DVWRITELN(format, ...)
+#if defined (_WIN32) // [
+  #define PBU_DWRITELNW(cs)
+  #define PBU_DVWRITELNW(format, ...)
+#endif // ]
   #define PBU_DPUTS(cs)
   #define PBU_DPRINTF(cs,...)
   #define PBU_DPUTWS(ws)
   #define PBU_DWPRINTF(ws,...)
-  #if defined (PBU_MESSAGE) // {
+  #if defined (PBU_MESSAGE) // [
     #define PBU_DERROR(debug,x,y) \
         ((void)((x)==(y)&&pbu_message(#x ": \"%s\" (%d).", \
             pbu_basename(__FILE__),__LINE__)))
-  #else // } {
+  #else // ] [
     #define PBU_DERROR(x,y)
-  #endif // }
+  #endif // ]
+#if 0 // [
   #define PBU_DMESSAGE(m)
-  #define PBU_DMESSAGEV(m,...)
+  #define PBU_DVMESSAGE(m,...)
+#if defined (_WIN32) // [
+  #define PBU_DMESSAGEW(m)
+  #define PBU_DVMESSAGEW(m,...)
+#endif // ]
+#endif // ]
   ////
   #define PBU_DDPUTS(debug,cs)
   #define PBU_DDPRINTF(debug,cs,...)
   #define PBU_DDPUTWS(debug,ws)
   #define PBU_DDWPRINTF(debug,ws,...)
-  #if defined (PBU_MESSAGE) // {
+  #if defined (PBU_MESSAGE) // [
     #define PBU_DDERROR(debug,x,y) \
       ((debug)&&PBU_DERROR(x,y)
-  #else // } {
+  #else // ] [
     #define PBU_DDERROR(debug,x,y)
-  #endif // }
+  #endif // ]
   #define PBU_DDMESSAGE(debug,m)
   #define PBU_DDMESSAGEV(debug,m,...)
-#endif // }
+#endif // ]
 
 ///////////////////////////////////////////////////////////////////////////////
 typedef struct pbu_list pbu_list_t;
@@ -184,7 +263,7 @@ void pbu_free1(void *ptr);
 void pbu_free(const char *func, const char *file, int line, void *ptr);
 #endif // }
 
-#if defined (_WIN32) // {
+#if defined (_WIN32) // [
 HANDLE pbu_msvcrt(void);
 wchar_t *pbu_wcstok_r(wchar_t *str, const wchar_t *delim, wchar_t **saveptr);
 char *pbu_strtok_r(char *str, const char *delim, char **saveptr);
@@ -193,9 +272,13 @@ wchar_t *pbu_s2w(const char *s);
 char *pbu_w2s(const wchar_t *w);
 const char *pbu_message(const char *format, ...);
 const wchar_t *pbu_wbasename(const wchar_t *wpath);
-#else // } {
+void pbu_vwritelnw(FILE *f, const char *path, int line, const char *func,
+    const wchar_t *format, ...);
+#else // ] [
 int pbu_copy_file(const char *src, const char *dst);
-#endif // }
+#endif // ]
+void pbu_vwritelna(FILE *f, const char *path, int line, const char *func,
+    const char *format, ...);
 int pbu_same_file(const char *path1, const char *path2);
 char *pbu_extend_path(const char *dirname, const char *basename);
 const char *pbu_ext(const char *path);
@@ -219,7 +302,9 @@ struct pbu_list {
 
 void *pbu_list_create(void *node);
 int pbu_list_append(void *head, void *node, size_t size);
+#if defined (PBU_LIST_RING) // [
 void *pbu_list_remove_link(void *head, void *node);
+#endif // ]
 void pbu_list_free_full(void *head, void *free_func);
 void pbu_list_free(void *head);
 

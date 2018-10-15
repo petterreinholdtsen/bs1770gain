@@ -23,6 +23,9 @@ int ffsox_stream_new(stream_t *s, sink_t *so, AVCodec *codec)
 {
   s->fc=so->f.fc;
   s->stream_index=s->fc->nb_streams;
+//DWRITELN("=================================================================");
+//DVWRITELN("s->stream_index: %d",s->stream_index);
+//DWRITELN("=================================================================");
 
   if (NULL==(s->st=avformat_new_stream(s->fc,codec))) {
     DMESSAGE("creating output stream");
@@ -39,11 +42,15 @@ st:
 
 int ffsox_stream_interleaved_write(stream_t *s, AVPacket *pkt)
 {
+//DVWRITELN("s->stream_index: %d",s->stream_index);
   pkt->stream_index=s->stream_index;
+//DVWRITELN("s->stream_index: %d, pkt->stream_index: %d",s->stream_index,pkt->stream_index);
 
 #if 0 // {
   fprintf(stderr,"%d: %I64d, %I64d\n",pkt->stream_index,pkt->pts,pkt->dts);
 #endif // }
+
+DVWRITELN("%d %d: pkt->pts: %I64d, pkt->dts: %I64d, pkt->duration: %I64d",s->stream_index,pkt->stream_index,pkt->pts,pkt->dts,pkt->duration);
 
   return av_interleaved_write_frame(s->fc,pkt);
 }

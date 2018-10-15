@@ -18,13 +18,13 @@
  * MA  02110-1301  USA
  */
 #ifndef __FFSOX_H__
-#define __FFSOX_H__ // {
-#include <lib1770.h>
-#include <ffsox_dynload.h>
-#if defined (WIN32) // {
+#define __FFSOX_H__ // [
+#if defined (_WIN32) // [
 #include <mmdeviceapi.h>
 #include <audioclient.h>
-#endif // }
+#endif // ]
+#include <lib1770.h>
+#include <ffsox_dynload.h>
 #ifdef __cpluplus
 extern "C" {
 #endif
@@ -37,7 +37,16 @@ extern "C" {
     10000
 #endif // }
 
+#define FFSOX_LFE_CHANNEL 3
 #define FFSOX_SAMPLE_FMT_S24 AV_SAMPLE_FMT_NB
+
+/*
+ * #881132 seems to be an artifical test case providing audio with a number of
+ * channels (32) greater than FFmpeg can deal with (AV_NUM_DATA_POINTERS==8).
+ */
+#define FFSOX_FIX_881131_CHANNEL_UNDERFOW
+#define FFSOX_FIX_881132_CHANNEL_OVERFLOW
+#define FFSOX_FIX_883198_MISSING_CODEC_ID
 
 ///////////////////////////////////////////////////////////////////////////////
 typedef struct ffsox_intercept ffsox_intercept_t;
@@ -45,7 +54,7 @@ typedef struct ffsox_convert ffsox_convert_t;
 typedef struct ffsox_format ffsox_format_t;
 typedef struct ffsox_stream ffsox_stream_t;
 typedef struct ffsox_frame ffsox_frame_t;
-typedef struct ffsox_machine ffsox_machine_t;
+typedef struct ffsox_engine ffsox_engine_t;
 typedef struct ffsox_read_list ffsox_read_list_t;
 typedef struct ffsox_packet_consumer_list ffsox_packet_consumer_list_t;
 typedef struct ffsox_stream_list ffsox_stream_list_t;
@@ -66,7 +75,7 @@ typedef struct ffsox_node_vmt ffsox_node_vmt_t;
     typedef struct ffsox_frame_reader_vmt ffsox_frame_reader_vmt_t;
   typedef struct ffsox_frame_consumer_vmt ffsox_frame_consumer_vmt_t;
     typedef struct ffsox_frame_writer_vmt ffsox_frame_writer_vmt_t;
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
     typedef struct ffsox_audio_player_vmt ffsox_audio_player_vmt_t;
 #endif // }
     typedef struct ffsox_sox_reader_vmt ffsox_sox_reader_vmt_t;
@@ -78,7 +87,7 @@ typedef struct ffsox_node ffsox_node_t;
     typedef struct ffsox_frame_reader ffsox_frame_reader_t;
   typedef struct ffsox_frame_consumer ffsox_frame_consumer_t;
     typedef struct ffsox_frame_writer ffsox_frame_writer_t;
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
     typedef struct ffsox_audio_player ffsox_audio_player_t;
 #endif // }
     typedef struct ffsox_sox_reader ffsox_sox_reader_t;
@@ -99,9 +108,13 @@ int ffsox_sox_add_effect_name(sox_effects_chain_t *chain,
     sox_signalinfo_t *signal_in, sox_signalinfo_t const *signal_out,
     int n, char *opts[], const char *name);
 
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
+wchar_t *ffsox_path3sep(const wchar_t *ws1, const char *s2, const char *s3,
+    wchar_t sep1, wchar_t sep2);
 wchar_t *ffsox_path3(const wchar_t *ws1, const char *s2, const char *s3);
 #else // } {
+char *ffsox_path3sep(const char *s1, const char *s2, const char *s3,
+    int sep1, int sep2);
 char *ffsox_path3(const char *s1, const char *s2, const char *s3);
 #endif // }
 int ffsox_csv2avdict(const char *file, char sep, AVDictionary **metadata);
@@ -130,8 +143,13 @@ struct ffsox_convert {
   int nb_samples;
 };
 
+#if defined (FFSOX_FIX_881132_CHANNEL_OVERFLOW) // [
+int ffsox_convert_setup(ffsox_convert_t *convert, ffsox_frame_t *fr,
+    ffsox_frame_t *fw, double q, ffsox_intercept_t *intercept);
+#else // ] [
 void ffsox_convert_setup(ffsox_convert_t *convert, ffsox_frame_t *fr,
     ffsox_frame_t *fw, double q, ffsox_intercept_t *intercept);
+#endif // ]
 
 /// format ////////////////////////////////////////////////////////////////////
 struct ffsox_format {
@@ -171,16 +189,16 @@ int ffsox_frame_convert(ffsox_frame_t *fr, ffsox_frame_t *fw, double q);
 int ffsox_frame_convert_sox(ffsox_frame_t *fr, ffsox_frame_t *fw, double q,
     ffsox_intercept_t *intercept, sox_uint64_t *clipsp);
 
-/// machine ///////////////////////////////////////////////////////////////////
+/// engine ////////////////////////////////////////////////////////////////////
 #define FFSOX_MACHINE_PUSH   0
 #define FFSOX_MACHINE_POP    1
 
-struct ffsox_machine {
+struct ffsox_engine {
   ffsox_source_t *source;
   ffsox_node_t *node;
 };
 
-int ffsox_machine_run(ffsox_machine_t *m, ffsox_node_t *node);
+int ffsox_engine_run(ffsox_engine_t *e, ffsox_node_t *node);
 
 /// stream_list ///////////////////////////////////////////////////////////////
 struct ffsox_stream_list {
@@ -265,6 +283,9 @@ struct ffsox_collect_config {
   double scale;
   double samplerate;
   int channels;
+#if defined (FFSOX_LFE_CHANNEL) // [
+  int lfe;
+#endif // ]
   ffsox_block_config_t momentary;
   ffsox_block_config_t shortterm;
 };
@@ -279,6 +300,9 @@ struct ffsox_collect {
   lib1770_block_t *momentary;
   lib1770_block_t *shortterm;
   lib1770_sample_t sample;
+#if defined (FFSOX_LFE_CHANNEL) // [
+  int lfe;
+#endif // ]
 };
 
 int ffsox_collect_create(ffsox_collect_t *collect, ffsox_collect_config_t *cc);
@@ -303,6 +327,9 @@ struct ffsox_analyze_config {
   int vi;
 #if defined (_WIN32) // [
   int utf16;
+#endif // ]
+#if defined (FFSOX_LFE_CHANNEL) // [
+  int lfe;
 #endif // ]
 };
 
@@ -450,8 +477,13 @@ struct ffsox_packet_consumer {
   };
 };
 
+#if defined (FFSOX_FIX_883198_MISSING_CODEC_ID) // [
+int ffsox_packet_consumer_create(ffsox_packet_consumer_t *n,
+    ffsox_source_t *si, int stream_index, int append);
+#else // ] [
 int ffsox_packet_consumer_create(ffsox_packet_consumer_t *n,
     ffsox_source_t *si, int stream_index);
+#endif // ]
 const ffsox_packet_consumer_vmt_t *ffsox_packet_consumer_get_vmt(void);
 
 /// packet_writer /////////////////////////////////////////////////////////////
@@ -612,7 +644,7 @@ ffsox_frame_writer_t *ffsox_frame_writer_new(ffsox_sink_t *so,
     ffsox_frame_reader_t *fr, int codec_id, int sample_fmt, double q);
 const ffsox_frame_writer_vmt_t *ffsox_frame_writer_get_vmt(void);
 
-#if defined (WIN32) // {
+#if defined (_WIN32) // {
 /// audio_player ////////////////////////////////////////////////////////////
 #define FFSOX_AUDIO_PLAYER_RENDER   1
 #define FFSOX_AUDIO_PLAYER_END      2
@@ -723,4 +755,4 @@ size_t ffsox_sox_reader_read(ffsox_sox_reader_t *sa, sox_sample_t *buf,
 #ifdef __cpluplus
 }
 #endif
-#endif // }
+#endif // ]

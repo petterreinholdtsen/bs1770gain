@@ -69,11 +69,12 @@ am_libffsox_2_a_OBJECTS = ffsox_aggregate.$(OBJEXT) \
 	ffsox_audiostream.$(OBJEXT) ffsox_av_time_base_q.$(OBJEXT) \
 	ffsox_collect.$(OBJEXT) ffsox_convert.$(OBJEXT) \
 	ffsox_csv2avdict.$(OBJEXT) ffsox_dynload.$(OBJEXT) \
+  ffsox_dynload2.$(OBJEXT) \
 	ffsox_dynload_trace.$(OBJEXT) ffsox_find_decoder.$(OBJEXT) \
 	ffsox_frame.$(OBJEXT) ffsox_frame_consumer.$(OBJEXT) \
 	ffsox_frame_convert.$(OBJEXT) \
 	ffsox_frame_convert_sox.$(OBJEXT) ffsox_frame_reader.$(OBJEXT) \
-	ffsox_frame_writer.$(OBJEXT) ffsox_machine.$(OBJEXT) \
+	ffsox_frame_writer.$(OBJEXT) ffsox_engine.$(OBJEXT) \
 	ffsox_msvcrt.$(OBJEXT) ffsox_node.$(OBJEXT) \
 	ffsox_packet_consumer.$(OBJEXT) \
 	ffsox_packet_consumer_list.$(OBJEXT) \
@@ -215,7 +216,7 @@ libffsox_2_a_SOURCES = ffsox.h ffsox_priv.h ffsox_dynload.h \
 	ffsox_dynload_trace.c ffsox_find_decoder.c ffsox_frame.c \
 	ffsox_frame_consumer.c ffsox_frame_convert.c \
 	ffsox_frame_convert_sox.c ffsox_frame_reader.c \
-	ffsox_frame_writer.c ffsox_machine.c ffsox_msvcrt.c \
+	ffsox_frame_writer.c ffsox_engine.c ffsox_msvcrt.c \
 	ffsox_node.c ffsox_packet_consumer.c \
 	ffsox_packet_consumer_list.c ffsox_packet_writer.c \
 	ffsox_path3.c ffsox_sink.c ffsox_source.c ffsox_source_link.c \
@@ -287,7 +288,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ffsox_frame_convert_sox.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ffsox_frame_reader.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ffsox_frame_writer.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ffsox_machine.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ffsox_engine.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ffsox_msvcrt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ffsox_node.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ffsox_packet_consumer.Po@am__quote@

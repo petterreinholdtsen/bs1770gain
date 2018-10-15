@@ -104,9 +104,10 @@ void bs1770gain_album_renumber(const bs1770gain_album_t *album)
     track->n=++n;
 }
 
-void bs1770gain_album_copy_file(const bs1770gain_album_t *album,
+int bs1770gain_album_copy_file(const bs1770gain_album_t *album,
     const char *basename)
 {
+  int code=-1;
 #if defined (_WIN32) // {
   wchar_t *src,*dst;
   struct _stat buf;
@@ -133,18 +134,23 @@ void bs1770gain_album_copy_file(const bs1770gain_album_t *album,
     goto dst;
 
   // copy the file.
-  pbu_copy_file(src,dst);
+  code=pbu_copy_file(src,dst);
   FREE(dst);
 dst:
 stat:
   FREE(src);
 src:
-  return;
+  return code;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+#if defined (BS1770GAIN_OVERWRITE) // [
+bs1770gain_track_t *bs1770gain_track_new(const char *idir, const char *ipath,
+    bs1770gain_album_t *album, const bs1770gain_options_t *options)
+#else // ] [
 bs1770gain_track_t *bs1770gain_track_new(const char *ipath,
     bs1770gain_album_t *album, const bs1770gain_options_t *options)
+#endif // ]
 {
   bs1770gain_track_t *track;
   bs1770gain_track_t *prev,*cur;
@@ -153,6 +159,15 @@ bs1770gain_track_t *bs1770gain_track_new(const char *ipath,
     DMESSAGE("allocation track");
     goto track;
   }
+
+#if defined (BS1770GAIN_OVERWRITE) // [
+  if (!options->overwrite||NULL==idir)
+    track->idir=NULL;
+  else if (NULL==(track->idir=STRDUP(idir))) {
+    DMESSAGE("copying input directory");
+    goto idir;
+  }
+#endif // ]
 
   if (NULL==(track->ipath=STRDUP(ipath))) {
     DMESSAGE("copying input path");
@@ -194,6 +209,11 @@ bs1770gain_track_t *bs1770gain_track_new(const char *ipath,
 aggregate:
   FREE(track->ipath);
 ipath:
+#if defined (BS1770GAIN_OVERWRITE) // [
+  if (track->idir)
+    FREE(track->idir);
+idir:
+#endif // ]
   FREE(track);
 track:
   return NULL;
@@ -207,6 +227,10 @@ void bs1770gain_track_close(bs1770gain_track_t *track)
     FREE(track->opath);
 
   FREE(track->ipath);
+#if defined (BS1770GAIN_OVERWRITE) // [
+  if (track->idir)
+    FREE(track->idir);
+#endif // ]
   FREE(track);
 }
 
@@ -217,8 +241,16 @@ int bs1770gain_track_alloc_output(track_t *track, const source_t *si,
   const char *odirname=track->album->opath;
   AVDictionaryEntry *de=av_dict_get(si->f.fc->metadata,"TITLE",NULL,0);
   const char *ext;
+#if defined (BS1770GAIN_OVERWRITE) // [
+#if defined (_WIN32) // [
+  static const char *const TMPDIR="temp";
+  const char *tmpdir;
+#else // ] [
+  const const char *tmpdir="/tmp";
+#endif // ]
+#endif // ]
 
-  if (NULL!=options->format)
+  if (options->format)
     ext=options->format;
   else if (0<=si->vi)
     ext=options->video_ext;
@@ -227,6 +259,19 @@ int bs1770gain_track_alloc_output(track_t *track, const source_t *si,
   else
     ext=pbu_ext(track->ipath);
 
+#if defined (BS1770GAIN_OVERWRITE) // [
+  if (options->overwrite) {
+#if defined (_WIN32) // [
+    if (NULL==(tmpdir=getenv(TMPDIR))) {
+      DMESSAGEV("missing \"%s\" environment variable",TMPDIR);
+      goto path;
+    }
+#endif // ]
+
+    track->opath=bs1770gain_opath(track->ipath,tmpdir,ext);
+  }
+  else
+#endif // ]
   if (0==(EXTENSION_RENAME&options->extensions)||NULL==de)
     track->opath=bs1770gain_opath(track->ipath,odirname,ext);
   else
@@ -242,3 +287,126 @@ int bs1770gain_track_alloc_output(track_t *track, const source_t *si,
 path:
   return code;
 }
+
+#if defined (BS1770GAIN_OVERWRITE) // [
+void bs1770gain_track_rename(track_t *track, const options_t *options)
+{
+  static const char EXT[]="BS1770GAIN";
+  const char *obasename=pbu_basename(track->opath);
+#if defined (_WIN32) // [
+  BOOL code;
+  wchar_t *wipath;
+  wchar_t *wirename;
+  wchar_t *wopath;
+  wchar_t *worename;
+#else // ] [
+  char *irename;
+  char *orename;
+  struct stat ibuf;
+  struct stat obuf;
+#endif // ]
+
+  if (options->overwrite) {
+#if defined (_WIN32) // [
+    if (NULL==(wipath=pbu_s2w(track->ipath))) {
+      DMESSAGE("allocating wide character path name\n");
+      goto wipath;
+    }
+
+    if (NULL==(wirename=ffsox_path3sep(NULL,track->ipath,EXT,0,L'.'))) {
+      DMESSAGE("allocating wide character path name\n");
+      goto wirename;
+    }
+
+    if (NULL==(wopath=pbu_s2w(track->opath))) {
+      DMESSAGE("allocating wide character path name\n");
+      goto wopath;
+    }
+
+    if (NULL==(worename=ffsox_path3sep(NULL,track->idir,obasename,0,L'\\'))) {
+      DMESSAGE("allocating wide character path name\n");
+      goto worename;
+    }
+
+    code=MoveFileW(
+      wipath,                 // _In_ LPCTSTR lpExistingFileName,
+      wirename                 // _In_ LPCTSTR lpNewFileName
+    );
+
+    if (!code) {
+      DMESSAGEV("re-naming files - error code %ld",GetLastError());
+      goto rename;
+    }
+
+    code=MoveFileExW(
+      wopath,                 // _In_ LPCTSTR lpExistingFileName,
+      wipath,                 // _In_ LPCTSTR lpNewFileName,
+      MOVEFILE_COPY_ALLOWED   // _In_     DWORD   dwFlags
+    );
+
+    if (!code) {
+      DMESSAGEV("re-naming files - error code %ld",GetLastError());
+      goto copy;
+    }
+  copy:
+  rename:
+    FREE(worename);
+  worename:
+    FREE(wopath);
+  wopath:
+    FREE(wirename);
+  wirename:
+    FREE(wipath);
+  wipath:
+#else // ] [
+    ///////////////////////////////////////////////////////////////////////////
+    if (NULL==(irename=ffsox_path3sep(NULL,track->ipath,EXT,0,L'.'))) {
+      DMESSAGE("allocating path name\n");
+      goto imalloc;
+    }
+
+    if (NULL==(orename=ffsox_path3sep(NULL,track->idir,obasename,0,L'/'))) {
+      DMESSAGE("allocating path name\n");
+      goto omalloc;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    if (stat(track->ipath,&ibuf)<0) {
+      DMESSAGE("getting file information");
+      goto istat;
+    }
+
+    if (stat(track->opath,&obuf)<0) {
+      DMESSAGE("getting file information");
+      goto ostat;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    if (rename(track->ipath,irename)<0) {
+      DMESSAGE("re-naming files");
+      goto irename;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    if (obuf.st_dev==ibuf.st_dev&&rename(track->opath,orename)<0) {
+      DMESSAGE("re-naming files");
+      goto orename;
+    }
+    else if (pbu_copy_file(track->opath,orename)<0) {
+      DMESSAGE("copying files");
+      goto ocopy;
+    }
+  ocopy:
+  orename:
+  irename:
+  ostat:
+  istat:
+    FREE(orename);
+  omalloc:
+    FREE(irename);
+  imalloc:
+#endif // ]
+    ;
+  }
+}
+#endif // ]

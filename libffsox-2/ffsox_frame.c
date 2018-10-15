@@ -39,7 +39,9 @@ frame:
 #if 1 // {
 int ffsox_frame_create_cc(frame_t *f, AVCodecContext *cc)
 {
+#if defined (CODEC_CAP_VARIABLE_FRAME_SIZE) // [
   const AVCodec *codec=cc->codec;
+#endif // ]
   AVFrame *frame;
   int nb_samples;
 
@@ -48,9 +50,11 @@ int ffsox_frame_create_cc(frame_t *f, AVCodecContext *cc)
     goto frame;
   }
 
+#if defined (CODEC_CAP_VARIABLE_FRAME_SIZE) // [
   if (NULL!=codec&&(codec->capabilities&CODEC_CAP_VARIABLE_FRAME_SIZE))
     nb_samples=10000;
   else
+#endif // ]
     nb_samples=cc->frame_size;
 
   frame=f->frame;

@@ -106,7 +106,7 @@ size_t ffsox_sox_reader_read(sox_reader_t *sa, sox_sample_t *buf, size_t len)
 {
   AVFrame *frame=sa->fo.frame;
   int channels=frame->channels;
-  machine_t m;
+  engine_t m;
 
   if (STATE_END==sa->state)
     return 0;
@@ -114,14 +114,14 @@ size_t ffsox_sox_reader_read(sox_reader_t *sa, sox_sample_t *buf, size_t len)
     frame->data[0]=(uint8_t *)buf;
     frame->nb_samples=len/channels;
 
-    if (ffsox_machine_run(&m,&sa->node)<0) {
-      DMESSAGE("running machine");
-      goto machine;
+    if (ffsox_engine_run(&m,&sa->node)<0) {
+      DMESSAGE("running engine");
+      goto engine;
     }
 
     return frame->nb_samples*channels;
   }
-machine:
+engine:
   sa->sox_errno=SOX_EOF;
 
   return 0;
@@ -161,27 +161,47 @@ static int sox_reader_next_set_frame(sox_reader_t *sa, ffsox_frame_t *fo)
 
 static int sox_reader_run(sox_reader_t *sa)
 {
+#if 0 // [
   frame_t *fi=sa->fi;
   frame_t *fo=&sa->fo;
+#else // ] [
+  frame_t *fi;
+  frame_t *fo;
+
+//DMARKLN();
+  fi=sa->fi;
+//DMARKLN();
+  fo=&sa->fo;
+//DMARKLN();
+#endif /// ]
 
   switch (sa->state) {
   case STATE_RUN:
+//DMARKLN();
     if (NULL!=fi) {
+//DMARKLN();
       while (0==ffsox_frame_complete(fi)) {
+//DMARKLN();
         if (ffsox_frame_convert_sox(fi,fo,sa->q,sa->intercept,&sa->clips)<0) {
           DMESSAGE("converting");
           return -1;
         }
 
+//DMARKLN();
         if (0!=ffsox_frame_complete(fo))
           return sox_reader_next_set_frame(sa,fo);
+//DMARKLN();
       }
 
+//DMARKLN();
       ffsox_frame_reset(fi);
+//DMARKLN();
     }
 
+//DMARKLN();
     return MACHINE_POP;
   case STATE_FLUSH:
+//DMARKLN();
     if (0<fo->nb_samples.frame) {
       fo->frame->nb_samples=fo->nb_samples.frame;
 
@@ -190,11 +210,14 @@ static int sox_reader_run(sox_reader_t *sa)
     else {
       sa->state=STATE_END;
 
+//DMARKLN();
       return sox_reader_next_set_frame(sa,NULL);
     }
   case STATE_END:
+//DMARKLN();
     return MACHINE_POP;
   default:
+//DMARKLN();
     DMESSAGE("illegal read decode state");
     return -1;
   }
@@ -222,6 +245,7 @@ const sox_reader_vmt_t *ffsox_sox_reader_get_vmt(void)
     vmt.run=sox_reader_run;
     vmt.set_frame=sox_reader_set_frame;
   }
+//DVWRITELN("=== vmt.name: \"%s\", vmt.run: %p =========",vmt.name,vmt.run);
 
   return &vmt;
 }

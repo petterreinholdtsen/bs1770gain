@@ -109,15 +109,28 @@ seek:
 int ffsox_source_append(source_t *si, packet_consumer_t *pc)
 {
   packet_consumer_list_t consumer;
+#if defined (PBU_DEBUG) // [
+  ffsox_packet_consumer_list_t *n;
+  packet_consumer_t *consumer_cur;
+#endif // ]
 
   consumer.consumer=pc;
 
+//DVWRITELN("pc->vmt->name: \"%s\"",pc->vmt->name);
   if (LIST_APPEND(si->consumer.h,consumer)<0) {
     DMESSAGE("appending chain");
     goto append;
   }
 
   pc->prev=si;
+
+#if defined (PBU_DEBUG) // [
+  for (n=si->consumer.h;n;LIST_NEXT(&n,si->consumer.h)) {
+    consumer_cur=n->consumer;
+//DVWRITELN("consumer_cur->vmt->name: \"%s\", consumer_cur->si.stream_index: %d",consumer_cur->vmt->name,consumer_cur->si.stream_index);
+    (void)consumer_cur;
+  }
+#endif // ]
 
   return 0;
 append:
@@ -168,8 +181,10 @@ static int source_run(source_t *n)
       if (NULL!=n->cb)
         n->cb(n,n->data);
 
+//DVWRITELN("pkt->stream_index: %d",pkt->stream_index);
       while (NULL!=n->consumer.n) {
         consumer=n->consumer.n->consumer;
+//DVWRITELN("consumer->vmt->name: \"%s\", consumer->si.stream_index: %d",consumer->vmt->name,consumer->si.stream_index);
 
         if (pkt->stream_index==consumer->si.stream_index) {
           if (0ll<n->ts) {
@@ -189,6 +204,7 @@ static int source_run(source_t *n)
         }
 
         LIST_NEXT(&n->consumer.n,n->consumer.h);
+//DVWRITELN("n->consumer.n: %p",n->consumer.n);
       }
     }
   case STATE_FLUSH:
@@ -202,6 +218,7 @@ static int source_run(source_t *n)
     else {
       consumer=n->consumer.n->consumer;
       consumer->state=STATE_FLUSH;
+//DVWRITELN("consumer->vmt->name: \"%s\"",consumer->vmt->name);
       consumer->vmt->set_packet(consumer,NULL);
       n->next=consumer;
       LIST_NEXT(&n->consumer.n,n->consumer.h);

@@ -21,8 +21,13 @@
 
 static packet_consumer_vmt_t vmt;
 
+#if defined (FFSOX_FIX_883198_MISSING_CODEC_ID) // [
+int ffsox_packet_consumer_create(packet_consumer_t *pc, source_t *si,
+    int stream_index, int append)
+#else // ] [
 int ffsox_packet_consumer_create(packet_consumer_t *pc, source_t *si,
     int stream_index)
+#endif // ]
 {
   if (ffsox_node_create(&pc->node)<0) {
     DMESSAGE("creating node");
@@ -36,11 +41,17 @@ int ffsox_packet_consumer_create(packet_consumer_t *pc, source_t *si,
   pc->si.cc=pc->si.st->codec;
   pc->si.codec=pc->si.cc->codec;
 
-  // link us to the packet consumer list.
-  if (ffsox_source_append(si,pc)<0) {
-    DMESSAGE("appending packet consumer");
-    goto append;
+#if defined (FFSOX_FIX_883198_MISSING_CODEC_ID) // [
+  if (append) {
+#endif // ]
+    // link us to the packet consumer list.
+    if (ffsox_source_append(si,pc)<0) {
+      DMESSAGE("appending packet consumer");
+      goto append;
+    }
+#if defined (FFSOX_FIX_883198_MISSING_CODEC_ID) // [
   }
+#endif // ]
 
   return 0;
 append:

@@ -1,0 +1,222 @@
+##
+ # configure-homegrown
+ #
+ # BS177GAIN
+ # Copyright (C) 2018  Peter Belkner (pbelkner@snafu.de)
+ #
+ # BS1770GAIN is free software: you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation, either version 3 of the License, or
+ # (at your option) any later version.
+ #
+ # BS1770GAIN is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License
+ # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ ##
+#!/bin/bash
+#
+# Small getopts tutorial:
+# http://wiki.bash-hackers.org/howto/getopts_tutorial
+# Command Line Options: How To Parse In Bash Using "getopt":
+# http://www.bahmanm.com/blogs/command-line-options-how-to-parse-in-bash-using-getopt
+# Using getopts in bash shell script to get long and short command line options:
+# https://stackoverflow.com/questions/402377/using-getopts-in-bash-shell-script-to-get-long-and-short-command-line-options
+
+srcdir=`dirname "$0"|sed -e 's,/$,,g'`
+makefile=Makefile
+
+# read the options
+# * options  consist of a single letter and are listed without any separation.
+#   a colon indicates an argument.
+opts="a:"
+# * long options  consist of more than one letter and are listed separated by
+#   comma. a colon indicates an argument.
+longopts="sox-prefix:,ffmpeg-prefix:,tooldir:,prefix:,libdir:,includedir:,bindir:,msvc:,mssdk:,tools:,reldir:,nsis:,gtk:"
+TEMP=`getopt -o ${opts} -l ${longopts} -- "$@"`
+eval set -- "${TEMP}"
+
+# "getopt" just re-orders the options and their (optional) argument in a
+# canonical way. We need to parse them ourselfs.
+while true ; do # [
+  opt="${1}"; shift               # Consume an option and shift.
+  case "${opt}" in # [
+  --sox-prefix)
+    optarg="${1}"; shift          # Consume the argument and shift.
+    sox_prefix=${optarg}
+    ;;
+  --ffmpeg-prefix)
+    optarg="${1}"; shift          # Consume the argument and shift.
+    ffmpeg_prefix=${optarg}
+    ;;
+  --tooldir)
+    optarg="${1}"; shift          # Consume the argument and shift.
+    tooldir=${optarg}
+    ;;
+  --prefix)
+    optarg="${1}"; shift          # Consume the argument and shift.
+    prefix=${optarg}
+    ;;
+  --includedir)
+    optarg="${1}"; shift          # Consume the argument and shift.
+    includedir=${optarg}
+    ;;
+  --libdir)
+    optarg="${1}"; shift          # Consume the argument and shift.
+    libdir=${optarg}
+    ;;
+  --bindir)
+    optarg="${1}"; shift          # Consume the argument and shift.
+    bindir=${optarg}
+    ;;
+  --msvc)
+    optarg="${1}"; shift          # Consume the argument and shift.
+    msvc=${optarg}
+    ;;
+  --mssdk)
+    optarg="${1}"; shift          # Consume the argument and shift.
+    mssdk=${optarg}
+    ;;
+  --tools)
+    optarg="${1}"; shift          # Consume the argument and shift.
+    tools=${optarg}
+    ;;
+  --reldir)
+    optarg="${1}"; shift          # Consume the argument and shift.
+    reldir=${optarg}
+    ;;
+  --gtk)
+    optarg="${1}"; shift          # Consume the argument and shift.
+    gtk=${optarg}
+    ;;
+  --nsis)
+    optarg="${1}"; shift          # Consume the argument and shift.
+    nsis=${optarg}
+    ;;
+  --)
+    break                         # Break out from the loop.
+    ;;
+  *)
+    # We should never go here.
+    echo "Internal error: ${opt}!" ;
+    exit 1
+    ;;
+  esac # ]
+done # ]
+
+if [ '1' = "`uname -a | grep -E '^MINGW' | wc -l`" ]; then # [
+  msys=`uname -a | sed -e 's/^MINGW\([1-9][1-9]\).*/\1/g'`
+fi # ]
+
+config="config.tmp.mak"
+rm -f ${config}
+
+###############################################################################
+if [ -n "${msvc}" ]; then echo "msvc=${msvc}" >> ${config}; fi
+if [ -n "${mssdk}" ]; then echo "mssdk=${mssdk}" >> ${config}; fi
+
+echo "CC=gcc" >> ${config}
+
+if [ -n "${msys}" ]; then # [
+  if [ \( '32' = "${msys}" \) -a \( -n "${msvc}" \) ]; then # [
+    echo "export PATH+=:\$(msvc)/bin" >> ${config}
+  elif [ \( '64' = "${msys}" \) -a \( -n "${msvc}" \) ]; then # ] [
+    echo "export PATH+=:\$(msvc)/bin/amd64" >> ${config}
+  fi # ]
+  echo "cl=cl.exe -nologo" >> ${config}
+  echo "lib=lib.exe -nologo" >> ${config}
+  if [ -n "${msvc}" ]; then # [
+    echo "CPPFLAGS-MSC+='-I\$(msvc)/include'" >> ${config}
+  fi # ]
+  if [ -n "${mssdk}" ]; then # [
+  	echo "(%.obj): %.obj" >> ${config}
+  	echo "	if test -e \$@; then \$(lib) -out:\$@ \$@ \$<; else \$(lib) -out:\$@ \$<; fi" >> ${config}
+    echo "CPPFLAGS-MSC+='-I\$(mssdk)/include'" >> ${config}
+    echo "CPPFLAGS-MSC+=-D_USING_V110_SDK71_" >> ${config}
+    echo "CPPFLAGS-MSC+=-Dinline=__inline" >> ${config}
+  	echo "%: LDFLAGS+=\$(LDFLAGS-MSC)" >> ${config}
+  	echo "%: LDLIBS+=\$(LIBS-MSC)" >> ${config}
+  	echo "%: %.obj" >> ${config}
+  	echo "	\$(cl) $^ -Fe\$@.exe \$(LDFLAGS) \$(LDLIBS)" >> ${config}
+  	echo "%.obj: CPPFLAGS+=\$(CPPFLAGS-MSC)" >> ${config}
+  	echo "%.obj: %.c" >> ${config}
+  	echo "	\$(cl) \$(CPPFLAGS) -c $< -Fo\$@" >> ${config}
+  fi # ]
+	if [ 'ms' != "${tools}" ]; then # [
+    echo "LDFLAGS-GNU+=-municode" >> ${config}
+    echo "%: LDFLAGS+=\$(LDFLAGS-GNU)" >> ${config}
+	fi # ]
+fi # ]
+
+echo "ARFLAGS:=\$(ARFLAGS)U" >> ${config}
+echo "CFLAGS-GNU+=-Wall" >> ${config}
+#echo "CFLAGS-GNU+=-Werror" >> ${config}
+echo "CFLAGS-GNU+=-O2" >> ${config}
+echo "%.o: CFLAGS+=\$(CFLAGS-GNU)" >> ${config}
+
+###############################################################################
+if [ -n "${sox_prefix}" ]; then # [
+  echo "sox-prefix=${sox_prefix}" >> ${config}
+fi # ]
+if [ -n "${ffmpeg_prefix}" ]; then # [
+  echo "ffmpeg-prefix=${ffmpeg_prefix}" >> ${config}
+fi # ]
+if [ -n "${tooldir}" ]; then echo "tooldir=${tooldir}" >> ${config}; fi
+if [ -n "${prefix}" ]; then echo "prefix=${prefix}" >> ${config}; fi
+
+if [ -z "${includedir}" ]; then includedir="${prefix}/include"; fi
+if [ -z "${bindir}" ]; then bindir="${prefix}/bin"; fi
+if [ -z "${libdir}" ]; then libdir="${prefix}/lib"; fi
+
+echo "includedir=${includedir}" >> ${config}
+echo "bindir=${bindir}" >> ${config}
+echo "libdir=${libdir}" >> ${config}
+
+if [ -n "${srcdir}" ]; then echo "srcdir=${srcdir}" >> ${config}; fi
+if [ -n "${tools}" ]; then echo "tools=${tools}" >> ${config}; fi
+if [ -n "${reldir}" ]; then echo "reldir=${reldir}" >> ${config}; fi
+if [ -n "${gtk}" ]; then echo "gtk=${gtk}" >> ${config}; fi
+if [ -n "${nsis}" ]; then echo "nsis=${nsis}" >> ${config}; fi
+
+###############################################################################
+if [ -n "${msys}" ]; then # [
+  # We're on MSYS.
+  echo "sodir=${bindir}" >> ${config}
+  echo "extexe=.exe" >> ${config}
+  echo "extso=.dll" >> ${config}
+	echo "so=\$(2)-\$(3)\$(extso)" >> ${config}
+	echo "msys=${msys}" >> ${config}
+else # ] [
+  # We're on Linux.
+  echo "sodir=${libdir}" >> ${config}
+  echo "extexe=" >> ${config}
+  echo "extso=.so" >> ${config}
+	echo "so=\$(1)\$(2)\$(extso).\$(3)" >> ${config}
+fi # ]
+
+if [ 'ms' = "${tools}" ]; then # [
+  # We're compiling and linking with MS tools.
+  echo "exto=.obj" >> ${config}
+  echo "exta=.lib" >> ${config}
+else # ] [
+  # We're compiling and linking with GNU tools.
+  echo "exto=.o" >> ${config}
+  echo "exta=.a" >> ${config}
+fi # ]
+
+###############################################################################
+if [ -e config.mak ]; then # [
+  count=`diff ${config} config.mak | wc -l`
+  if [ 0 -lt ${count} ]; then # [
+    mv ${config} config.mak
+  else # ] [
+    rm -f ${config}
+  fi # ]
+else # ] [
+  mv ${config} config.mak
+fi # ]
+
+cp ${srcdir}/homegrown.makefile ./Makefile

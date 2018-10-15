@@ -19,11 +19,11 @@
  */
 #ifndef __LIB1770_H__ // {
 #define __LIB1770_H__
-#include <pbutil.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+#include <pbutil.h>
 #ifdef __cplusplus
 extern "C" {
 #endif

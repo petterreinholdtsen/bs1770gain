@@ -24,8 +24,13 @@ void *pbu_list_create(void *node)
 {
   list_t *n=node;
 
+#if defined (PBU_LIST_RING) // [
   n->prev=node;
   n->next=node;
+#else // ] [
+  n->prev=NULL;
+  n->next=NULL;
+#endif // ]
 
   return node;
 }
@@ -42,14 +47,23 @@ int pbu_list_append(void *head, void *node, size_t size)
   memcpy(n,node,size);
 
   if (NULL==h) {
+#if defined (PBU_LIST_RING) // [
     n->prev=n;
     n->next=n;
+#else // ] [
+    n->prev=NULL;
+    n->next=NULL;
+#endif // ]
     h=n;
   }
   else {
     n->next=h;
+#if defined (PBU_LIST_RING) // [
     n->prev=h->prev;
     h->prev->next=n;
+#else // ] [
+    n->prev=NULL;
+#endif // ]
     h->prev=n;
   }
 
@@ -60,6 +74,7 @@ malloc:
   return -1;
 }
 
+#if defined (PBU_LIST_RING) // [
 void *pbu_list_remove_link(void *head, void *node)
 {
   list_t *h=head;
@@ -72,13 +87,18 @@ void *pbu_list_remove_link(void *head, void *node)
   else
     h=NULL;
 
-  n->prev->next=n->next;
-  n->next->prev=n->prev;
+  if (n->prev)
+    n->prev->next=n->next;
+
+  if (n->next)
+    n->next->prev=n->prev;
+
   n->prev=NULL;
   n->next=NULL;
 
   return h;
 }
+#endif // ]
 
 void pbu_list_free_full(void *head, void *free_func)
 {
@@ -86,7 +106,11 @@ void pbu_list_free_full(void *head, void *free_func)
   list_t *n;
 
   while (NULL!=(n=h)) {
+#if defined (PBU_LIST_RING) // [
     h=pbu_list_remove_link(n,n);
+#else // ] [
+    h=n->next;
+#endif // ]
     ((void (*)(list_t *))free_func)(n);
   }
 }
