@@ -1,3 +1,14 @@
+bs1770gain (0.5.1-1) unstable; urgency=medium
+
+  * New upstream version 0.5.1
+  * Add d/patches/README with number structure for patches.
+  * Adjusted build to get dh-autoreconf working. (Closes: #882224)
+  * Removed obsolete 1000-fix-typo-in-help-entry.patch and
+    1010-ignore-autoreconf-errors.patch.
+  * Updated Standards-Version from 3.9.8 to 4.2.1.
+
+ -- Petter Reinholdtsen <pere@debian.org>  Fri, 19 Oct 2018 11:02:44 +0200
+
 bs1770gain (0.4.12-2) unstable; urgency=low
 
   [ Matteo F. Vescovi ]
