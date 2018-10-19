@@ -1,19 +1,23 @@
-CFLAGS+=-Werror
-CFLAGS+=-Wall
-CFLAGS+=-Wformat
-CFLAGS+=-Wpointer-arith
-CFLAGS+=-Wcast-align
-CFLAGS+=-Wcast-qual
-CFLAGS+=-Wreturn-type
-CFLAGS+=-Wextra
-CFLAGS+=-Wstrict-prototypes
-#CFLAGS+=-Wmissing-declarations
-#CFLAGS+=-Wmissing-prototypes
+AM_CFLAGS=
+AM_CPPFLAGS=
+AM_LDFLAGS=
 
-#CFLAGS+=-g
-#CFLAGS+=-ggdb
-#LDFLAGS+=-static-libgcc
-#LDFLAGS+=-static-libstdc++
+AM_CFLAGS+=-Werror
+AM_CFLAGS+=-Wall
+AM_CFLAGS+=-Wformat
+AM_CFLAGS+=-Wpointer-arith
+AM_CFLAGS+=-Wcast-align
+AM_CFLAGS+=-Wcast-qual
+AM_CFLAGS+=-Wreturn-type
+AM_CFLAGS+=-Wextra
+AM_CFLAGS+=-Wstrict-prototypes
+#AM_CFLAGS+=-Wmissing-declarations
+#AM_CFLAGS+=-Wmissing-prototypes
+
+#AM_CFLAGS+=-g
+#AM_CFLAGS+=-ggdb
+#AM_LDFLAGS+=-static-libgcc
+#AM_LDFLAGS+=-static-libstdc++
 
 $(libpbutil_a_OBJECTS): $(CONFIG_HEADER)
 
@@ -37,3 +41,5 @@ libpbutil_a_SOURCES+=pbu_same_file.c
 libpbutil_a_SOURCES+=pbu_strtok.c
 libpbutil_a_SOURCES+=pbu_trace.c
 libpbutil_a_SOURCES+=pbu_wcstok.c
+libpbutil_a_SOURCES+=pbu_vwritelna.c
+libpbutil_a_SOURCES+=pbu_vwritelnw.c

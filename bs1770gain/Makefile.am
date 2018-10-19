@@ -1,46 +1,34 @@
-CFLAGS+=-Werror
-CFLAGS+=-Wall
-CFLAGS+=-Wformat
-CFLAGS+=-Wpointer-arith
-CFLAGS+=-Wcast-align
-CFLAGS+=-Wcast-qual
-CFLAGS+=-Wreturn-type
-CFLAGS+=-Wextra
-CFLAGS+=-Wstrict-prototypes
-CFLAGS+=-Wno-unused-parameter
-CFLAGS+=-Wno-deprecated-declarations
-#CFLAGS+=-Wmissing-declarations
-#CFLAGS+=-Wmissing-prototypes
-#CFLAGS+=-Wno-unused-variable
+AM_CFLAGS=
+AM_CPPFLAGS=
+AM_LDFLAGS=
 
-CPPFLAGS+=-I$(top_srcdir)/libpbutil
-CPPFLAGS+=-I$(top_srcdir)/lib1770-2
-CPPFLAGS+=-I$(top_srcdir)/libffsox-2
+AM_CFLAGS+=-Werror
+AM_CFLAGS+=-Wall
+AM_CFLAGS+=-Wformat
+AM_CFLAGS+=-Wpointer-arith
+AM_CFLAGS+=-Wcast-align
+AM_CFLAGS+=-Wcast-qual
+AM_CFLAGS+=-Wreturn-type
+AM_CFLAGS+=-Wextra
+AM_CFLAGS+=-Wstrict-prototypes
+AM_CFLAGS+=-Wno-unused-parameter
+AM_CFLAGS+=-Wno-deprecated-declarations
+#AM_CFLAGS+=-Wmissing-declarations
+#AM_CFLAGS+=-Wmissing-prototypes
+#AM_CFLAGS+=-Wno-unused-variable
 
-#CFLAGS+=-g
-#CFLAGS+=-ggdb
-#LDFLAGS+=-static-libgcc
-#LDFLAGS+=-static-libstdc++
+AM_CPPFLAGS+=-I$(top_srcdir)/libpbutil
+AM_CPPFLAGS+=-I$(top_srcdir)/lib1770-2
+AM_CPPFLAGS+=-I$(top_srcdir)/libffsox-2
+
+#AM_CFLAGS+=-g
+#AM_CFLAGS+=-ggdb
+#AM_LDFLAGS+=-static-libgcc
+#AM_LDFLAGS+=-static-libstdc++
 if WIN32
-LDFLAGS+=-municode
+AM_LDFLAGS+=-municode
 endif
-
-FFMPEG_PREFIX=@FFMPEG_PREFIX@
-SOX_PREFIX=@SOX_PREFIX@
-
-FFSOX_AVUTIL_V=@FFSOX_AVUTIL_V@
-FFSOX_SWRESAMPLE_V=@FFSOX_SWRESAMPLE_V@
-FFSOX_AVCODEC_V=@FFSOX_AVCODEC_V@
-FFSOX_AVFORMAT_V=@FFSOX_AVFORMAT_V@
-FFSOX_LIBSOX_V=@FFSOX_LIBSOX_V@
-
-SODIR=@SODIR@
-SOLIB=@SOLIB@
-LDFLAGS+=@BS1770GAIN_LDFLAGS@
-
-BS1770GAIN_TOOLS_ALL=@BS1770GAIN_TOOLS_ALL@
-BS1770GAIN_TOOLS_INSTALL=@BS1770GAIN_TOOLS_INSTALL@
-BS1770GAIN_TOOLS_UNINSTALL=@BS1770GAIN_TOOLS_UNINSTALL@
+AM_LDFLAGS+=@BS1770GAIN_LDFLAGS@
 
 bin_PROGRAMS=
 bin_PROGRAMS+=bs1770gain
@@ -49,18 +37,26 @@ bs1770gain_SOURCES+=bs1770gain.c
 bs1770gain_LDADD=
 bs1770gain_LDADD+=libbs1770gain.a
 bs1770gain_LDADD+=$(top_builddir)/libffsox-2/libffsox_2.a
+bs1770gain_LDADD+=$(top_builddir)/libffsox-2/libffsox_2.a
 bs1770gain_LDADD+=$(top_builddir)/lib1770-2/lib1770_2.a
 bs1770gain_LDADD+=$(top_builddir)/libpbutil/libpbutil.a
+if WIN32
+AM_LDFLAGS+=-lsox.dll
+AM_LDFLAGS+=-lavformat.dll
+AM_LDFLAGS+=-lavcodec.dll
+AM_LDFLAGS+=-lswresample.dll
+AM_LDFLAGS+=-lavutil.dll
+else
+AM_LDFLAGS+=-lsox
+AM_LDFLAGS+=-lavformat
+AM_LDFLAGS+=-lavcodec
+AM_LDFLAGS+=-lswresample
+AM_LDFLAGS+=-lavutil
+if FFSOX_DYNLOAD
+bs1770gain_LDADD+=-ldl
+endif
+endif
 bs1770gain_LDADD+=-lm
-#bin_PROGRAMS+=bs1770hello
-#bs1770hello_SOURCES=
-#bs1770hello_SOURCES+=bs1770hello.c
-#bs1770hello_LDADD=
-#bs1770hello_LDADD+=libbs1770gain.a
-#bs1770hello_LDADD+=$(top_builddir)/libffsox-2/libffsox_2.a
-#bs1770hello_LDADD+=$(top_builddir)/lib1770-2/lib1770_2.a
-#bs1770hello_LDADD+=$(top_builddir)/libpbutil/libpbutil.a
-#bs1770hello_LDADD+=-lm
 
 noinst_LIBRARIES=libbs1770gain.a
 libbs1770gain_a_SOURCES=
@@ -86,41 +82,25 @@ $(OBJECTS): $(top_srcdir)/libffsox-2/ffsox.h
 $(OBJECTS): $(top_srcdir)/libffsox-2/ffsox_priv.h
 $(OBJECTS): $(top_srcdir)/libffsox-2/ffsox_dynload.h
 
-all: $(BS1770GAIN_TOOLS_ALL)
-install-exec-local: $(BS1770GAIN_TOOLS_INSTALL)
-uninstall-local: $(BS1770GAIN_TOOLS_UNINSTALL)
-
-.PHONY: bs1770gain-tools-nop
-bs1770gain-tools-nop:
-
-.PHONY: bs1770gain-tools-all
-bs1770gain-tools-all: bs1770gain-tools/$(call SOLIB,,avutil,$(FFSOX_AVUTIL_V))
-bs1770gain-tools-all: bs1770gain-tools/$(call SOLIB,,swresample,$(FFSOX_SWRESAMPLE_V))
-bs1770gain-tools-all: bs1770gain-tools/$(call SOLIB,,avcodec,$(FFSOX_AVCODEC_V))
-bs1770gain-tools-all: bs1770gain-tools/$(call SOLIB,,avformat,$(FFSOX_AVFORMAT_V))
-bs1770gain-tools-all: bs1770gain-tools/$(call SOLIB,lib,sox,$(FFSOX_LIBSOX_V))
-
-.PHONY: bs1770gain-tools-install
-bs1770gain-tools-install: $(bindir)/bs1770gain-tools/$(call SOLIB,,avutil,$(FFSOX_AVUTIL_V))
-bs1770gain-tools-install: $(bindir)/bs1770gain-tools/$(call SOLIB,,swresample,$(FFSOX_SWRESAMPLE_V))
-bs1770gain-tools-install: $(bindir)/bs1770gain-tools/$(call SOLIB,,avcodec,$(FFSOX_AVCODEC_V))
-bs1770gain-tools-install: $(bindir)/bs1770gain-tools/$(call SOLIB,,avformat,$(FFSOX_AVFORMAT_V))
-bs1770gain-tools-install: $(bindir)/bs1770gain-tools/$(call SOLIB,lib,sox,$(FFSOX_LIBSOX_V))
-
-.PHONY: bs1770gain-tools-uninstall
-bs1770gain-tools-uninstall:
-	rm -f $(prefix)/$(bindir)/bs1770gain-tools/$(call SOLIB,lib,sox,$(FFSOX_LIBSOX_V))
-	rm -f $(prefix)/$(bindir)/bs1770gain-tools/$(call SOLIB,,avformat,$(FFSOX_AVFORMAT_V))
-	rm -f $(prefix)/$(bindir)/bs1770gain-tools/$(call SOLIB,,avcodec,$(FFSOX_AVCODEC_V))
-	rm -f $(prefix)/$(bindir)/bs1770gain-tools/$(call SOLIB,,swresample,$(FFSOX_SWRESAMPLE_V))
-	rm -f $(prefix)/$(bindir)/bs1770gain-tools/$(call SOLIB,,avutil,$(FFSOX_AVUTIL_V))
-
-bs1770gain-tools/%: $(FFMPEG_PREFIX)/$(SODIR)/%
-	@mkdir -p $(@D)
+if FFSOX_DYNLOAD
+install-exec-hook: $(DESTDIR)$(bindir)/bs1770gain-tools/@LIBSOX_SO@
+install-exec-hook: $(DESTDIR)$(bindir)/bs1770gain-tools/@AVFORMAT_SO@
+install-exec-hook: $(DESTDIR)$(bindir)/bs1770gain-tools/@AVCODEC_SO@
+install-exec-hook: $(DESTDIR)$(bindir)/bs1770gain-tools/@SWRESAMPLE_SO@
+install-exec-hook: $(DESTDIR)$(bindir)/bs1770gain-tools/@AVUTIL_SO@
+$(DESTDIR)$(bindir)/bs1770gain-tools/$(LIBSOX_SO): @SOX_PREFIX@/@SODIR@/@LIBSOX_SO@
+	mkdir -p $(@D)
 	cp $< $(@D)
-bs1770gain-tools/%: $(SOX_PREFIX)/$(SODIR)/%
-	@mkdir -p $(@D)
+$(DESTDIR)$(bindir)/bs1770gain-tools/$(AVFORMAT_SO): @FFMPEG_PREFIX@/@SODIR@/@AVFORMAT_SO@
+	mkdir -p $(@D)
 	cp $< $(@D)
-$(bindir)/bs1770gain-tools/%: bs1770gain-tools/%
-	@mkdir -p $(@D)
+$(DESTDIR)$(bindir)/bs1770gain-tools/$(AVCODEC_SO): @FFMPEG_PREFIX@/@SODIR@/@AVCODEC_SO@
+	mkdir -p $(@D)
 	cp $< $(@D)
+$(DESTDIR)$(bindir)/bs1770gain-tools/$(SWRESAMPLE_SO): @FFMPEG_PREFIX@/@SODIR@/@SWRESAMPLE_SO@
+	mkdir -p $(@D)
+	cp $< $(@D)
+$(DESTDIR)$(bindir)/bs1770gain-tools/$(AVUTIL_SO): @FFMPEG_PREFIX@/@SODIR@/@AVUTIL_SO@
+	mkdir -p $(@D)
+	cp $< $(@D)
+endif
