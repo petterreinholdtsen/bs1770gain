@@ -9,7 +9,7 @@ Build-depends: debhelper (>> 10~)
  , libavformat-dev (>= 7:2.7.0)
  , sox
  , txt2man
-Standards-Version: 3.9.8
+Standards-Version: 4.2.1
 Homepage: http://bs1770gain.sourceforge.net/
 Vcs-Browser: https://anonscm.debian.org/gitweb/?p=pkg-multimedia/bs1770gain.git
 Vcs-Git: https://anonscm.debian.org/git/pkg-multimedia/bs1770gain.git
