@@ -61,7 +61,9 @@ static struct _ffsox_avutil {
   void (*av_frame_set_channel_layout)(AVFrame *frame, int64_t val);
   int64_t (*av_frame_get_channel_layout)(const AVFrame *frame);
   void (*av_frame_set_channels)(AVFrame *frame, int val);
+#if defined (FFSOX_AV_FRAME_GET_CHANNELS) // [
   int (*av_frame_get_channels)(const AVFrame *frame);
+#endif // ]
   void (*av_frame_set_sample_rate)(AVFrame *frame, int val);
   int  (*av_frame_get_sample_rate)(const AVFrame *frame);
   int (*av_samples_alloc)(uint8_t **audio_data, int *linesize,
@@ -208,6 +210,7 @@ void av_frame_set_channels(AVFrame *frame, int val)
   avutil.av_frame_set_channels(frame,val);
 }
 
+#if defined (FFSOX_AV_FRAME_GET_CHANNELS) // [
 int av_frame_get_channels(const AVFrame *frame)
 {
   if (avutil_load(&avutil.av_frame_get_channels,__func__)<0)
@@ -215,6 +218,7 @@ int av_frame_get_channels(const AVFrame *frame)
 
   return avutil.av_frame_get_channels(frame);
 }
+#endif // ]
 
 void av_frame_set_sample_rate(AVFrame *frame, int val)
 {

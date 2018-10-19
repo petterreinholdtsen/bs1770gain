@@ -250,7 +250,9 @@ static int ffsox_dynload_avutil(void *lib)
   FFSOX_BIND(lib,&ffsox_avutil.av_frame_get_channel_layout,
       "av_frame_get_channel_layout");
   FFSOX_BIND(lib,&ffsox_avutil.av_frame_set_channels,"av_frame_set_channels");
+#if defined (FFSOX_AV_FRAME_GET_CHANNELS) // [
   FFSOX_BIND(lib,&ffsox_avutil.av_frame_get_channels,"av_frame_get_channels");
+#endif // ]
   FFSOX_BIND(lib,&ffsox_avutil.av_frame_set_sample_rate,
       "av_frame_set_sample_rate");
   FFSOX_BIND(lib,&ffsox_avutil.av_frame_get_sample_rate,

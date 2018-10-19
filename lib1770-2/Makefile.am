@@ -1,21 +1,25 @@
-CFLAGS+=-Werror
-CFLAGS+=-Wall
-CFLAGS+=-Wformat
-CFLAGS+=-Wpointer-arith
-CFLAGS+=-Wcast-align
-CFLAGS+=-Wcast-qual
-CFLAGS+=-Wreturn-type
-CFLAGS+=-Wextra
-CFLAGS+=-Wstrict-prototypes
-#CFLAGS+=-Wmissing-declarations
-#CFLAGS+=-Wmissing-prototypes
+AM_CFLAGS=
+AM_CPPFLAGS=
+AM_LDFLAGS=
 
-CPPFLAGS+=-I$(top_srcdir)/libpbutil
+AM_CFLAGS+=-Werror
+AM_CFLAGS+=-Wall
+AM_CFLAGS+=-Wformat
+AM_CFLAGS+=-Wpointer-arith
+AM_CFLAGS+=-Wcast-align
+AM_CFLAGS+=-Wcast-qual
+AM_CFLAGS+=-Wreturn-type
+AM_CFLAGS+=-Wextra
+AM_CFLAGS+=-Wstrict-prototypes
+#AM_CFLAGS+=-Wmissing-declarations
+#AM_CFLAGS+=-Wmissing-prototypes
 
-#CFLAGS+=-g
-#CFLAGS+=-ggdb
-#LDFLAGS+=-static-libgcc
-#LDFLAGS+=-static-libstdc++
+AM_CPPFLAGS+=-I$(top_srcdir)/libpbutil
+
+#AM_CFLAGS+=-g
+#AM_CFLAGS+=-ggdb
+#AM_LDFLAGS+=-static-libgcc
+#AM_LDFLAGS+=-static-libstdc++
 
 $(libffsox_2_a_OBJECTS): $(CONFIG_HEADER)
 $(libffsox_2_a_OBJECTS): $(top_srcdir)/libpbutil/pbutil.h

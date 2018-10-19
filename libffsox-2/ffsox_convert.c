@@ -33,7 +33,11 @@ void ffsox_convert_setup(convert_t *convert, frame_t *fr, frame_t *fw,
   convert->fw=fw;
   convert->q=q;
   convert->intercept=intercept;
+#if defined (FFSOX_AV_FRAME_GET_CHANNELS) // [
   convert->channels=av_frame_get_channels(fr->frame);
+#else // ] [
+  convert->channels=fr->frame->channels;
+#endif // ]
 
 #if defined (FFSOX_FIX_881132_CHANNEL_OVERFLOW) // [
   if (AV_NUM_DATA_POINTERS<=convert->channels) {

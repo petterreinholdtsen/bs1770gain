@@ -126,7 +126,9 @@ struct ffsox_avutil {
   typeof (av_frame_set_channel_layout) *av_frame_set_channel_layout;
   typeof (av_frame_get_channel_layout) *av_frame_get_channel_layout;
   typeof (av_frame_set_channels) *av_frame_set_channels;
+#if defined (FFSOX_AV_FRAME_GET_CHANNELS) // [
   typeof (av_frame_get_channels) *av_frame_get_channels;
+#endif // ]
   typeof (av_frame_set_sample_rate) *av_frame_set_sample_rate;
   typeof (av_frame_get_sample_rate) *av_frame_get_sample_rate;
   typeof (av_samples_alloc) *av_samples_alloc;
@@ -158,7 +160,9 @@ struct ffsox_avutil {
   void (*av_frame_set_channel_layout)(AVFrame *frame, int64_t val);
   int64_t (*av_frame_get_channel_layout)(const AVFrame *frame);
   void (*av_frame_set_channels)(AVFrame *frame, int val);
+#if defined (FFSOX_AV_FRAME_GET_CHANNELS) // [
   int (*av_frame_get_channels)(const AVFrame *frame);
+#endif // ]
   void (*av_frame_set_sample_rate)(AVFrame *frame, int val);
   int  (*av_frame_get_sample_rate)(const AVFrame *frame);
   int (*av_samples_alloc)(uint8_t **audio_data, int *linesize,
@@ -368,7 +372,9 @@ extern ffsox_libsox_t ffsox_libsox;
 #define av_frame_get_channel_layout \
     (*ffsox_avutil.av_frame_get_channel_layout)
 #define av_frame_set_channels (*ffsox_avutil.av_frame_set_channels)
+#if defined (FFSOX_AV_FRAME_GET_CHANNELS) // [
 #define av_frame_get_channels (*ffsox_avutil.av_frame_get_channels)
+#endif // ]
 #define av_frame_set_sample_rate (*ffsox_avutil.av_frame_set_sample_rate)
 #define av_frame_get_sample_rate (*ffsox_avutil.av_frame_get_sample_rate)
 #define av_samples_alloc (*ffsox_avutil.av_samples_alloc)
